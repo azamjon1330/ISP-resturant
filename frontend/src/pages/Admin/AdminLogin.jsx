@@ -2,17 +2,15 @@ import React, { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { authAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { Eye, EyeOff } from 'lucide-react'
-import './AdminLogin.css'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ username: '', password: '' })
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const token = localStorage.getItem('youit_token')
-  if (token) {
+  if (localStorage.getItem('youit_token')) {
     return <Navigate to="/admin/" replace />
   }
 
@@ -20,7 +18,7 @@ export default function AdminLogin() {
     e.preventDefault()
     setLoading(true)
     try {
-      const res = await authAPI.login(form.username, form.password)
+      const res = await authAPI.login(username, password)
       localStorage.setItem('youit_token', res.data.token)
       navigate('/admin/', { replace: true })
     } catch {
@@ -31,63 +29,104 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="admin-login-page">
-      <div className="login-left">
-        <div className="login-brand">
-          <span className="login-brand-emoji">🍽️</span>
-          <h1>YouIt Café</h1>
-          <p>Миллий таомлар кафеси<br />бошқарув тизими</p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #FF6B35 0%, #E85A24 40%, #C94010 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      fontFamily: 'Inter, sans-serif',
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '24px',
+        padding: '48px 44px',
+        width: '100%',
+        maxWidth: '420px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{ fontSize: '56px', marginBottom: '12px' }}>🍽️</div>
+          <h1 style={{ fontSize: '26px', fontWeight: 900, color: '#111827', margin: 0 }}>YouIt Café</h1>
+          <p style={{ fontSize: '14px', color: '#6B7280', marginTop: '6px' }}>Бошқарув панелига кириш</p>
         </div>
-        <div className="login-dishes">
-          <span>🥘</span>
-          <span>🍜</span>
-          <span>🫕</span>
-          <span>🥗</span>
-        </div>
-      </div>
 
-      <div className="login-right">
-        <div className="login-card slide-in">
-          <p className="login-card-title">Кириш</p>
-          <p className="login-card-sub">Админ панелига кириш учун маълумотларни киритинг</p>
+        <form onSubmit={submit}>
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+              Логин
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="Логинни киритинг"
+              required
+              autoComplete="username"
+              style={{
+                width: '100%', padding: '12px 16px', fontSize: '14px',
+                border: '1.5px solid #E5E7EB', borderRadius: '10px',
+                outline: 'none', boxSizing: 'border-box',
+                fontFamily: 'Inter, sans-serif',
+              }}
+              onFocus={e => e.target.style.borderColor = '#FF6B35'}
+              onBlur={e => e.target.style.borderColor = '#E5E7EB'}
+            />
+          </div>
 
-          <form onSubmit={submit}>
-            <div className="form-group">
-              <label className="label">Логин</label>
+          <div style={{ marginBottom: '28px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+              Парол
+            </label>
+            <div style={{ position: 'relative' }}>
               <input
-                className="input"
-                type="text"
-                placeholder="Логинни киритинг"
-                value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                type={showPass ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Паролни киритинг"
                 required
-                autoComplete="username"
+                autoComplete="current-password"
+                style={{
+                  width: '100%', padding: '12px 48px 12px 16px', fontSize: '14px',
+                  border: '1.5px solid #E5E7EB', borderRadius: '10px',
+                  outline: 'none', boxSizing: 'border-box',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                onFocus={e => e.target.style.borderColor = '#FF6B35'}
+                onBlur={e => e.target.style.borderColor = '#E5E7EB'}
               />
+              <button
+                type="button"
+                onClick={() => setShowPass(s => !s)}
+                style={{
+                  position: 'absolute', right: '14px', top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#9CA3AF', fontSize: '16px', padding: '4px',
+                }}
+              >
+                {showPass ? '🙈' : '👁️'}
+              </button>
             </div>
+          </div>
 
-            <div className="form-group">
-              <label className="label">Парол</label>
-              <div className="pass-wrap">
-                <input
-                  className="input"
-                  type={showPass ? 'text' : 'password'}
-                  placeholder="Паролни киритинг"
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  required
-                  autoComplete="current-password"
-                />
-                <button type="button" className="pass-toggle" onClick={() => setShowPass(s => !s)}>
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <button className="login-btn" type="submit" disabled={loading}>
-              {loading ? '⏳ Кириш...' : '🔐 Кириш'}
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%', padding: '14px', fontSize: '16px', fontWeight: 700,
+              background: loading ? '#9CA3AF' : 'linear-gradient(135deg, #FF6B35, #E85A24)',
+              color: 'white', border: 'none', borderRadius: '12px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 16px rgba(255,107,53,0.4)',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s',
+            }}
+          >
+            {loading ? '⏳ Кириш...' : '🔐 Кириш'}
+          </button>
+        </form>
       </div>
     </div>
   )

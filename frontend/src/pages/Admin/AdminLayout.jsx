@@ -1,9 +1,9 @@
 import React from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, BarChart3, LogOut } from 'lucide-react'
+import { NavLink, Outlet, useNavigate, Navigate } from 'react-router-dom'
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, BarChart3, LogOut, Home } from 'lucide-react'
 import './AdminLayout.css'
 
-const navItems = [
+const NAV = [
   { to: '/admin/', icon: LayoutDashboard, label: 'Бош панель', end: true },
   { to: '/admin/orders', icon: ShoppingBag, label: 'Буюртмалар' },
   { to: '/admin/menu', icon: UtensilsCrossed, label: 'Меню' },
@@ -13,44 +13,55 @@ const navItems = [
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const token = localStorage.getItem('youit_token')
+
+  if (!token) {
+    return <Navigate to="/admin" replace />
+  }
 
   const logout = () => {
     localStorage.removeItem('youit_token')
-    navigate('/admin')
+    navigate('/admin', { replace: true })
   }
 
   return (
-    <div className="admin-layout">
-      <aside className="admin-sidebar">
-        <div className="sidebar-logo">
-          <span className="sidebar-logo-emoji">🍽️</span>
+    <div className="al-root">
+      <aside className="al-sidebar">
+        <div className="al-logo">
+          <span className="al-logo-icon">🍽️</span>
           <div>
-            <span className="logo-main">YouIt Café</span>
-            <span className="logo-sub">Бошқарув панели</span>
+            <div className="al-logo-name">YouIt Café</div>
+            <div className="al-logo-sub">Бошқарув панели</div>
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          {navItems.map(item => (
+        <nav className="al-nav">
+          {NAV.map(({ to, icon: Icon, label, end }) => (
             <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) => `al-nav-item${isActive ? ' active' : ''}`}
             >
-              <item.icon size={18} />
-              <span>{item.label}</span>
+              <Icon size={18} />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <button className="nav-item logout-btn" onClick={logout}>
-          <LogOut size={18} />
-          <span>Чиқиш</span>
-        </button>
+        <div className="al-bottom">
+          <button className="al-nav-item al-logout" onClick={() => navigate('/')}>
+            <Home size={18} />
+            <span>Бош саҳифа</span>
+          </button>
+          <button className="al-nav-item al-logout" onClick={logout}>
+            <LogOut size={18} />
+            <span>Чиқиш</span>
+          </button>
+        </div>
       </aside>
 
-      <main className="admin-main">
+      <main className="al-main">
         <Outlet />
       </main>
     </div>

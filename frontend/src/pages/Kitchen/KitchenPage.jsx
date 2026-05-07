@@ -1,25 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ordersAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { ChefHat, Clock, CheckCircle, Bell, Home } from 'lucide-react'
+import { ChefHat, CheckCircle, Bell, Home, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import './KitchenPage.css'
 
 const COLUMNS = [
-  { status: 'pending',  label: 'Янги',          color: 'yellow', nextStatus: 'cooking',  nextLabel: 'Тайёрлашни бошлаш' },
-  { status: 'cooking',  label: 'Тайёрланмоқда', color: 'orange', nextStatus: 'ready',   nextLabel: 'Тайёр!' },
-  { status: 'ready',    label: 'Тайёр',          color: 'green',  nextStatus: 'served',  nextLabel: 'Берилди' },
+  { status: 'pending',  label: 'Янги',           color: 'yellow', nextStatus: 'cooking', nextLabel: 'Тайёрлашни бошлаш' },
+  { status: 'cooking',  label: 'Тайёрланмоқда',  color: 'orange', nextStatus: 'ready',   nextLabel: 'Тайёр!' },
+  { status: 'ready',    label: 'Тайёр',           color: 'green',  nextStatus: 'served',  nextLabel: 'Берилди ✓' },
 ]
+
+const fmtTime = (iso) => {
+  const d = new Date(iso)
+  const pad = n => String(n).padStart(2, '0')
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 export default function KitchenPage() {
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const wsRef = useRef(null)
-  const audioRef = useRef(null)
 
   useEffect(() => {
-    loadOrders()
+    load()
     connectWS()
     return () => wsRef.current?.close()
   }, [])
@@ -57,7 +62,7 @@ export default function KitchenPage() {
     } catch {}
   }
 
-  const loadOrders = async () => {
+  const load = async () => {
     setLoading(true)
     try {
       const res = await ordersAPI.getAll()
@@ -77,78 +82,81 @@ export default function KitchenPage() {
     } catch { toast.error('Ҳолатни янгилашда хато') }
   }
 
-  const getColumnOrders = (status) => orders.filter(o => o.status === status)
+  const col = (status) => orders.filter(o => o.status === status)
 
-  const getElapsed = (createdAt) => {
-    const mins = Math.floor((Date.now() - new Date(createdAt)) / 60000)
-    if (mins < 1) return 'Ҳозир'
-    return `${mins} дақиқа`
-  }
-
-  if (loading) return <div className="kitchen-loading"><ChefHat size={40} className="animate-spin" color="var(--orange)" /></div>
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F5F5F5' }}>
+      <ChefHat size={44} color="#FF6B35" className="animate-spin" />
+    </div>
+  )
 
   return (
     <div className="kitchen-page">
       <header className="kitchen-header">
-        <button className="btn-icon" style={{color:'white'}} onClick={() => navigate('/')}><Home size={20} /></button>
-        <div className="kitchen-title">
-          <ChefHat size={24} color="white" />
-          <h1>Ошпазхона панели</h1>
+        <div className="kh-left">
+          <button className="kh-icon-btn" onClick={() => navigate('/')}><Home size={20} /></button>
+          <ChefHat size={22} color="white" />
+          <h1 className="kh-title">Ошпазхона панели</h1>
         </div>
-        <div className="kitchen-stats">
-          <span className="stat"><Bell size={14} /> {getColumnOrders('pending').length} янги</span>
-          <span className="stat cooking">{getColumnOrders('cooking').length} тайёрланмоқда</span>
-          <span className="stat ready">{getColumnOrders('ready').length} тайёр</span>
+        <div className="kh-stats">
+          <span className="kh-stat kh-stat-yellow"><Bell size={14} /> {col('pending').length} янги</span>
+          <span className="kh-stat kh-stat-orange">{col('cooking').length} тайёрланмоқда</span>
+          <span className="kh-stat kh-stat-green">{col('ready').length} тайёр</span>
         </div>
-        <button className="btn btn-sm" style={{background:'rgba(255,255,255,0.2)',color:'white',border:'none'}} onClick={loadOrders}>Янгилаш</button>
+        <button className="kh-refresh" onClick={load}><RefreshCw size={16} /> Янгилаш</button>
       </header>
 
       <div className="kitchen-board">
         {COLUMNS.map(col => (
-          <div key={col.status} className={`kitchen-column col-${col.color}`}>
-            <div className="column-header">
-              <span className={`col-dot dot-${col.color}`} />
+          <div key={col.status} className={`kboard-col col-${col.color}`}>
+            <div className="kboard-col-head">
+              <span className={`kdot dot-${col.color}`} />
               <h2>{col.label}</h2>
-              <span className="col-count">{getColumnOrders(col.status).length}</span>
+              <span className="kboard-count">{orders.filter(o => o.status === col.status).length}</span>
             </div>
 
-            <div className="column-body">
-              {getColumnOrders(col.status).length === 0 ? (
-                <div className="col-empty">Буюртма йўқ</div>
-              ) : (
-                getColumnOrders(col.status).map(order => (
-                  <div key={order.id} className={`kitchen-card card-${col.color}`}>
-                    <div className="kcard-header">
-                      <span className="kcard-code">#{order.order_code}</span>
-                      <span className="kcard-time"><Clock size={12} /> {getElapsed(order.created_at)}</span>
-                    </div>
-
-                    {order.items && order.items.length > 0 && (
-                      <ul className="kcard-items">
-                        {order.items.map((item, i) => (
-                          <li key={i}>
-                            <span className="item-qty">×{item.quantity}</span>
-                            <span className="item-name">{item.item_name}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {order.note && <p className="kcard-note">💬 {order.note}</p>}
-
-                    <div className="kcard-footer">
-                      <span className="kcard-price">{order.final_price?.toLocaleString()} сум</span>
-                      <button
-                        className={`btn btn-sm status-btn btn-${col.color}`}
-                        onClick={() => updateStatus(order, col.nextStatus)}
-                      >
-                        {col.nextStatus === 'ready' ? <CheckCircle size={14} /> : null}
-                        {col.nextLabel}
-                      </button>
-                    </div>
+            <div className="kboard-col-body">
+              {orders.filter(o => o.status === col.status).length === 0 ? (
+                <div className="kboard-empty">Буюртма йўқ</div>
+              ) : orders.filter(o => o.status === col.status).map(order => (
+                <div key={order.id} className={`kcard kcard-${col.color}`}>
+                  <div className="kcard-top">
+                    <span className="kcard-code">#{order.order_code}</span>
+                    <span className="kcard-time">{fmtTime(order.created_at)}</span>
                   </div>
-                ))
-              )}
+
+                  {order.items?.length > 0 && (
+                    <ul className="kcard-items">
+                      {order.items.map((item, i) => (
+                        <li key={i} className="kcard-item">
+                          <div className="kcard-item-left">
+                            <span className="kcard-qty">×{item.quantity}</span>
+                            <span className="kcard-name">{item.item_name}</span>
+                          </div>
+                          {(item.price || item.unit_price) && (
+                            <span className="kcard-item-price">
+                              {((item.price || item.unit_price) * item.quantity).toLocaleString()} сум
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {order.note && <p className="kcard-note">💬 {order.note}</p>}
+
+                  <div className="kcard-foot">
+                    <span className="kcard-total">{order.final_price?.toLocaleString()} сум</span>
+                    <button
+                      className={`kcard-btn kcard-btn-${col.color}`}
+                      onClick={() => updateStatus(order, col.nextStatus)}
+                    >
+                      {col.nextStatus === 'ready' && <CheckCircle size={16} />}
+                      {col.nextLabel}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}

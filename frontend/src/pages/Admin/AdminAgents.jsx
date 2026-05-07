@@ -2,23 +2,22 @@ import React, { useState, useEffect } from 'react'
 import { agentsAPI } from '../../api'
 import toast from 'react-hot-toast'
 import { Plus, Users, Star, CreditCard, X, Check, ChevronRight, Gift } from 'lucide-react'
-import { QRCodeSVG } from 'qrcode.react'
-import './AdminAgents.css'
+import '../Admin/AdminLayout.css'
 
-const emptyForm = { name: '', phone: '', regular_card_count: 20, discount_amount: 20000, bonus_threshold: 10, referral_bonus_threshold: 20 }
+const EMPTY = { name: '', phone: '', regular_card_count: 20, discount_amount: 20000, bonus_threshold: 10, referral_bonus_threshold: 20 }
 
 export default function AdminAgents() {
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
   const [selected, setSelected] = useState(null)
-  const [form, setForm] = useState(emptyForm)
-  const [saving, setSaving] = useState(false)
   const [bonuses, setBonuses] = useState([])
+  const [modal, setModal] = useState(false)
+  const [form, setForm] = useState(EMPTY)
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => { loadAgents() }, [])
+  useEffect(() => { load() }, [])
 
-  const loadAgents = async () => {
+  const load = async () => {
     setLoading(true)
     try { const r = await agentsAPI.getAll(); setAgents(r.data) }
     catch { toast.error('Юкланмади') }
@@ -27,10 +26,10 @@ export default function AdminAgents() {
 
   const selectAgent = async (agent) => {
     setSelected(agent)
+    setBonuses([])
     try {
-      const r = await agentsAPI.getById(agent.id)
+      const [r, b] = await Promise.all([agentsAPI.getById(agent.id), agentsAPI.getBonuses(agent.id)])
       setSelected(r.data)
-      const b = await agentsAPI.getBonuses(agent.id)
       setBonuses(b.data)
     } catch {}
   }
@@ -39,150 +38,205 @@ export default function AdminAgents() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await agentsAPI.create({ ...form, regular_card_count: +form.regular_card_count, discount_amount: +form.discount_amount, bonus_threshold: +form.bonus_threshold, referral_bonus_threshold: +form.referral_bonus_threshold })
+      const res = await agentsAPI.create({
+        ...form,
+        regular_card_count: +form.regular_card_count,
+        discount_amount: +form.discount_amount,
+        bonus_threshold: +form.bonus_threshold,
+        referral_bonus_threshold: +form.referral_bonus_threshold,
+      })
       setAgents(a => [res.data, ...a])
-      setShowCreate(false)
-      setForm(emptyForm)
+      setModal(false)
+      setForm(EMPTY)
       toast.success(`Агент яратилди: ${res.data.code}`)
     } catch (e) { toast.error(e.response?.data?.error || 'Хатолик') }
     finally { setSaving(false) }
   }
 
+  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+
   return (
-    <div className="agents-page">
-      <div className="agents-left">
-        <div className="page-header-row">
-          <div><h1>Реферал агентлар</h1><p className="sub">{agents.length} та агент</p></div>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}><Plus size={14} /> Агент</button>
+    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 120px)' }}>
+      {/* Left: agent list */}
+      <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>👥 Агентлар</h1>
+            <p style={{ fontSize: 13, color: '#6B7280', margin: '2px 0 0' }}>{agents.length} та агент</p>
+          </div>
+          <button className="adm-btn adm-btn-primary adm-btn-sm" onClick={() => setModal(true)}>
+            <Plus size={14} /> Агент
+          </button>
         </div>
 
-        {loading ? <div className="page-loading">Юкланмоқда...</div> : (
-          <div className="agents-list">
-            {agents.map(agent => (
-              <div key={agent.id} className={`agent-row ${selected?.id === agent.id ? 'active' : ''}`} onClick={() => selectAgent(agent)}>
-                <div className="agent-avatar"><Users size={18} /></div>
-                <div className="agent-row-info">
-                  <span className="agent-name">{agent.name}</span>
-                  <span className="agent-code">#{agent.code}</span>
-                </div>
-                <div className="agent-row-stats">
-                  <span className="stat-pill gold"><Star size={10} /> {agent.gold_card_uses}</span>
-                  <span className="stat-pill">{agent.referral_card_total_uses} реф</span>
-                </div>
-                <ChevronRight size={16} color="var(--gray-400)" />
+        <div className="adm-card" style={{ flex: 1, padding: 0, overflow: 'hidden auto' }}>
+          {loading ? (
+            <div className="adm-loading"><div className="adm-spinner" /></div>
+          ) : agents.length === 0 ? (
+            <div className="adm-empty">Агентлар йўқ</div>
+          ) : agents.map(ag => (
+            <div
+              key={ag.id}
+              onClick={() => selectAgent(ag)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+                cursor: 'pointer', borderBottom: '1px solid #F3F4F6',
+                background: selected?.id === ag.id ? '#FFF4EF' : 'white',
+                transition: 'background 0.15s',
+              }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: selected?.id === ag.id ? '#FF6B35' : '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Users size={18} color={selected?.id === ag.id ? 'white' : '#6B7280'} />
               </div>
-            ))}
-          </div>
-        )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: '#111827', fontSize: 14 }}>{ag.name}</div>
+                <div style={{ fontSize: 12, color: '#6B7280' }}>#{ag.code}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 11, background: '#FEF3C7', color: '#92400E', padding: '2px 7px', borderRadius: 100, fontWeight: 600 }}>
+                  ⭐ {ag.gold_card_uses}
+                </span>
+              </div>
+              <ChevronRight size={16} color="#9CA3AF" />
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="agents-right">
+      {/* Right: agent detail */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
         {selected ? (
-          <div>
-            <div className="agent-detail-header">
-              <div className="agent-big-avatar"><Users size={28} /></div>
-              <div>
-                <h2>{selected.name}</h2>
-                <div className="agent-code-big">#{selected.code}</div>
-                {selected.phone && <p className="agent-phone">{selected.phone}</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Header */}
+            <div className="adm-card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#FFF4EF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Users size={26} color="#FF6B35" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>{selected.name}</h2>
+                <div style={{ fontSize: 14, color: '#FF6B35', fontWeight: 600 }}>#{selected.code}</div>
+                {selected.phone && <div style={{ fontSize: 13, color: '#6B7280' }}>{selected.phone}</div>}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {[
+                  { label: 'Олтин карта', val: selected.gold_card_uses },
+                  { label: 'Реферал', val: selected.referral_card_total_uses },
+                  { label: 'Бонус', val: selected.total_bonus_earned },
+                  { label: 'Чегирма', val: `${selected.discount_amount?.toLocaleString()} сум` },
+                ].map((s, i) => (
+                  <div key={i} style={{ textAlign: 'center', padding: '8px 14px', background: '#F9FAFB', borderRadius: 10 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#FF6B35' }}>{s.val}</div>
+                    <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>{s.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="agent-stats-row">
-              <div className="astat"><span className="astat-val">{selected.gold_card_uses}</span><span className="astat-label">Олтин карта</span></div>
-              <div className="astat"><span className="astat-val">{selected.referral_card_total_uses}</span><span className="astat-label">Реферал</span></div>
-              <div className="astat"><span className="astat-val">{selected.total_bonus_earned}</span><span className="astat-label">Бонус</span></div>
-              <div className="astat"><span className="astat-val">{selected.discount_amount?.toLocaleString()}</span><span className="astat-label">Скидка (сум)</span></div>
-            </div>
-
-            <div className="card" style={{marginBottom: 16}}>
-              <h3 className="section-title">Олтин карта</h3>
-              <div className="gold-card">
-                <div className="gold-card-left">
-                  <Star size={20} color="#F59E0B" fill="#F59E0B" />
-                  <div>
-                    <p className="gc-code">{selected.gold_card_code}</p>
-                    <p className="gc-info">{selected.gold_card_uses} / {selected.bonus_threshold} визит → бонус</p>
+            {/* Gold card */}
+            <div className="adm-card">
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 12 }}>⭐ Олтин карта</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderRadius: 12, padding: '14px 18px' }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#92400E', letterSpacing: 2 }}>{selected.gold_card_code}</div>
+                  <div style={{ fontSize: 12, color: '#92400E', marginTop: 4 }}>
+                    {selected.gold_card_uses} / {selected.bonus_threshold} ташриф → бонус
                   </div>
                 </div>
-                <QRCodeSVG value={selected.gold_card_code} size={60} />
+                <Star size={32} color="#F59E0B" fill="#F59E0B" />
               </div>
             </div>
 
-            <div className="card" style={{marginBottom: 16}}>
-              <h3 className="section-title">Реферал карталар ({selected.cards?.filter(c => c.card_type === 'regular').length} та)</h3>
-              <div className="cards-list">
-                {selected.cards?.filter(c => c.card_type === 'regular').map(card => (
-                  <div key={card.id} className={`ref-card ${!card.is_active ? 'inactive' : ''}`}>
-                    <CreditCard size={14} />
-                    <span className="ref-code">{card.card_code}</span>
-                    <span className="ref-uses">{card.use_count}×</span>
-                    <QRCodeSVG value={card.card_code} size={32} />
-                  </div>
-                ))}
+            {/* Referral cards */}
+            {selected.cards?.filter(c => c.card_type === 'regular').length > 0 && (
+              <div className="adm-card">
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 12 }}>
+                  💳 Реферал карталар ({selected.cards.filter(c => c.card_type === 'regular').length} та)
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+                  {selected.cards.filter(c => c.card_type === 'regular').map(card => (
+                    <div key={card.id} style={{
+                      padding: '10px 12px', borderRadius: 9, border: '1.5px solid',
+                      borderColor: card.is_active ? '#E5E7EB' : '#F3F4F6',
+                      background: card.is_active ? 'white' : '#F9FAFB',
+                      opacity: card.is_active ? 1 : 0.6,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <CreditCard size={13} color={card.is_active ? '#FF6B35' : '#9CA3AF'} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', letterSpacing: 1 }}>{card.card_code}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#6B7280' }}>Ишлатилди: {card.use_count}×</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
+            {/* Bonuses */}
             {bonuses.length > 0 && (
-              <div className="card">
-                <h3 className="section-title">Бонуслар ({bonuses.length})</h3>
-                {bonuses.map(b => (
-                  <div key={b.id} className={`bonus-row ${b.used ? 'used' : ''}`}>
-                    <Gift size={14} color={b.bonus_type === 'gold_meal' ? '#F59E0B' : 'var(--green)'} />
-                    <span>{b.description}</span>
-                    <span className="bonus-amount">{b.amount?.toLocaleString()} сум</span>
-                    <span className={`badge ${b.used ? 'badge-gray' : 'badge-green'}`}>{b.used ? 'Ишлатилди' : 'Актив'}</span>
-                  </div>
-                ))}
+              <div className="adm-card">
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 12 }}>🎁 Бонуслар ({bonuses.length})</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {bonuses.map(b => (
+                    <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 9, background: b.used ? '#F9FAFB' : '#F0FDF4', border: `1px solid ${b.used ? '#F3F4F6' : '#BBF7D0'}` }}>
+                      <Gift size={16} color={b.bonus_type === 'gold_meal' ? '#F59E0B' : '#10B981'} />
+                      <span style={{ flex: 1, fontSize: 13, color: '#374151' }}>{b.description}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{b.amount?.toLocaleString()} сум</span>
+                      <span className={`adm-badge ${b.used ? 'adm-badge-gray' : 'adm-badge-green'}`}>
+                        {b.used ? 'Ишлатилди' : 'Актив'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="agent-empty">
-            <Users size={48} opacity={0.2} />
-            <p>Агентни танланг</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', gap: 12 }}>
+            <Users size={56} opacity={0.25} />
+            <p style={{ fontSize: 15 }}>Агентни рўйхатдан танланг</p>
           </div>
         )}
       </div>
 
-      {showCreate && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
-          <div className="modal-card slide-in">
-            <div className="modal-header">
+      {/* Create modal */}
+      {modal && (
+        <div className="adm-overlay" onClick={e => e.target === e.currentTarget && setModal(false)}>
+          <div className="adm-modal">
+            <div className="adm-modal-header">
               <h2>Янги агент яратиш</h2>
-              <button onClick={() => setShowCreate(false)}><X size={20} /></button>
+              <button onClick={() => setModal(false)}><X size={20} /></button>
             </div>
             <form onSubmit={create}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="label">Исм *</label>
-                  <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+              <div className="adm-form-row">
+                <div className="adm-field">
+                  <label className="adm-label">Исм *</label>
+                  <input className="adm-input" value={form.name} onChange={f('name')} required />
                 </div>
-                <div className="form-group">
-                  <label className="label">Телефон</label>
-                  <input className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+998..." />
+                <div className="adm-field">
+                  <label className="adm-label">Телефон</label>
+                  <input className="adm-input" value={form.phone} onChange={f('phone')} placeholder="+998..." />
                 </div>
-                <div className="form-group">
-                  <label className="label">Реферал карталар сони</label>
-                  <input className="input" type="number" value={form.regular_card_count} onChange={e => setForm(f => ({ ...f, regular_card_count: e.target.value }))} min="1" max="100" />
+                <div className="adm-field">
+                  <label className="adm-label">Реферал карта сони</label>
+                  <input className="adm-input" type="number" value={form.regular_card_count} onChange={f('regular_card_count')} min="1" max="100" />
                 </div>
-                <div className="form-group">
-                  <label className="label">Скидка миқдори (сум)</label>
-                  <input className="input" type="number" value={form.discount_amount} onChange={e => setForm(f => ({ ...f, discount_amount: e.target.value }))} min="0" />
+                <div className="adm-field">
+                  <label className="adm-label">Чегирма (сум)</label>
+                  <input className="adm-input" type="number" value={form.discount_amount} onChange={f('discount_amount')} min="0" />
                 </div>
-                <div className="form-group">
-                  <label className="label">Олтин карта бонус (ташриф)</label>
-                  <input className="input" type="number" value={form.bonus_threshold} onChange={e => setForm(f => ({ ...f, bonus_threshold: e.target.value }))} min="1" />
+                <div className="adm-field">
+                  <label className="adm-label">Олтин бонус (ташриф)</label>
+                  <input className="adm-input" type="number" value={form.bonus_threshold} onChange={f('bonus_threshold')} min="1" />
                 </div>
-                <div className="form-group">
-                  <label className="label">Реферал бонус (ишлатиш)</label>
-                  <input className="input" type="number" value={form.referral_bonus_threshold} onChange={e => setForm(f => ({ ...f, referral_bonus_threshold: e.target.value }))} min="1" />
+                <div className="adm-field">
+                  <label className="adm-label">Реферал бонус (ишлатиш)</label>
+                  <input className="adm-input" type="number" value={form.referral_bonus_threshold} onChange={f('referral_bonus_threshold')} min="1" />
                 </div>
               </div>
-              <p className="form-hint">Агентга автоматик 7 рақамли код ва QR карталар берилади</p>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowCreate(false)}>Бекор</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
+              <p style={{ fontSize: 12, color: '#9CA3AF', margin: '4px 0 0' }}>Агентга автоматик 7 рақамли код ва QR карталар берилади</p>
+              <div className="adm-modal-footer">
+                <button type="button" className="adm-btn adm-btn-secondary" onClick={() => setModal(false)}>Бекор</button>
+                <button type="submit" className="adm-btn adm-btn-primary" disabled={saving}>
                   <Check size={16} /> {saving ? 'Яратилмоқда...' : 'Яратиш'}
                 </button>
               </div>

@@ -2,33 +2,33 @@ import React, { useState, useEffect } from 'react'
 import { menuAPI } from '../../api'
 import toast from 'react-hot-toast'
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Check } from 'lucide-react'
-import './AdminMenu.css'
+import '../Admin/AdminLayout.css'
 
-const emptyForm = { name: '', description: '', price: '', category: 'Основные блюда', image_url: '', available: true }
-const categories = ['Основные блюда', 'Супы', 'Гриль', 'Выпечка', 'Напитки', 'Десерты']
+const CATS = ['Основные блюда', 'Супы', 'Гриль', 'Выпечка', 'Напитки', 'Десерты']
+const EMPTY = { name: '', description: '', price: '', category: 'Основные блюда', image_url: '', available: true }
 
 export default function AdminMenu() {
   const [menu, setMenu] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [editItem, setEditItem] = useState(null)
-  const [form, setForm] = useState(emptyForm)
+  const [modal, setModal] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { loadMenu() }, [])
+  useEffect(() => { load() }, [])
 
-  const loadMenu = async () => {
+  const load = async () => {
     setLoading(true)
     try { const r = await menuAPI.getAll(); setMenu(r.data) }
     catch { toast.error('Юкланмади') }
     finally { setLoading(false) }
   }
 
-  const openCreate = () => { setEditItem(null); setForm(emptyForm); setShowModal(true) }
+  const openNew = () => { setEditing(null); setForm(EMPTY); setModal(true) }
   const openEdit = (item) => {
-    setEditItem(item)
-    setForm({ name: item.name, description: item.description, price: item.price, category: item.category, image_url: item.image_url, available: item.available })
-    setShowModal(true)
+    setEditing(item)
+    setForm({ name: item.name, description: item.description || '', price: item.price, category: item.category, image_url: item.image_url || '', available: item.available })
+    setModal(true)
   }
 
   const save = async (e) => {
@@ -36,22 +36,22 @@ export default function AdminMenu() {
     setSaving(true)
     try {
       const data = { ...form, price: parseFloat(form.price) }
-      if (editItem) {
-        await menuAPI.update(editItem.id, data)
-        setMenu(m => m.map(i => i.id === editItem.id ? { ...i, ...data } : i))
+      if (editing) {
+        await menuAPI.update(editing.id, data)
+        setMenu(m => m.map(i => i.id === editing.id ? { ...i, ...data } : i))
         toast.success('Янгиланди')
       } else {
         const res = await menuAPI.create(data)
         setMenu(m => [...m, res.data])
         toast.success('Қўшилди')
       }
-      setShowModal(false)
+      setModal(false)
     } catch { toast.error('Хатолик') }
     finally { setSaving(false) }
   }
 
   const del = async (item) => {
-    if (!confirm(`"${item.name}" ни ўчиришни тасдиқлайсизми?`)) return
+    if (!window.confirm(`"${item.name}" ни ўчиришни тасдиқлайсизми?`)) return
     try {
       await menuAPI.delete(item.id)
       setMenu(m => m.filter(i => i.id !== item.id))
@@ -66,35 +66,53 @@ export default function AdminMenu() {
     } catch { toast.error('Хатолик') }
   }
 
+  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+
   return (
     <div>
-      <div className="page-header-row">
-        <div>
-          <h1>Меню бошқаруви</h1>
-          <p className="page-header">{menu.length} та таом</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div className="adm-page-header" style={{ margin: 0 }}>
+          <h1>🍜 Меню бошқаруви</h1>
+          <p>{menu.length} та таом</p>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
+        <button className="adm-btn adm-btn-primary" onClick={openNew}>
           <Plus size={16} /> Янги таом
         </button>
       </div>
 
-      {loading ? <div className="page-loading">Юкланмоқда...</div> : (
-        <div className="menu-admin-grid">
+      {loading ? (
+        <div className="adm-loading"><div className="adm-spinner" /><span>Юкланмоқда...</span></div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
           {menu.map(item => (
-            <div key={item.id} className={`menu-admin-card ${!item.available ? 'unavailable' : ''}`}>
-              <div className="mac-header">
-                <span className="mac-category">{item.category}</span>
-                <button className="toggle-btn" onClick={() => toggle(item)}>
-                  {item.available ? <ToggleRight size={22} color="var(--green)" /> : <ToggleLeft size={22} color="var(--gray-400)" />}
+            <div key={item.id} className="adm-card" style={{ opacity: item.available ? 1 : 0.6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span className="adm-badge adm-badge-orange" style={{ fontSize: 11 }}>{item.category}</span>
+                <button onClick={() => toggle(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                  {item.available
+                    ? <ToggleRight size={24} color="#10B981" />
+                    : <ToggleLeft size={24} color="#9CA3AF" />}
                 </button>
               </div>
-              <h3>{item.name}</h3>
-              <p>{item.description}</p>
-              <div className="mac-footer">
-                <span className="mac-price">{item.price?.toLocaleString()} сум</span>
-                <div className="mac-actions">
-                  <button className="icon-btn" onClick={() => openEdit(item)}><Edit2 size={14} /></button>
-                  <button className="icon-btn danger" onClick={() => del(item)}><Trash2 size={14} /></button>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>{item.name}</h3>
+              <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 14px', lineHeight: 1.4, minHeight: 36 }}>
+                {item.description || '—'}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: '#FF6B35' }}>{item.price?.toLocaleString()} сум</span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={() => openEdit(item)}
+                    style={{ padding: '6px 10px', borderRadius: 7, border: '1.5px solid #E5E7EB', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    <Edit2 size={14} color="#374151" />
+                  </button>
+                  <button
+                    onClick={() => del(item)}
+                    style={{ padding: '6px 10px', borderRadius: 7, border: '1.5px solid #FEE2E2', background: '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    <Trash2 size={14} color="#EF4444" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -102,41 +120,41 @@ export default function AdminMenu() {
         </div>
       )}
 
-      {showModal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal-card slide-in">
-            <div className="modal-header">
-              <h2>{editItem ? 'Таомни таҳрирлаш' : 'Янги таом қўшиш'}</h2>
-              <button onClick={() => setShowModal(false)}><X size={20} /></button>
+      {modal && (
+        <div className="adm-overlay" onClick={e => e.target === e.currentTarget && setModal(false)}>
+          <div className="adm-modal">
+            <div className="adm-modal-header">
+              <h2>{editing ? 'Таомни таҳрирлаш' : 'Янги таом қўшиш'}</h2>
+              <button onClick={() => setModal(false)}><X size={20} /></button>
             </div>
             <form onSubmit={save}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="label">Номи *</label>
-                  <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+              <div className="adm-form-row">
+                <div className="adm-field">
+                  <label className="adm-label">Номи *</label>
+                  <input className="adm-input" value={form.name} onChange={f('name')} required />
                 </div>
-                <div className="form-group">
-                  <label className="label">Нарх (сум) *</label>
-                  <input className="input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required min="0" />
+                <div className="adm-field">
+                  <label className="adm-label">Нарх (сум) *</label>
+                  <input className="adm-input" type="number" value={form.price} onChange={f('price')} required min="0" />
                 </div>
               </div>
-              <div className="form-group">
-                <label className="label">Тавсиф</label>
-                <textarea className="input" rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+              <div className="adm-field">
+                <label className="adm-label">Тавсиф</label>
+                <textarea className="adm-input" rows={2} value={form.description} onChange={f('description')} style={{ resize: 'vertical' }} />
               </div>
-              <div className="form-group">
-                <label className="label">Категория</label>
-                <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {categories.map(c => <option key={c}>{c}</option>)}
+              <div className="adm-field">
+                <label className="adm-label">Категория</label>
+                <select className="adm-input" value={form.category} onChange={f('category')}>
+                  {CATS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="form-group">
-                <label className="label">Расм URL (ихтиёрий)</label>
-                <input className="input" value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://..." />
+              <div className="adm-field">
+                <label className="adm-label">Расм URL (ихтиёрий)</label>
+                <input className="adm-input" value={form.image_url} onChange={f('image_url')} placeholder="https://..." />
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Бекор</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
+              <div className="adm-modal-footer">
+                <button type="button" className="adm-btn adm-btn-secondary" onClick={() => setModal(false)}>Бекор</button>
+                <button type="submit" className="adm-btn adm-btn-primary" disabled={saving}>
                   <Check size={16} /> {saving ? 'Сақланмоқда...' : 'Сақлаш'}
                 </button>
               </div>
