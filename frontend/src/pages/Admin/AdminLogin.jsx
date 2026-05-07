@@ -11,7 +11,8 @@ export default function AdminLogin() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  if (localStorage.getItem('youit_token')) {
+  const token = localStorage.getItem('youit_token')
+  if (token) {
     return <Navigate to="/admin/" replace />
   }
 
@@ -60,6 +61,7 @@ export default function AdminLogin() {
                 value={form.username}
                 onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                 required
+                autoComplete="username"
               />
             </div>
 
@@ -73,6 +75,7 @@ export default function AdminLogin() {
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   required
+                  autoComplete="current-password"
                 />
                 <button type="button" className="pass-toggle" onClick={() => setShowPass(s => !s)}>
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}

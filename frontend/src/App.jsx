@@ -17,13 +17,15 @@ class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(error) { return { error } }
   render() {
     if (this.state.error) return (
-      <div style={{ padding: 40, fontFamily: 'monospace', background: '#FFF4EF', minHeight: '100vh' }}>
-        <h2 style={{ color: '#E85A24' }}>⚠️ Рендер хатоси:</h2>
-        <pre style={{ color: '#111', marginTop: 12, whiteSpace: 'pre-wrap' }}>
+      <div style={{ padding: 40, fontFamily: 'monospace', background: '#FF6B35', minHeight: '100vh', color: 'white' }}>
+        <h2 style={{ fontSize: 24, marginBottom: 16 }}>⚠️ Рендер хатоси:</h2>
+        <pre style={{ background: 'rgba(0,0,0,0.3)', padding: 20, borderRadius: 8, whiteSpace: 'pre-wrap', fontSize: 13 }}>
           {this.state.error?.message}
+          {'\n\n'}
+          {this.state.error?.stack}
         </pre>
         <button onClick={() => { localStorage.removeItem('youit_token'); window.location.href = '/admin'; }}
-          style={{ marginTop: 20, padding: '10px 20px', background: '#FF6B35', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+          style={{ marginTop: 20, padding: '12px 24px', background: 'white', color: '#FF6B35', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>
           Токенни тозалаш ва қайта кириш
         </button>
       </div>
@@ -34,7 +36,8 @@ class ErrorBoundary extends React.Component {
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('youit_token')
-  return token ? children : <Navigate to="/admin" replace />
+  if (!token) return <Navigate to="/admin" replace />
+  return children
 }
 
 export default function App() {
@@ -53,6 +56,7 @@ export default function App() {
           <Route path="/cashier" element={<CashierPage />} />
           <Route path="/kitchen" element={<KitchenPage />} />
           <Route path="/admin" element={<AdminLogin />} />
+
           <Route path="/admin/*" element={
             <ProtectedRoute>
               <AdminLayout />
@@ -64,6 +68,8 @@ export default function App() {
             <Route path="agents" element={<AdminAgents />} />
             <Route path="analytics" element={<AdminAnalytics />} />
           </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>
     </BrowserRouter>
