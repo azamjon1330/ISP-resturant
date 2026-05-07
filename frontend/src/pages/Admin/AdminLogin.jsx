@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { ShieldCheck, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import './AdminLogin.css'
 
 export default function AdminLogin() {
@@ -12,7 +12,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
 
   if (localStorage.getItem('youit_token')) {
-    navigate('/admin/dashboard', { replace: true })
+    navigate('/admin/', { replace: true })
     return null
   }
 
@@ -32,47 +32,60 @@ export default function AdminLogin() {
 
   return (
     <div className="admin-login-page">
-      <div className="login-card slide-in">
-        <div className="login-icon">
-          <ShieldCheck size={32} color="var(--orange)" />
+      <div className="login-left">
+        <div className="login-brand">
+          <span className="login-brand-emoji">🍽️</span>
+          <h1>YouIt Café</h1>
+          <p>Миллий таомлар кафеси<br />бошқарув тизими</p>
         </div>
-        <h1>Админ панели</h1>
-        <p>YouIt Café бошқарув тизими</p>
+        <div className="login-dishes">
+          <span>🥘</span>
+          <span>🍜</span>
+          <span>🫕</span>
+          <span>🥗</span>
+        </div>
+      </div>
 
-        <form onSubmit={submit}>
-          <div className="form-group">
-            <label className="label">Логин</label>
-            <input
-              className="input"
-              type="text"
-              placeholder="Логинни киритинг"
-              value={form.username}
-              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-              required
-            />
-          </div>
+      <div className="login-right">
+        <div className="login-card slide-in">
+          <p className="login-card-title">Кириш</p>
+          <p className="login-card-sub">Админ панелига кириш учун маълумотларни киритинг</p>
 
-          <div className="form-group">
-            <label className="label">Парол</label>
-            <div className="pass-wrap">
+          <form onSubmit={submit}>
+            <div className="form-group">
+              <label className="label">Логин</label>
               <input
                 className="input"
-                type={showPass ? 'text' : 'password'}
-                placeholder="Паролни киритинг"
-                value={form.password}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                type="text"
+                placeholder="Логинни киритинг"
+                value={form.username}
+                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                 required
               />
-              <button type="button" className="pass-toggle" onClick={() => setShowPass(s => !s)}>
-                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
             </div>
-          </div>
 
-          <button className="btn btn-primary btn-lg login-btn" type="submit" disabled={loading}>
-            {loading ? 'Кириш...' : 'Кириш'}
-          </button>
-        </form>
+            <div className="form-group">
+              <label className="label">Парол</label>
+              <div className="pass-wrap">
+                <input
+                  className="input"
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Паролни киритинг"
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  required
+                />
+                <button type="button" className="pass-toggle" onClick={() => setShowPass(s => !s)}>
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button className="login-btn" type="submit" disabled={loading}>
+              {loading ? '⏳ Кириш...' : '🔐 Кириш'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )

@@ -1,10 +1,10 @@
 import React from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, BarChart3, LogOut, ChefHat } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, BarChart3, LogOut } from 'lucide-react'
 import './AdminLayout.css'
 
 const navItems = [
-  { to: '/admin/', icon: LayoutDashboard, label: 'Асосий', end: true },
+  { to: '/admin/', icon: LayoutDashboard, label: 'Бош панель', end: true },
   { to: '/admin/orders', icon: ShoppingBag, label: 'Буюртмалар' },
   { to: '/admin/menu', icon: UtensilsCrossed, label: 'Меню' },
   { to: '/admin/agents', icon: Users, label: 'Агентлар' },
@@ -23,10 +23,10 @@ export default function AdminLayout() {
     <div className="admin-layout">
       <aside className="admin-sidebar">
         <div className="sidebar-logo">
-          <ChefHat size={24} color="var(--orange)" />
+          <span className="sidebar-logo-emoji">🍽️</span>
           <div>
             <span className="logo-main">YouIt Café</span>
-            <span className="logo-sub">Админ</span>
+            <span className="logo-sub">Бошқарув панели</span>
           </div>
         </div>
 

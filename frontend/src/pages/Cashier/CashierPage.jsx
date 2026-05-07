@@ -91,7 +91,7 @@ export default function CashierPage() {
     try {
       const res = await agentsAPI.scanCard({ card_code: cardCode.trim(), order_total: cartTotal })
       setCardInfo(res.data)
-      toast.success(`Карта: ${res.data.agent_name} — скидка ${res.data.discount.toLocaleString()} сум`)
+      toast.success(`Карта: ${res.data.agent_name} — чегирма ${res.data.discount.toLocaleString()} сум`)
     } catch (e) {
       toast.error(e.response?.data?.error || 'Карта топилмади')
       setCardInfo(null)
@@ -260,7 +260,7 @@ export default function CashierPage() {
 
               <div className="cart-totals">
                 <div className="total-row"><span>Жами:</span><span>{cartTotal.toLocaleString()} сум</span></div>
-                {discount > 0 && <div className="total-row discount"><span>Скидка:</span><span>-{discount.toLocaleString()} сум</span></div>}
+                {discount > 0 && <div className="total-row discount"><span>Чегирма:</span><span>-{discount.toLocaleString()} сум</span></div>}
                 <div className="total-row final"><span>Тўлов:</span><span>{finalTotal.toLocaleString()} сум</span></div>
               </div>
 
@@ -312,7 +312,7 @@ export default function CashierPage() {
             <div className="order-summary">
               <div className="summary-row"><span>Жами:</span><span>{lastOrder.total_price?.toLocaleString()} сум</span></div>
               {lastOrder.discount_amount > 0 && (
-                <div className="summary-row green"><span>Скидка:</span><span>-{lastOrder.discount_amount?.toLocaleString()} сум</span></div>
+                <div className="summary-row green"><span>Чегирма:</span><span>-{lastOrder.discount_amount?.toLocaleString()} сум</span></div>
               )}
               <div className="summary-row bold"><span>Тўлов:</span><span>{lastOrder.final_price?.toLocaleString()} сум</span></div>
             </div>

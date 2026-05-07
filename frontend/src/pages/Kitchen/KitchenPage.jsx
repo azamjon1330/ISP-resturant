@@ -90,17 +90,17 @@ export default function KitchenPage() {
   return (
     <div className="kitchen-page">
       <header className="kitchen-header">
-        <button className="btn-icon" onClick={() => navigate('/')}><Home size={20} /></button>
+        <button className="btn-icon" style={{color:'white'}} onClick={() => navigate('/')}><Home size={20} /></button>
         <div className="kitchen-title">
-          <ChefHat size={24} color="var(--orange)" />
-          <h1>Ошпаз панели</h1>
+          <ChefHat size={24} color="white" />
+          <h1>Ошпазхона панели</h1>
         </div>
         <div className="kitchen-stats">
           <span className="stat"><Bell size={14} /> {getColumnOrders('pending').length} янги</span>
           <span className="stat cooking">{getColumnOrders('cooking').length} тайёрланмоқда</span>
           <span className="stat ready">{getColumnOrders('ready').length} тайёр</span>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={loadOrders}>Янгилаш</button>
+        <button className="btn btn-sm" style={{background:'rgba(255,255,255,0.2)',color:'white',border:'none'}} onClick={loadOrders}>Янгилаш</button>
       </header>
 
       <div className="kitchen-board">

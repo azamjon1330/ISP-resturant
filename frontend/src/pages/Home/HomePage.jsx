@@ -1,6 +1,5 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UtensilsCrossed, ChefHat, ShieldCheck } from 'lucide-react'
 import './HomePage.css'
 
 export default function HomePage() {
@@ -8,37 +7,37 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      <div className="home-bg" />
+      <div className="home-pattern" />
       <div className="home-content">
-        <div className="home-logo">
-          <UtensilsCrossed size={48} color="#FF6B35" />
+        <div className="home-hero">
+          <div className="home-emoji-row">
+            🍽️ 🥘 🍜
+          </div>
           <h1>YouIt Café</h1>
-          <p>Миллий таомлар кафеси</p>
+          <p>Миллий таомлар кафеси бошқарув тизими</p>
+          <div className="home-divider" />
         </div>
 
         <div className="home-panels">
           <button className="home-panel" onClick={() => navigate('/cashier')}>
-            <div className="panel-icon orange">
-              <UtensilsCrossed size={32} />
-            </div>
-            <h2>Касса</h2>
-            <p>Заказ қабул қилиш ва тайёрлаш</p>
+            <div className="panel-emoji">🧾</div>
+            <h2>Кассир</h2>
+            <p>Буюртма қабул қилиш ва тўлов</p>
+            <span className="panel-arrow">→</span>
           </button>
 
           <button className="home-panel" onClick={() => navigate('/kitchen')}>
-            <div className="panel-icon green">
-              <ChefHat size={32} />
-            </div>
-            <h2>Ошпаз</h2>
-            <p>Буюртмаларни кўриш ва бошқариш</p>
+            <div className="panel-emoji">👨‍🍳</div>
+            <h2>Ошпазхона</h2>
+            <p>Буюртмаларни кўриш ва тайёрлаш</p>
+            <span className="panel-arrow">→</span>
           </button>
 
           <button className="home-panel" onClick={() => navigate('/admin')}>
-            <div className="panel-icon gray">
-              <ShieldCheck size={32} />
-            </div>
-            <h2>Админ</h2>
-            <p>Бошқарув панели</p>
+            <div className="panel-emoji">⚙️</div>
+            <h2>Бошқарув</h2>
+            <p>Админ панели ва аналитика</p>
+            <span className="panel-arrow">→</span>
           </button>
         </div>
       </div>
