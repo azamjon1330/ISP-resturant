@@ -11,7 +11,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
 
   if (localStorage.getItem('youit_token')) {
-    return <Navigate to="/admin/" replace />
+    return <Navigate to="/admin/dashboard" replace />
   }
 
   const submit = async (e) => {
@@ -20,7 +20,7 @@ export default function AdminLogin() {
     try {
       const res = await authAPI.login(username, password)
       localStorage.setItem('youit_token', res.data.token)
-      navigate('/admin/', { replace: true })
+      navigate('/admin/dashboard', { replace: true })
     } catch {
       toast.error('Нотўғри логин ёки парол')
     } finally {

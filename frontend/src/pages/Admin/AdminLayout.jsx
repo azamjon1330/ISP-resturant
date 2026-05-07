@@ -4,7 +4,7 @@ import { LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, BarChart3, LogOut
 import './AdminLayout.css'
 
 const NAV = [
-  { to: '/admin/', icon: LayoutDashboard, label: 'Бош панель', end: true },
+  { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Бош панель', end: true },
   { to: '/admin/orders', icon: ShoppingBag, label: 'Буюртмалар' },
   { to: '/admin/menu', icon: UtensilsCrossed, label: 'Меню' },
   { to: '/admin/agents', icon: Users, label: 'Агентлар' },

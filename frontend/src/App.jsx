@@ -28,7 +28,7 @@ export default function App() {
         <Route path="/kitchen" element={<KitchenPage />} />
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/*" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="agents" element={<AdminAgents />} />
