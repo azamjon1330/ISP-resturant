@@ -34,6 +34,20 @@ func Connect() {
 	DB.SetMaxOpenConns(25)
 	DB.SetMaxIdleConns(10)
 	log.Println("Database connected")
+	runMigrations()
+}
+
+func runMigrations() {
+	migrations := []string{
+		`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS expense_type VARCHAR(20) DEFAULT 'one_time'`,
+		`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT false`,
+	}
+	for _, q := range migrations {
+		if _, err := DB.Exec(q); err != nil {
+			log.Printf("Migration warning: %v", err)
+		}
+	}
+	log.Println("Migrations applied")
 }
 
 func getEnv(key, fallback string) string {

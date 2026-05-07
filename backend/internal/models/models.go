@@ -88,20 +88,23 @@ type Expense struct {
 	Description string    `json:"description"`
 	Amount      float64   `json:"amount"`
 	Category    string    `json:"category"`
+	ExpenseType string    `json:"expense_type"`
+	IsRecurring bool      `json:"is_recurring"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
 type Analytics struct {
-	TotalRevenue    float64            `json:"total_revenue"`
-	TotalDiscount   float64            `json:"total_discount"`
-	TotalExpenses   float64            `json:"total_expenses"`
-	NetProfit       float64            `json:"net_profit"`
-	TotalOrders     int                `json:"total_orders"`
-	TodayOrders     int                `json:"today_orders"`
-	TodayRevenue    float64            `json:"today_revenue"`
-	PopularItems    []PopularItem      `json:"popular_items"`
-	DailyRevenue    []DailyRevenue     `json:"daily_revenue"`
-	CategorySales   []CategorySale     `json:"category_sales"`
+	TotalRevenue      float64          `json:"total_revenue"`
+	TotalDiscount     float64          `json:"total_discount"`
+	TotalExpenses     float64          `json:"total_expenses"`
+	MonthlyExpenses   float64          `json:"monthly_expenses"`
+	NetProfit         float64          `json:"net_profit"`
+	TotalOrders       int              `json:"total_orders"`
+	TodayOrders       int              `json:"today_orders"`
+	TodayRevenue      float64          `json:"today_revenue"`
+	PopularItems      []PopularItem    `json:"popular_items"`
+	DailyRevenue      []DailyRevenue   `json:"daily_revenue"`
+	CategorySales     []CategorySale   `json:"category_sales"`
 }
 
 type PopularItem struct {

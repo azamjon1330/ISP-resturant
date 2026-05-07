@@ -41,10 +41,33 @@ func GetAnalytics(c *gin.Context) {
 		 FROM orders WHERE status != 'pending' AND DATE(created_at) = CURRENT_DATE`,
 	).Scan(&analytics.TodayRevenue, &analytics.TodayOrders)
 
+	// One-time expenses within the period
+	var oneTimeExpenses float64
 	database.DB.QueryRow(
-		`SELECT COALESCE(SUM(amount),0) FROM expenses WHERE ` + dateFilter,
-	).Scan(&analytics.TotalExpenses)
+		`SELECT COALESCE(SUM(amount),0) FROM expenses WHERE COALESCE(is_recurring,false)=false AND ` + dateFilter,
+	).Scan(&oneTimeExpenses)
 
+	// Monthly recurring expenses (always active)
+	database.DB.QueryRow(
+		`SELECT COALESCE(SUM(amount),0) FROM expenses WHERE COALESCE(is_recurring,false)=true`,
+	).Scan(&analytics.MonthlyExpenses)
+
+	// Scale recurring expenses to the selected period
+	var recurringPortion float64
+	switch period {
+	case "today":
+		recurringPortion = analytics.MonthlyExpenses / 30.0
+	case "week":
+		recurringPortion = analytics.MonthlyExpenses * 7.0 / 30.0
+	case "month":
+		recurringPortion = analytics.MonthlyExpenses
+	case "year":
+		recurringPortion = analytics.MonthlyExpenses * 12.0
+	default:
+		recurringPortion = analytics.MonthlyExpenses
+	}
+
+	analytics.TotalExpenses = oneTimeExpenses + recurringPortion
 	analytics.NetProfit = analytics.TotalRevenue - analytics.TotalExpenses
 
 	rows, _ := database.DB.Query(
@@ -105,9 +128,13 @@ func CreateExpense(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
 		return
 	}
+	if exp.ExpenseType == "" {
+		exp.ExpenseType = "one_time"
+	}
 	err := database.DB.QueryRow(
-		`INSERT INTO expenses (description, amount, category) VALUES ($1,$2,$3) RETURNING id, created_at`,
-		exp.Description, exp.Amount, exp.Category,
+		`INSERT INTO expenses (description, amount, category, expense_type, is_recurring)
+		 VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at`,
+		exp.Description, exp.Amount, exp.Category, exp.ExpenseType, exp.IsRecurring,
 	).Scan(&exp.ID, &exp.CreatedAt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -118,7 +145,9 @@ func CreateExpense(c *gin.Context) {
 
 func GetExpenses(c *gin.Context) {
 	rows, err := database.DB.Query(
-		`SELECT id, description, amount, category, created_at FROM expenses ORDER BY created_at DESC LIMIT 100`,
+		`SELECT id, description, amount, category,
+		        COALESCE(expense_type,'one_time'), COALESCE(is_recurring,false), created_at
+		 FROM expenses ORDER BY is_recurring DESC, created_at DESC LIMIT 100`,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -129,7 +158,7 @@ func GetExpenses(c *gin.Context) {
 	expenses := []models.Expense{}
 	for rows.Next() {
 		var e models.Expense
-		rows.Scan(&e.ID, &e.Description, &e.Amount, &e.Category, &e.CreatedAt)
+		rows.Scan(&e.ID, &e.Description, &e.Amount, &e.Category, &e.ExpenseType, &e.IsRecurring, &e.CreatedAt)
 		expenses = append(expenses, e)
 	}
 	c.JSON(http.StatusOK, expenses)

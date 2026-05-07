@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { analyticsAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { Plus, X, Check, TrendingUp, DollarSign, ShoppingBag, Tag } from 'lucide-react'
+import { Plus, X, Check, TrendingUp, DollarSign, ShoppingBag, Tag, RefreshCw } from 'lucide-react'
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, Cell,
+} from 'recharts'
 import '../Admin/AdminLayout.css'
 
 const PERIODS = [
@@ -12,6 +16,7 @@ const PERIODS = [
 ]
 
 const EXP_CATS = ['Маҳсулотлар', 'Ходимлар', 'Коммунал', 'Таъмирлаш', 'Бошқа']
+const CHART_COLORS = ['#FF6B35', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']
 
 const fmt = (v) => v ? `${Number(v).toLocaleString()} сум` : '0 сум'
 
@@ -21,13 +26,26 @@ const fmtDate = (iso) => {
   return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`
 }
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+      <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 4px' }}>{label}</p>
+      <p style={{ fontSize: 14, fontWeight: 700, color: '#FF6B35', margin: 0 }}>{Number(payload[0].value).toLocaleString()} сум</p>
+    </div>
+  )
+}
+
 export default function AdminAnalytics() {
   const [period, setPeriod] = useState('month')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [expenses, setExpenses] = useState([])
   const [modal, setModal] = useState(false)
-  const [expForm, setExpForm] = useState({ description: '', amount: '', category: 'Маҳсулотлар' })
+  const [expForm, setExpForm] = useState({
+    description: '', amount: '', category: 'Маҳсулотлар',
+    expense_type: 'one_time', is_recurring: false,
+  })
 
   useEffect(() => { loadAnalytics() }, [period])
   useEffect(() => { loadExpenses() }, [])
@@ -49,13 +67,17 @@ export default function AdminAnalytics() {
       await analyticsAPI.createExpense({ ...expForm, amount: +expForm.amount })
       toast.success('Харажат қўшилди')
       setModal(false)
-      setExpForm({ description: '', amount: '', category: 'Маҳсулотлар' })
+      setExpForm({ description: '', amount: '', category: 'Маҳсулотлар', expense_type: 'one_time', is_recurring: false })
       loadExpenses()
       loadAnalytics()
     } catch { toast.error('Хатолик') }
   }
 
   const ef = (k) => (e) => setExpForm(p => ({ ...p, [k]: e.target.value }))
+
+  const setExpenseType = (type) => {
+    setExpForm(p => ({ ...p, expense_type: type, is_recurring: type === 'monthly' }))
+  }
 
   const stats = data ? [
     { icon: DollarSign, color: '#FF6B35', bg: '#FFF4EF', label: 'Тушум', value: fmt(data.total_revenue) },
@@ -90,6 +112,9 @@ export default function AdminAnalytics() {
           <button className="adm-btn adm-btn-secondary adm-btn-sm" onClick={() => setModal(true)}>
             <Plus size={14} /> Харажат
           </button>
+          <button className="adm-btn adm-btn-secondary adm-btn-sm" onClick={() => { loadAnalytics(); loadExpenses() }}>
+            <RefreshCw size={14} />
+          </button>
         </div>
       </div>
 
@@ -112,53 +137,87 @@ export default function AdminAnalytics() {
             ))}
           </div>
 
-          {/* Daily revenue chart (CSS bars) */}
-          {data.daily_revenue?.length > 0 && (
-            <div className="adm-card" style={{ marginBottom: 16 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 16 }}>📈 Кунлик тушум</h3>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 120, overflowX: 'auto', paddingBottom: 8 }}>
-                {(() => {
-                  const max = Math.max(...data.daily_revenue.map(d => d.revenue || 0))
-                  return data.daily_revenue.map((d, i) => {
-                    const pct = max > 0 ? (d.revenue / max) * 100 : 0
-                    return (
-                      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 auto', minWidth: 28, gap: 4 }}>
-                        <div
-                          title={`${d.date}: ${Number(d.revenue).toLocaleString()} сум`}
-                          style={{ width: 18, height: `${Math.max(pct, 4)}%`, background: 'linear-gradient(to top, #E85A24, #FF8C5A)', borderRadius: '4px 4px 0 0', transition: 'height 0.3s', cursor: 'pointer' }}
-                        />
-                        <span style={{ fontSize: 9, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{d.date?.slice(8)}</span>
-                      </div>
-                    )
-                  })
-                })()}
+          {/* Daily revenue chart — recharts AreaChart */}
+          <div className="adm-card" style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 16 }}>📈 Кунлик тушум</h3>
+            {data.daily_revenue?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={data.daily_revenue} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#FF6B35" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={d => d?.slice(8) || ''}
+                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
+                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={45}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#FF6B35"
+                    strokeWidth={2.5}
+                    fill="url(#gradRevenue)"
+                    dot={false}
+                    activeDot={{ r: 5, fill: '#FF6B35' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', fontSize: 14 }}>
+                Маълумот йўқ
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-            {/* Category sales */}
+            {/* Category sales — recharts BarChart */}
             {data.category_sales?.length > 0 && (
               <div className="adm-card">
                 <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 14 }}>🏷️ Категориялар</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {data.category_sales.map((cat, i) => {
-                    const max = Math.max(...data.category_sales.map(c => c.revenue))
-                    const pct = max > 0 ? (cat.revenue / max) * 100 : 0
-                    const colors = ['#FF6B35', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']
-                    return (
-                      <div key={i}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
-                          <span style={{ fontWeight: 500, color: '#374151' }}>{cat.category}</span>
-                          <span style={{ fontWeight: 700, color: '#111827' }}>{cat.revenue?.toLocaleString()} сум</span>
-                        </div>
-                        <div style={{ height: 8, background: '#F3F4F6', borderRadius: 100, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: colors[i % colors.length], borderRadius: 100, transition: 'width 0.5s' }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                <ResponsiveContainer width="100%" height={Math.max(data.category_sales.length * 44, 120)}>
+                  <BarChart
+                    layout="vertical"
+                    data={data.category_sales}
+                    margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
+                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="category"
+                      tick={{ fontSize: 12, fill: '#374151' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={90}
+                    />
+                    <Tooltip formatter={v => [`${Number(v).toLocaleString()} сум`, 'Тушум']} />
+                    <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
+                      {data.category_sales.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             )}
 
@@ -187,17 +246,29 @@ export default function AdminAnalytics() {
           {/* Expenses table */}
           {expenses.length > 0 && (
             <div className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', margin: 0 }}>💸 Сўнгги харажатлар</h3>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', margin: 0 }}>💸 Харажатлар</h3>
+                {data.monthly_expenses > 0 && (
+                  <span style={{ fontSize: 12, color: '#6B7280' }}>
+                    Ойлик: <strong style={{ color: '#EF4444' }}>{data.monthly_expenses?.toLocaleString()} сум</strong>
+                  </span>
+                )}
               </div>
               <table className="adm-table">
                 <thead>
-                  <tr><th>Тавсиф</th><th>Категория</th><th>Миқдор</th><th>Сана</th></tr>
+                  <tr><th>Тавсиф</th><th>Тури</th><th>Категория</th><th>Миқдор</th><th>Сана</th></tr>
                 </thead>
                 <tbody>
-                  {expenses.slice(0, 10).map(e => (
+                  {expenses.slice(0, 15).map(e => (
                     <tr key={e.id}>
                       <td>{e.description}</td>
+                      <td>
+                        {e.is_recurring ? (
+                          <span className="adm-badge adm-badge-orange">🔄 Ойлик</span>
+                        ) : (
+                          <span className="adm-badge adm-badge-gray">Бир марталик</span>
+                        )}
+                      </td>
                       <td><span className="adm-badge adm-badge-gray">{e.category}</span></td>
                       <td style={{ color: '#EF4444', fontWeight: 700 }}>{e.amount?.toLocaleString()} сум</td>
                       <td style={{ fontSize: 12, color: '#6B7280' }}>{fmtDate(e.created_at)}</td>
@@ -212,15 +283,52 @@ export default function AdminAnalytics() {
 
       {modal && (
         <div className="adm-overlay" onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div className="adm-modal" style={{ maxWidth: 400 }}>
+          <div className="adm-modal" style={{ maxWidth: 420 }}>
             <div className="adm-modal-header">
               <h2>Харажат қўшиш</h2>
               <button onClick={() => setModal(false)}><X size={20} /></button>
             </div>
             <form onSubmit={addExpense}>
+              {/* Expense type toggle */}
+              <div className="adm-field">
+                <label className="adm-label">Харажат тури</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setExpenseType('one_time')}
+                    style={{
+                      flex: 1, padding: '9px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                      border: '1.5px solid', cursor: 'pointer',
+                      background: expForm.expense_type === 'one_time' ? '#FF6B35' : 'white',
+                      color: expForm.expense_type === 'one_time' ? 'white' : '#374151',
+                      borderColor: expForm.expense_type === 'one_time' ? '#FF6B35' : '#E5E7EB',
+                    }}
+                  >
+                    Бир марталик
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExpenseType('monthly')}
+                    style={{
+                      flex: 1, padding: '9px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                      border: '1.5px solid', cursor: 'pointer',
+                      background: expForm.expense_type === 'monthly' ? '#FF6B35' : 'white',
+                      color: expForm.expense_type === 'monthly' ? 'white' : '#374151',
+                      borderColor: expForm.expense_type === 'monthly' ? '#FF6B35' : '#E5E7EB',
+                    }}
+                  >
+                    🔄 Ойлик (авт.)
+                  </button>
+                </div>
+                {expForm.is_recurring && (
+                  <p style={{ fontSize: 12, color: '#6B7280', margin: '6px 0 0' }}>
+                    Ойлик харажатлар ҳар ойда аналитикага автоматик қўшилади
+                  </p>
+                )}
+              </div>
               <div className="adm-field">
                 <label className="adm-label">Тавсиф *</label>
-                <input className="adm-input" value={expForm.description} onChange={ef('description')} required />
+                <input className="adm-input" value={expForm.description} onChange={ef('description')} required placeholder="Масалан: Ижара, Электр энергияси..." />
               </div>
               <div className="adm-field">
                 <label className="adm-label">Миқдор (сум) *</label>

@@ -46,6 +46,15 @@ func CreateAgent(c *gin.Context) {
 		return
 	}
 
+	if req.Phone != "" {
+		var exists bool
+		database.DB.QueryRow(`SELECT EXISTS(SELECT 1 FROM referral_agents WHERE phone=$1)`, req.Phone).Scan(&exists)
+		if exists {
+			c.JSON(http.StatusConflict, gin.H{"error": "Бу телефон рақами аллақачон рўйхатга олинган"})
+			return
+		}
+	}
+
 	if req.RegularCardCount == 0 {
 		req.RegularCardCount = 20
 	}
@@ -219,11 +228,9 @@ func ScanCard(c *gin.Context) {
 	var bonusReady bool
 
 	if cardType == "gold" {
-		if useCount >= bonusThreshold {
-			discount = discountAmount
-			if discount > body.OrderTotal && body.OrderTotal > 0 {
-				discount = body.OrderTotal
-			}
+		discount = discountAmount
+		if discount > body.OrderTotal && body.OrderTotal > 0 {
+			discount = body.OrderTotal
 		}
 		bonusReady = (useCount+1)%bonusThreshold == 0 && useCount > 0
 	} else {

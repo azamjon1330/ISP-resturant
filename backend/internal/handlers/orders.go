@@ -171,11 +171,9 @@ func applyCardDiscount(tx *sql.Tx, cardCode string, totalPrice float64) (float64
 	var discount float64
 
 	if cardType == "gold" {
-		if useCount >= bonusThreshold {
-			discount = discountAmount
-			if discount > totalPrice {
-				discount = totalPrice
-			}
+		discount = discountAmount
+		if discount > totalPrice {
+			discount = totalPrice
 		}
 		tx.Exec(`UPDATE referral_cards SET use_count=use_count+1 WHERE id=$1`, cardID)
 		tx.Exec(`UPDATE referral_agents SET gold_card_uses=gold_card_uses+1 WHERE id=$1`, agentID)
@@ -227,17 +225,18 @@ func checkAndGrantBonus(cardID, agentID int) {
 
 func GetOrders(c *gin.Context) {
 	status := c.Query("status")
-	query := `SELECT id, order_code, total_price, discount_amount, final_price, status,
-	           COALESCE(card_code,''), COALESCE(note,''), created_at, updated_at
-	           FROM orders`
+	whereClause := ""
 	args := []interface{}{}
 	if status != "" {
-		query += " WHERE status=$1"
+		whereClause = " WHERE status=$1"
 		args = append(args, status)
 	}
-	query += " ORDER BY created_at DESC LIMIT 200"
 
-	rows, err := database.DB.Query(query, args...)
+	orderQuery := `SELECT id, order_code, total_price, discount_amount, final_price, status,
+	               COALESCE(card_code,''), COALESCE(note,''), created_at, updated_at
+	               FROM orders` + whereClause + ` ORDER BY created_at DESC LIMIT 200`
+
+	rows, err := database.DB.Query(orderQuery, args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -245,12 +244,37 @@ func GetOrders(c *gin.Context) {
 	defer rows.Close()
 
 	orders := []models.Order{}
+	orderMap := map[int]int{}
 	for rows.Next() {
 		var o models.Order
 		rows.Scan(&o.ID, &o.OrderCode, &o.TotalPrice, &o.DiscountAmount, &o.FinalPrice,
 			&o.Status, &o.CardCode, &o.Note, &o.CreatedAt, &o.UpdatedAt)
+		o.Items = []models.OrderItem{}
+		orderMap[o.ID] = len(orders)
 		orders = append(orders, o)
 	}
+
+	if len(orders) > 0 {
+		itemQuery := `SELECT oi.order_id, oi.id, oi.menu_item_id, oi.item_name, oi.quantity, oi.unit_price
+		              FROM order_items oi
+		              WHERE oi.order_id IN (
+		                  SELECT id FROM orders` + whereClause + ` ORDER BY created_at DESC LIMIT 200
+		              )`
+		itemRows, err := database.DB.Query(itemQuery, args...)
+		if err == nil {
+			defer itemRows.Close()
+			for itemRows.Next() {
+				var orderID int
+				var item models.OrderItem
+				itemRows.Scan(&orderID, &item.ID, &item.MenuItemID, &item.ItemName, &item.Quantity, &item.UnitPrice)
+				item.OrderID = orderID
+				if idx, ok := orderMap[orderID]; ok {
+					orders[idx].Items = append(orders[idx].Items, item)
+				}
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, orders)
 }
 
