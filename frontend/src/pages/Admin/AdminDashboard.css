@@ -1,4 +1,20 @@
-.page-loading { text-align: center; padding: 60px; color: var(--gray-500); }
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 200px;
+  color: #6B7280;
+  font-size: 15px;
+}
+.loading-spinner {
+  width: 24px; height: 24px;
+  border: 3px solid #F3F4F6;
+  border-top-color: #FF6B35;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .page-header { margin-bottom: 24px; }
 .page-header h1 { font-size: 24px; font-weight: 800; color: var(--gray-900); }

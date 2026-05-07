@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { authAPI } from '../../api'
 import toast from 'react-hot-toast'
 import { Eye, EyeOff } from 'lucide-react'
@@ -12,8 +12,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
 
   if (localStorage.getItem('youit_token')) {
-    navigate('/admin/', { replace: true })
-    return null
+    return <Navigate to="/admin/" replace />
   }
 
   const submit = async (e) => {
