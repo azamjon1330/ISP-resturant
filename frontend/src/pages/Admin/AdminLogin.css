@@ -1,0 +1,46 @@
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFF4EF 0%, #FFFFFF 60%, #FFF4EF 100%);
+}
+
+.login-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  width: 380px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gray-100);
+  text-align: center;
+}
+
+.login-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--orange-bg);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.login-card h1 { font-size: 24px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+.login-card > p { font-size: 14px; color: var(--gray-500); margin-bottom: 28px; }
+
+.pass-wrap { position: relative; }
+.pass-wrap .input { padding-right: 40px; }
+.pass-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: var(--gray-400);
+  padding: 0;
+}
+
+.login-btn { width: 100%; justify-content: center; margin-top: 4px; }

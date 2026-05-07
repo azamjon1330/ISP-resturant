@@ -1,0 +1,65 @@
+.page-loading { text-align: center; padding: 60px; color: var(--gray-500); }
+
+.page-header { margin-bottom: 24px; }
+.page-header h1 { font-size: 24px; font-weight: 800; color: var(--gray-900); }
+.page-header p { font-size: 14px; color: var(--gray-500); margin-top: 2px; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-orange .stat-icon { background: var(--orange-bg); color: var(--orange); }
+.stat-blue .stat-icon { background: var(--blue-light); color: var(--blue); }
+.stat-green .stat-icon { background: var(--green-light); color: var(--green); }
+.stat-purple .stat-icon { background: #EDE9FE; color: #7C3AED; }
+
+.stat-label { font-size: 12px; color: var(--gray-500); font-weight: 500; margin-bottom: 4px; }
+.stat-value { font-size: 18px; font-weight: 800; color: var(--gray-900); }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+.section-title { font-size: 15px; font-weight: 700; color: var(--gray-800); margin-bottom: 16px; }
+
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { font-size: 12px; font-weight: 600; color: var(--gray-500); text-align: left; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+.data-table td { padding: 10px 0; font-size: 13px; color: var(--gray-700); border-bottom: 1px solid var(--gray-50); }
+.data-table tr:last-child td { border-bottom: none; }
+.text-bold { font-weight: 700; color: var(--gray-900); }
+
+.empty-text { color: var(--gray-400); font-size: 13px; text-align: center; padding: 30px 0; }
+
+.category-bars { display: flex; flex-direction: column; gap: 12px; }
+.cat-bar-item { display: flex; flex-direction: column; gap: 4px; }
+.cat-bar-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--gray-600); font-weight: 500; }
+.cat-bar-track { height: 8px; background: var(--gray-100); border-radius: 100px; overflow: hidden; }
+.cat-bar-fill { height: 100%; background: var(--orange); border-radius: 100px; transition: width 0.6s ease; }
