@@ -40,6 +40,7 @@ export const ordersAPI = {
 export const agentsAPI = {
   getAll: () => api.get('/admin/agents'),
   create: (data) => api.post('/admin/agents', data),
+  update: (id, data) => api.put(`/admin/agents/${id}`, data),
   delete: (id) => api.delete(`/admin/agents/${id}`),
   getById: (id) => api.get(`/admin/agents/${id}`),
   getByCode: (code) => api.get(`/agents/code/${code}`),

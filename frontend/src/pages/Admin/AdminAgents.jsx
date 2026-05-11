@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { agentsAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { Plus, Users, Star, CreditCard, X, Check, ChevronRight, Gift, Trash2 } from 'lucide-react'
+import { Plus, Users, Star, CreditCard, X, Check, ChevronRight, Gift, Trash2, Edit2 } from 'lucide-react'
 import '../Admin/AdminLayout.css'
 
 const EMPTY = { name: '', phone: '', regular_card_count: 20, discount_amount: 20000, bonus_threshold: 10, referral_bonus_threshold: 20 }
@@ -12,10 +12,13 @@ export default function AdminAgents() {
   const [selected, setSelected] = useState(null)
   const [bonuses, setBonuses] = useState([])
   const [modal, setModal] = useState(false)
+  const [editModal, setEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({})
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -55,6 +58,37 @@ export default function AdminAgents() {
     finally { setSaving(false) }
   }
 
+  const openEdit = (agent) => {
+    setEditForm({
+      name: agent.name || '',
+      phone: agent.phone || '',
+      discount_amount: agent.discount_amount || 0,
+      bonus_threshold: agent.bonus_threshold || 10,
+      referral_bonus_threshold: agent.referral_bonus_threshold || 20,
+    })
+    setEditModal(true)
+  }
+
+  const saveEdit = async (e) => {
+    e.preventDefault()
+    if (!selected) return
+    setEditSaving(true)
+    try {
+      const res = await agentsAPI.update(selected.id, {
+        name: editForm.name,
+        phone: editForm.phone,
+        discount_amount: +editForm.discount_amount,
+        bonus_threshold: +editForm.bonus_threshold,
+        referral_bonus_threshold: +editForm.referral_bonus_threshold,
+      })
+      setAgents(a => a.map(x => x.id === selected.id ? res.data : x))
+      setSelected(res.data)
+      setEditModal(false)
+      toast.success('Агент маълумотлари янгиланди')
+    } catch (e) { toast.error(e.response?.data?.error || 'Хатолик') }
+    finally { setEditSaving(false) }
+  }
+
   const deleteAgent = async (agent) => {
     setDeleting(true)
     try {
@@ -68,6 +102,7 @@ export default function AdminAgents() {
   }
 
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+  const ef = (k) => (e) => setEditForm(p => ({ ...p, [k]: e.target.value }))
 
   return (
     <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 120px)' }}>
@@ -152,12 +187,37 @@ export default function AdminAgents() {
                     </div>
                   ))}
                 </div>
-                <button
-                  onClick={() => setDeleteConfirm(selected)}
-                  style={{ padding: '8px 14px', borderRadius: 9, border: '1.5px solid #FEE2E2', background: '#FEF2F2', cursor: 'pointer', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
-                >
-                  <Trash2 size={15} /> Ўчириш
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <button
+                    onClick={() => openEdit(selected)}
+                    style={{ padding: '8px 14px', borderRadius: 9, border: '1.5px solid #DBEAFE', background: '#EFF6FF', cursor: 'pointer', color: '#2563EB', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    <Edit2 size={15} /> Tahrirlash
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(selected)}
+                    style={{ padding: '8px 14px', borderRadius: 9, border: '1.5px solid #FEE2E2', background: '#FEF2F2', cursor: 'pointer', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    <Trash2 size={15} /> Ўчириш
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Settings summary */}
+            <div className="adm-card">
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 12 }}>⚙️ Sozlamalar</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+                {[
+                  { label: 'Chegirma miqdori', val: `${selected.discount_amount?.toLocaleString()} so'm` },
+                  { label: 'Oltin bonus (tashriflar)', val: `${selected.bonus_threshold} ta` },
+                  { label: 'Referral bonus (ishlatish)', val: `${selected.referral_bonus_threshold} ta` },
+                ].map((s, i) => (
+                  <div key={i} style={{ padding: '12px 14px', background: '#F9FAFB', borderRadius: 10, border: '1px solid #F3F4F6' }}>
+                    <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>{s.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{s.val}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -267,6 +327,48 @@ export default function AdminAgents() {
                 <button type="button" className="adm-btn adm-btn-secondary" onClick={() => setModal(false)}>Бекор</button>
                 <button type="submit" className="adm-btn adm-btn-primary" disabled={saving}>
                   <Check size={16} /> {saving ? 'Яратилмоқда...' : 'Яратиш'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editModal && (
+        <div className="adm-overlay" onClick={e => e.target === e.currentTarget && setEditModal(false)}>
+          <div className="adm-modal">
+            <div className="adm-modal-header">
+              <h2>Агент маълумотларини ўзгартириш</h2>
+              <button onClick={() => setEditModal(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={saveEdit}>
+              <div className="adm-form-row">
+                <div className="adm-field">
+                  <label className="adm-label">Исм *</label>
+                  <input className="adm-input" value={editForm.name} onChange={ef('name')} required />
+                </div>
+                <div className="adm-field">
+                  <label className="adm-label">Телефон</label>
+                  <input className="adm-input" value={editForm.phone} onChange={ef('phone')} placeholder="+998..." />
+                </div>
+                <div className="adm-field">
+                  <label className="adm-label">Чегирма (сум)</label>
+                  <input className="adm-input" type="number" value={editForm.discount_amount} onChange={ef('discount_amount')} min="0" />
+                </div>
+                <div className="adm-field">
+                  <label className="adm-label">Олтин бонус (ташриф сони)</label>
+                  <input className="adm-input" type="number" value={editForm.bonus_threshold} onChange={ef('bonus_threshold')} min="1" />
+                </div>
+                <div className="adm-field">
+                  <label className="adm-label">Реферал бонус (ишлатиш сони)</label>
+                  <input className="adm-input" type="number" value={editForm.referral_bonus_threshold} onChange={ef('referral_bonus_threshold')} min="1" />
+                </div>
+              </div>
+              <div className="adm-modal-footer">
+                <button type="button" className="adm-btn adm-btn-secondary" onClick={() => setEditModal(false)}>Бекор</button>
+                <button type="submit" className="adm-btn adm-btn-primary" disabled={editSaving}>
+                  <Check size={16} /> {editSaving ? 'Сақланмоқда...' : 'Сақлаш'}
                 </button>
               </div>
             </form>

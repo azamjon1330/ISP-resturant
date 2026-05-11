@@ -255,7 +255,7 @@ func GetOrders(c *gin.Context) {
 	}
 
 	if len(orders) > 0 {
-		itemQuery := `SELECT oi.order_id, oi.id, oi.menu_item_id, oi.item_name, oi.quantity, oi.unit_price
+		itemQuery := `SELECT oi.order_id, oi.id, COALESCE(oi.menu_item_id, 0), oi.item_name, oi.quantity, oi.unit_price
 		              FROM order_items oi
 		              WHERE oi.order_id IN (
 		                  SELECT id FROM orders` + whereClause + ` ORDER BY created_at DESC LIMIT 200
@@ -293,7 +293,7 @@ func GetOrderByCode(c *gin.Context) {
 	}
 
 	rows, _ := database.DB.Query(
-		`SELECT id, order_id, menu_item_id, item_name, quantity, unit_price FROM order_items WHERE order_id=$1`, o.ID,
+		`SELECT id, order_id, COALESCE(menu_item_id, 0), item_name, quantity, unit_price FROM order_items WHERE order_id=$1`, o.ID,
 	)
 	defer rows.Close()
 	for rows.Next() {

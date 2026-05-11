@@ -78,12 +78,12 @@ func GetAnalytics(c *gin.Context) {
 	analytics.NetProfit = analytics.TotalRevenue - analytics.TotalExpenses
 
 	rows, _ := database.DB.Query(
-		`SELECT oi.menu_item_id, oi.item_name, SUM(oi.quantity) as total_sold,
+		`SELECT COALESCE(oi.menu_item_id, 0), oi.item_name, SUM(oi.quantity) as total_sold,
 		        SUM(oi.quantity * oi.unit_price) as revenue
 		 FROM order_items oi
 		 JOIN orders o ON oi.order_id=o.id
 		 WHERE o.status != 'pending' AND ` + dateFilter + `
-		 GROUP BY oi.menu_item_id, oi.item_name
+		 GROUP BY oi.item_name
 		 ORDER BY total_sold DESC LIMIT 10`,
 	)
 	if rows != nil {
@@ -129,12 +129,12 @@ func GetAnalytics(c *gin.Context) {
 	}
 
 	catRows, _ := database.DB.Query(
-		`SELECT mi.category, COALESCE(SUM(oi.quantity * oi.unit_price),0), COALESCE(SUM(oi.quantity),0)
+		`SELECT COALESCE(mi.category, 'Boshqa'), COALESCE(SUM(oi.quantity * oi.unit_price),0), COALESCE(SUM(oi.quantity),0)
 		 FROM order_items oi
 		 JOIN orders o ON oi.order_id=o.id
-		 JOIN menu_items mi ON oi.menu_item_id=mi.id
+		 LEFT JOIN menu_items mi ON oi.menu_item_id=mi.id
 		 WHERE o.status != 'pending' AND ` + dateFilter + `
-		 GROUP BY mi.category ORDER BY SUM(oi.quantity * oi.unit_price) DESC`,
+		 GROUP BY COALESCE(mi.category, 'Boshqa') ORDER BY SUM(oi.quantity * oi.unit_price) DESC`,
 	)
 	if catRows != nil {
 		defer catRows.Close()

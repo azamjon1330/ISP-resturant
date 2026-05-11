@@ -60,6 +60,7 @@ func main() {
 		admin.GET("/agents", handlers.GetAgents)
 		admin.POST("/agents", handlers.CreateAgent)
 		admin.GET("/agents/:id", handlers.GetAgentDetail)
+		admin.PUT("/agents/:id", handlers.UpdateAgent)
 		admin.GET("/agents/:id/bonuses", handlers.GetAgentBonuses)
 		admin.DELETE("/agents/:id", handlers.DeleteAgent)
 	}

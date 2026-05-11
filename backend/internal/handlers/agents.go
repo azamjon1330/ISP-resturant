@@ -291,6 +291,48 @@ func GetAgentBonuses(c *gin.Context) {
 	c.JSON(http.StatusOK, bonuses)
 }
 
+func UpdateAgent(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var body struct {
+		Name                   string  `json:"name"`
+		Phone                  string  `json:"phone"`
+		DiscountAmount         float64 `json:"discount_amount"`
+		BonusThreshold         int     `json:"bonus_threshold"`
+		ReferralBonusThreshold int     `json:"referral_bonus_threshold"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	if body.Phone != "" {
+		var existingID int
+		database.DB.QueryRow(
+			`SELECT id FROM referral_agents WHERE phone=$1 AND id!=$2`, body.Phone, id,
+		).Scan(&existingID)
+		if existingID != 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "Bu telefon raqami boshqa agentga tegishli"})
+			return
+		}
+	}
+
+	_, err := database.DB.Exec(
+		`UPDATE referral_agents SET name=$1, phone=$2, discount_amount=$3, bonus_threshold=$4, referral_bonus_threshold=$5 WHERE id=$6`,
+		body.Name, body.Phone, body.DiscountAmount, body.BonusThreshold, body.ReferralBonusThreshold, id,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	agent := GetAgentByID(id)
+	if agent == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+		return
+	}
+	c.JSON(http.StatusOK, agent)
+}
+
 func DeleteAgent(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 
