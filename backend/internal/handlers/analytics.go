@@ -78,7 +78,7 @@ func GetAnalytics(c *gin.Context) {
 	analytics.NetProfit = analytics.TotalRevenue - analytics.TotalExpenses
 
 	rows, _ := database.DB.Query(
-		`SELECT COALESCE(oi.menu_item_id, 0), oi.item_name, SUM(oi.quantity) as total_sold,
+		`SELECT COALESCE(MIN(oi.menu_item_id), 0), oi.item_name, SUM(oi.quantity) as total_sold,
 		        SUM(oi.quantity * oi.unit_price) as revenue
 		 FROM order_items oi
 		 JOIN orders o ON oi.order_id=o.id

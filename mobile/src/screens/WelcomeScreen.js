@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { agentAPI } from '../api'
+import { setAgent } from '../agentStore'
 import Toast from 'react-native-toast-message'
 
 export default function WelcomeScreen({ navigation }) {
@@ -30,7 +31,8 @@ export default function WelcomeScreen({ navigation }) {
         Toast.show({ type: 'error', text1: 'Xato', text2: "Telefon raqam yoki kod noto'g'ri" })
         return
       }
-      navigation.replace('Main', { agent })
+      setAgent(agent)
+      navigation.replace('main')
     } catch {
       Toast.show({ type: 'error', text1: 'Agent topilmadi', text2: 'Kod yoki telefon raqamni tekshiring' })
     } finally {

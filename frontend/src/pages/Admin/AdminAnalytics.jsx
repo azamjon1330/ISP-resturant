@@ -281,46 +281,59 @@ export default function AdminAnalytics() {
           </div>
 
           {/* Category + Popular items */}
-          {(data.category_sales?.length > 0 || data.popular_items?.length > 0) && (
-            <div style={{ display: 'grid', gridTemplateColumns: data.category_sales?.length > 0 && data.popular_items?.length > 0 ? '1fr 1fr' : '1fr', gap: 16, marginBottom: 16 }}>
-              {data.category_sales?.length > 0 && (
-                <div className="adm-card">
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 14 }}>🏷️ Категориялар</h3>
-                  <ResponsiveContainer width="100%" height={Math.max(data.category_sales.length * 44, 120)}>
-                    <BarChart layout="vertical" data={data.category_sales} margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
-                      <XAxis type="number" tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                      <YAxis type="category" dataKey="category" tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} width={90} />
-                      <Tooltip formatter={v => [`${Number(v).toLocaleString()} сум`, 'Тушум']} />
-                      <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
-                        {data.category_sales.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+          <div style={{ display: 'grid', gridTemplateColumns: data.category_sales?.length > 0 ? '1fr 1fr' : '1fr', gap: 16, marginBottom: 16 }}>
+            {data.category_sales?.length > 0 && (
+              <div className="adm-card">
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 14 }}>🏷️ Категориялар</h3>
+                <ResponsiveContainer width="100%" height={Math.max(data.category_sales.length * 44, 120)}>
+                  <BarChart layout="vertical" data={data.category_sales} margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
+                    <XAxis type="number" tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="category" tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} width={90} />
+                    <Tooltip formatter={v => [`${Number(v).toLocaleString()} сум`, 'Тушум']} />
+                    <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
+                      {data.category_sales.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
-              {data.popular_items?.length > 0 && (
-                <div className="adm-card">
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 14 }}>🏆 Машҳур таомлар</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {data.popular_items.slice(0, 5).map((item, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: i === 0 ? '#FEF3C7' : '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: i === 0 ? '#92400E' : '#6B7280', flexShrink: 0 }}>
-                          {i + 1}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                          <div style={{ fontSize: 11, color: '#6B7280' }}>{item.total_sold} та сотилди</div>
-                        </div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#FF6B35', flexShrink: 0 }}>{item.revenue?.toLocaleString()} сум</div>
+            {/* Popular items — always shown */}
+            <div className="adm-card">
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 4 }}>🏆 Машҳур таомлар</h3>
+              <p style={{ fontSize: 12, color: '#9CA3AF', margin: '0 0 14px' }}>
+                {customDate ? customDate : period === 'today' ? 'Бугун' : period === 'week' ? 'Ҳафта' : period === 'month' ? '30 кун' : 'Йил'} бўйича энг кўп сотилган
+              </p>
+              {!data.popular_items?.length ? (
+                <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, padding: '24px 0' }}>
+                  Бу давр учун маълумот йўқ
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {data.popular_items.slice(0, 10).map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: i === 0 ? '#FEF3C7' : i === 1 ? '#F3F4F6' : i === 2 ? '#FEE2E2' : '#F9FAFB',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 800,
+                        color: i === 0 ? '#92400E' : i === 1 ? '#374151' : i === 2 ? '#991B1B' : '#9CA3AF',
+                        flexShrink: 0,
+                      }}>
+                        {i + 1}
                       </div>
-                    ))}
-                  </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                        <div style={{ fontSize: 11, color: '#6B7280' }}>{item.total_sold} та сотилди</div>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#FF6B35', flexShrink: 0 }}>{Number(item.revenue || 0).toLocaleString()} сум</div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          )}
+          </div>
 
           {/* Expenses section */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
@@ -351,14 +364,17 @@ export default function AdminAnalytics() {
 
             {/* One-time expenses */}
             <div className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #F3F4F6' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: '#374151', margin: 0 }}>💳 Бир марталик харажатлар</h3>
+                {oneTimeExpenses.length > 0 && (
+                  <span style={{ fontSize: 12, color: '#6B7280', background: '#F3F4F6', borderRadius: 6, padding: '2px 8px' }}>{oneTimeExpenses.length} та</span>
+                )}
               </div>
               {oneTimeExpenses.length === 0 ? (
                 <div style={{ padding: '24px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>Бир марталик харажат йўқ</div>
               ) : (
-                <div style={{ padding: '8px 0', maxHeight: 240, overflowY: 'auto' }}>
-                  {oneTimeExpenses.slice(0, 10).map(e => (
+                <div style={{ padding: '8px 0', maxHeight: 400, overflowY: 'auto' }}>
+                  {oneTimeExpenses.map(e => (
                     <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', borderBottom: '1px solid #F9FAFB' }}>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{e.description}</div>

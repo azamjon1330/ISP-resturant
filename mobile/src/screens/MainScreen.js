@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { agentAPI } from '../api'
+import { getAgent } from '../agentStore'
 import Toast from 'react-native-toast-message'
 import QRCode from 'react-native-qrcode-svg'
 
@@ -21,7 +22,7 @@ const fmtDate = (iso) => {
 }
 
 export default function MainScreen({ route, navigation }) {
-  const { agent: initialAgent } = route.params
+  const initialAgent = route?.params?.agent ?? getAgent()
   const [agent, setAgent] = useState(initialAgent)
   const [tab, setTab] = useState('cards')
   const [history, setHistory] = useState([])
@@ -51,7 +52,7 @@ export default function MainScreen({ route, navigation }) {
     setRefreshing(false)
   }
 
-  const logout = () => navigation.replace('Welcome')
+  const logout = () => navigation.replace('index')
 
   const goldVisits = agent.gold_card_uses % agent.bonus_threshold
   const goldPct = goldVisits / agent.bonus_threshold
