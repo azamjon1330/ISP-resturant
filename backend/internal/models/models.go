@@ -104,7 +104,14 @@ type Analytics struct {
 	TodayRevenue      float64          `json:"today_revenue"`
 	PopularItems      []PopularItem    `json:"popular_items"`
 	DailyRevenue      []DailyRevenue   `json:"daily_revenue"`
+	HourlyRevenue     []HourlyRevenue  `json:"hourly_revenue"`
 	CategorySales     []CategorySale   `json:"category_sales"`
+}
+
+type HourlyRevenue struct {
+	Hour    int     `json:"hour"`
+	Revenue float64 `json:"revenue"`
+	Orders  int     `json:"orders"`
 }
 
 type PopularItem struct {

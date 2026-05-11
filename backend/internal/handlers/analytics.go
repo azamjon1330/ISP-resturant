@@ -109,6 +109,25 @@ func GetAnalytics(c *gin.Context) {
 		}
 	}
 
+	// Hourly breakdown for today or a single custom date
+	if period == "today" || period == "custom" {
+		hourlyRows, _ := database.DB.Query(
+			`SELECT EXTRACT(HOUR FROM created_at)::int,
+			        COALESCE(SUM(final_price),0), COUNT(*)
+			 FROM orders WHERE status != 'pending' AND `+dateFilter+`
+			 GROUP BY EXTRACT(HOUR FROM created_at)
+			 ORDER BY 1`,
+		)
+		if hourlyRows != nil {
+			defer hourlyRows.Close()
+			for hourlyRows.Next() {
+				var h models.HourlyRevenue
+				hourlyRows.Scan(&h.Hour, &h.Revenue, &h.Orders)
+				analytics.HourlyRevenue = append(analytics.HourlyRevenue, h)
+			}
+		}
+	}
+
 	catRows, _ := database.DB.Query(
 		`SELECT mi.category, COALESCE(SUM(oi.quantity * oi.unit_price),0), COALESCE(SUM(oi.quantity),0)
 		 FROM order_items oi

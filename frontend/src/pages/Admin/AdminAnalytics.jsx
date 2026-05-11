@@ -27,7 +27,7 @@ const fmtDate = (iso) => {
 // Fill missing days in daily revenue array so the chart shows a continuous line
 function fillDailyGaps(data, period) {
   if (!data || data.length === 0) return []
-  const days = period === 'today' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365
+  const days = period === 'week' ? 7 : period === 'month' ? 30 : 365
   const map = {}
   data.forEach(d => { map[d.date] = d })
 
@@ -41,11 +41,34 @@ function fillDailyGaps(data, period) {
   return result
 }
 
-const CustomTooltip = ({ active, payload, label }) => {
+// Fill all 24 hours for today/single-date view
+function fillHourlyGaps(data) {
+  const map = {}
+  if (data) data.forEach(d => { map[d.hour] = d })
+  const result = []
+  for (let h = 0; h < 24; h++) {
+    result.push(map[h] || { hour: h, revenue: 0, orders: 0 })
+  }
+  return result
+}
+
+const DailyTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
       <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 4px' }}>{label}</p>
+      <p style={{ fontSize: 14, fontWeight: 700, color: '#FF6B35', margin: 0 }}>{Number(payload[0].value).toLocaleString()} сум</p>
+      {payload[1] && <p style={{ fontSize: 12, color: '#6B7280', margin: '2px 0 0' }}>{payload[1].value} буюртма</p>}
+    </div>
+  )
+}
+
+const HourlyTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  const h = Number(label)
+  return (
+    <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+      <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 4px' }}>{String(h).padStart(2,'0')}:00 – {String(h+1).padStart(2,'0')}:00</p>
       <p style={{ fontSize: 14, fontWeight: 700, color: '#FF6B35', margin: 0 }}>{Number(payload[0].value).toLocaleString()} сум</p>
       {payload[1] && <p style={{ fontSize: 12, color: '#6B7280', margin: '2px 0 0' }}>{payload[1].value} буюртма</p>}
     </div>
@@ -105,8 +128,9 @@ export default function AdminAnalytics() {
     setShowDatePicker(false)
   }
 
-  const chartData = customDate
-    ? (data?.daily_revenue || [])
+  const isHourlyView = period === 'today' || !!customDate
+  const chartData = isHourlyView
+    ? fillHourlyGaps(data?.hourly_revenue)
     : fillDailyGaps(data?.daily_revenue, period)
 
   const monthlyExpenses = expenses.filter(e => e.is_recurring)
@@ -205,55 +229,55 @@ export default function AdminAnalytics() {
             ))}
           </div>
 
-          {/* Daily revenue chart */}
+          {/* Revenue chart — hourly for today/single date, daily otherwise */}
           <div className="adm-card" style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 16 }}>📈 Кунлик тушум</h3>
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.22} />
-                      <stop offset="95%" stopColor="#FF6B35" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={d => {
-                      if (!d) return ''
-                      const parts = d.split('-')
-                      return `${parts[2]}/${parts[1]}`
-                    }}
-                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={chartData.length > 14 ? Math.floor(chartData.length / 7) : 0}
-                  />
-                  <YAxis
-                    tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
-                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={50}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#FF6B35"
-                    strokeWidth={2.5}
-                    fill="url(#gradRevenue)"
-                    dot={chartData.length <= 14 ? { r: 4, fill: '#FF6B35', strokeWidth: 0 } : false}
-                    activeDot={{ r: 6, fill: '#FF6B35', strokeWidth: 2, stroke: 'white' }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', fontSize: 14 }}>
-                Маълумот йўқ
-              </div>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 4 }}>
+              📈 {isHourlyView ? 'Соатлик тушум (24 соат)' : 'Кунлик тушум'}
+            </h3>
+            {isHourlyView && (
+              <p style={{ fontSize: 12, color: '#9CA3AF', margin: '0 0 14px' }}>
+                Har bir nuqta = 1 soatlik tushum va buyurtmalar soni
+              </p>
             )}
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#FF6B35" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
+                <XAxis
+                  dataKey={isHourlyView ? 'hour' : 'date'}
+                  tickFormatter={isHourlyView
+                    ? h => `${String(h).padStart(2,'0')}:00`
+                    : d => { if (!d) return ''; const p = d.split('-'); return `${p[2]}/${p[1]}` }
+                  }
+                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={isHourlyView ? 1 : (chartData.length > 14 ? Math.floor(chartData.length / 7) : 0)}
+                />
+                <YAxis
+                  tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
+                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={50}
+                />
+                <Tooltip content={isHourlyView ? <HourlyTooltip /> : <DailyTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#FF6B35"
+                  strokeWidth={2.5}
+                  fill="url(#gradRevenue)"
+                  dot={isHourlyView ? { r: 4, fill: '#FF6B35', strokeWidth: 0 } : (chartData.length <= 14 ? { r: 4, fill: '#FF6B35', strokeWidth: 0 } : false)}
+                  activeDot={{ r: 6, fill: '#FF6B35', strokeWidth: 2, stroke: 'white' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
 
           {/* Category + Popular items */}

@@ -72,6 +72,8 @@ func UpdateMenuItem(c *gin.Context) {
 
 func DeleteMenuItem(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
+	// Nullify FK in order_items so existing order history is preserved
+	database.DB.Exec(`UPDATE order_items SET menu_item_id = NULL WHERE menu_item_id = $1`, id)
 	_, err := database.DB.Exec(`DELETE FROM menu_items WHERE id=$1`, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
