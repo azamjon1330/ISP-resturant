@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"youit-backend/internal/database"
@@ -146,7 +147,17 @@ func GetAgentByID(agentID int) *models.ReferralAgent {
 func GetAgentByCode(c *gin.Context) {
 	code := c.Param("code")
 	var agentID int
-	err := database.DB.QueryRow(`SELECT id FROM referral_agents WHERE code=$1 AND is_active=true`, code).Scan(&agentID)
+	var err error
+	if strings.HasPrefix(strings.ToUpper(code), "GOLD-") {
+		err = database.DB.QueryRow(
+			`SELECT id FROM referral_agents WHERE UPPER(gold_card_code)=$1 AND is_active=true`,
+			strings.ToUpper(code),
+		).Scan(&agentID)
+	} else {
+		err = database.DB.QueryRow(
+			`SELECT id FROM referral_agents WHERE code=$1 AND is_active=true`, code,
+		).Scan(&agentID)
+	}
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
