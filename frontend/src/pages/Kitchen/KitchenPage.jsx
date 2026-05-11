@@ -97,6 +97,11 @@ export default function KitchenPage() {
 
   return (
     <div className="kitchen-page">
+      <div className="kitchen-bg">
+        <div className="k-blob k-blob-1" />
+        <div className="k-blob k-blob-2" />
+        <div className="k-blob k-blob-3" />
+      </div>
       <header className="kitchen-header">
         <div className="kh-left">
           <button className="kh-icon-btn" onClick={() => navigate('/')}><Home size={20} /></button>

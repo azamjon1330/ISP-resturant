@@ -208,12 +208,30 @@ func ScanCard(c *gin.Context) {
 		`SELECT rc.id, rc.agent_id, rc.card_type, rc.use_count, rc.is_active
 		 FROM referral_cards rc WHERE rc.card_code=$1`, body.CardCode,
 	).Scan(&cardID, &agentID, &cardType, &useCount, &isActive)
+
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Карта не найдена"})
-		return
+		// Try as 7-digit agent personal code — use the agent's gold card
+		var goldCardCode string
+		err2 := database.DB.QueryRow(
+			`SELECT id, gold_card_code FROM referral_agents WHERE code=$1 AND is_active=true`,
+			body.CardCode,
+		).Scan(&agentID, &goldCardCode)
+		if err2 != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Karta yoki agent topilmadi"})
+			return
+		}
+		err = database.DB.QueryRow(
+			`SELECT id, agent_id, card_type, use_count, is_active
+			 FROM referral_cards WHERE card_code=$1`, goldCardCode,
+		).Scan(&cardID, &agentID, &cardType, &useCount, &isActive)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Gold karta topilmadi"})
+			return
+		}
 	}
+
 	if !isActive {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Карта деактивирована"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Karta deaktivlashtirilgan"})
 		return
 	}
 
