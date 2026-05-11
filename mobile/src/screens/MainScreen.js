@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
+import { router } from 'expo-router'
 import { agentAPI } from '../api'
 import { getAgent } from '../agentStore'
 import Toast from 'react-native-toast-message'
@@ -21,19 +22,22 @@ const fmtDate = (iso) => {
   return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
 }
 
-export default function MainScreen({ route, navigation }) {
-  const initialAgent = route?.params?.agent ?? getAgent()
+export default function MainScreen() {
+  const initialAgent = getAgent()
   const [agent, setAgent] = useState(initialAgent)
   const [tab, setTab] = useState('cards')
   const [history, setHistory] = useState([])
-  const [bonuses, setBonuses] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => {
+    if (!initialAgent) { router.replace('/'); return }
+    loadAll()
+  }, [])
 
   const loadAll = async () => {
+    if (!agent) return
     setLoading(true)
     try {
       const [agentRes, histRes] = await Promise.all([
@@ -52,7 +56,9 @@ export default function MainScreen({ route, navigation }) {
     setRefreshing(false)
   }
 
-  const logout = () => navigation.replace('index')
+  const logout = () => router.replace('/')
+
+  if (!agent) return null
 
   const goldVisits = agent.gold_card_uses % agent.bonus_threshold
   const goldPct = goldVisits / agent.bonus_threshold

@@ -27,6 +27,10 @@
     },
     "plugins": [
       ["expo-camera", { "cameraPermission": "YouIt Café needs camera for QR scanning" }]
-    ]
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
   }
 }

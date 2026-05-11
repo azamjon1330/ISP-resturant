@@ -4,11 +4,12 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
+import { router } from 'expo-router'
 import { agentAPI } from '../api'
 import { setAgent } from '../agentStore'
 import Toast from 'react-native-toast-message'
 
-export default function WelcomeScreen({ navigation }) {
+export default function WelcomeScreen() {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -32,7 +33,7 @@ export default function WelcomeScreen({ navigation }) {
         return
       }
       setAgent(agent)
-      navigation.replace('main')
+      router.replace('/main')
     } catch {
       Toast.show({ type: 'error', text1: 'Agent topilmadi', text2: 'Kod yoki telefon raqamni tekshiring' })
     } finally {
@@ -60,7 +61,6 @@ export default function WelcomeScreen({ navigation }) {
             <Text style={styles.cardTitle}>Kirish</Text>
             <Text style={styles.cardSub}>Telefon raqam va agentlik kodingizni kiriting</Text>
 
-            {/* Phone number */}
             <View style={styles.fieldWrap}>
               <Text style={styles.fieldLabel}>📱 Telefon raqam</Text>
               <TextInput
@@ -74,7 +74,6 @@ export default function WelcomeScreen({ navigation }) {
               />
             </View>
 
-            {/* Agent code */}
             <View style={styles.fieldWrap}>
               <Text style={styles.fieldLabel}>🔑 Agentlik kodi (7 ta raqam)</Text>
               <TextInput
