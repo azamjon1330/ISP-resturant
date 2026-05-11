@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { agentsAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { Plus, Users, Star, CreditCard, X, Check, ChevronRight, Gift } from 'lucide-react'
+import { Plus, Users, Star, CreditCard, X, Check, ChevronRight, Gift, Trash2 } from 'lucide-react'
 import '../Admin/AdminLayout.css'
 
 const EMPTY = { name: '', phone: '', regular_card_count: 20, discount_amount: 20000, bonus_threshold: 10, referral_bonus_threshold: 20 }
@@ -12,6 +12,8 @@ export default function AdminAgents() {
   const [selected, setSelected] = useState(null)
   const [bonuses, setBonuses] = useState([])
   const [modal, setModal] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
 
@@ -53,6 +55,18 @@ export default function AdminAgents() {
     finally { setSaving(false) }
   }
 
+  const deleteAgent = async (agent) => {
+    setDeleting(true)
+    try {
+      await agentsAPI.delete(agent.id)
+      setAgents(a => a.filter(x => x.id !== agent.id))
+      if (selected?.id === agent.id) setSelected(null)
+      setDeleteConfirm(null)
+      toast.success(`Агент "${agent.name}" ўчирилди`)
+    } catch (e) { toast.error(e.response?.data?.error || 'Ўчиришда хатолик') }
+    finally { setDeleting(false) }
+  }
+
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   return (
@@ -92,10 +106,17 @@ export default function AdminAgents() {
                 <div style={{ fontWeight: 600, color: '#111827', fontSize: 14 }}>{ag.name}</div>
                 <div style={{ fontSize: 12, color: '#6B7280' }}>#{ag.code}</div>
               </div>
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
                 <span style={{ fontSize: 11, background: '#FEF3C7', color: '#92400E', padding: '2px 7px', borderRadius: 100, fontWeight: 600 }}>
                   ⭐ {ag.gold_card_uses}
                 </span>
+                <button
+                  onClick={e => { e.stopPropagation(); setDeleteConfirm(ag) }}
+                  style={{ width: 28, height: 28, borderRadius: 7, border: '1.5px solid #FEE2E2', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#EF4444', flexShrink: 0 }}
+                  title="Ўчириш"
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
               <ChevronRight size={16} color="#9CA3AF" />
             </div>
@@ -117,18 +138,26 @@ export default function AdminAgents() {
                 <div style={{ fontSize: 14, color: '#FF6B35', fontWeight: 600 }}>#{selected.code}</div>
                 {selected.phone && <div style={{ fontSize: 13, color: '#6B7280' }}>{selected.phone}</div>}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {[
-                  { label: 'Олтин карта', val: selected.gold_card_uses },
-                  { label: 'Реферал', val: selected.referral_card_total_uses },
-                  { label: 'Бонус', val: selected.total_bonus_earned },
-                  { label: 'Чегирма', val: `${selected.discount_amount?.toLocaleString()} сум` },
-                ].map((s, i) => (
-                  <div key={i} style={{ textAlign: 'center', padding: '8px 14px', background: '#F9FAFB', borderRadius: 10 }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#FF6B35' }}>{s.val}</div>
-                    <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>{s.label}</div>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {[
+                    { label: 'Олтин карта', val: selected.gold_card_uses },
+                    { label: 'Реферал', val: selected.referral_card_total_uses },
+                    { label: 'Бонус', val: selected.total_bonus_earned },
+                    { label: 'Чегирма', val: `${selected.discount_amount?.toLocaleString()} сум` },
+                  ].map((s, i) => (
+                    <div key={i} style={{ textAlign: 'center', padding: '8px 14px', background: '#F9FAFB', borderRadius: 10 }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#FF6B35' }}>{s.val}</div>
+                      <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setDeleteConfirm(selected)}
+                  style={{ padding: '8px 14px', borderRadius: 9, border: '1.5px solid #FEE2E2', background: '#FEF2F2', cursor: 'pointer', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
+                >
+                  <Trash2 size={15} /> Ўчириш
+                </button>
               </div>
             </div>
 
@@ -241,6 +270,44 @@ export default function AdminAgents() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="adm-overlay" onClick={e => e.target === e.currentTarget && setDeleteConfirm(null)}>
+          <div className="adm-modal" style={{ maxWidth: 380 }}>
+            <div className="adm-modal-header">
+              <h2>Агентни ўчириш</h2>
+              <button onClick={() => setDeleteConfirm(null)}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '16px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px', background: '#FEF2F2', borderRadius: 10, marginBottom: 16 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Trash2 size={20} color="#EF4444" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#111827', fontSize: 15 }}>{deleteConfirm.name}</div>
+                  <div style={{ fontSize: 13, color: '#6B7280' }}>#{deleteConfirm.code}</div>
+                </div>
+              </div>
+              <p style={{ fontSize: 14, color: '#374151', margin: '0 0 4px' }}>
+                Ушбу агентни ҳамда унинг барча карталари, транзакциялари ва бонусларини ўчирмоқчимисиз?
+              </p>
+              <p style={{ fontSize: 13, color: '#EF4444', margin: 0, fontWeight: 600 }}>Бу амал қайтарилмайди!</p>
+            </div>
+            <div className="adm-modal-footer">
+              <button className="adm-btn adm-btn-secondary" onClick={() => setDeleteConfirm(null)}>Бекор</button>
+              <button
+                className="adm-btn"
+                onClick={() => deleteAgent(deleteConfirm)}
+                disabled={deleting}
+                style={{ background: '#EF4444', color: 'white', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Trash2 size={15} /> {deleting ? 'Ўчирилмоқда...' : 'Ҳа, ўчириш'}
+              </button>
+            </div>
           </div>
         </div>
       )}

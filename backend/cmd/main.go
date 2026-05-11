@@ -61,6 +61,7 @@ func main() {
 		admin.POST("/agents", handlers.CreateAgent)
 		admin.GET("/agents/:id", handlers.GetAgentDetail)
 		admin.GET("/agents/:id/bonuses", handlers.GetAgentBonuses)
+		admin.DELETE("/agents/:id", handlers.DeleteAgent)
 	}
 
 	port := os.Getenv("PORT")

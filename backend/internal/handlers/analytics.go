@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"youit-backend/internal/database"
@@ -11,22 +12,28 @@ import (
 
 func GetAnalytics(c *gin.Context) {
 	period := c.Query("period")
-	if period == "" {
+	customDate := c.Query("date") // e.g. "2026-05-11"
+	if period == "" && customDate == "" {
 		period = "month"
 	}
 
 	var dateFilter string
-	switch period {
-	case "today":
-		dateFilter = "DATE(created_at) = CURRENT_DATE"
-	case "week":
-		dateFilter = "created_at >= CURRENT_DATE - INTERVAL '7 days'"
-	case "month":
-		dateFilter = "created_at >= CURRENT_DATE - INTERVAL '30 days'"
-	case "year":
-		dateFilter = "created_at >= CURRENT_DATE - INTERVAL '365 days'"
-	default:
-		dateFilter = "1=1"
+	if customDate != "" {
+		dateFilter = fmt.Sprintf("DATE(created_at) = '%s'", customDate)
+		period = "custom"
+	} else {
+		switch period {
+		case "today":
+			dateFilter = "DATE(created_at) = CURRENT_DATE"
+		case "week":
+			dateFilter = "created_at >= CURRENT_DATE - INTERVAL '7 days'"
+		case "month":
+			dateFilter = "created_at >= CURRENT_DATE - INTERVAL '30 days'"
+		case "year":
+			dateFilter = "created_at >= CURRENT_DATE - INTERVAL '365 days'"
+		default:
+			dateFilter = "1=1"
+		}
 	}
 
 	analytics := models.Analytics{}

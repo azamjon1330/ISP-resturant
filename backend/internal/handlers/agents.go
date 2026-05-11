@@ -273,6 +273,40 @@ func GetAgentBonuses(c *gin.Context) {
 	c.JSON(http.StatusOK, bonuses)
 }
 
+func DeleteAgent(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	tx, err := database.DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction error"})
+		return
+	}
+	defer tx.Rollback()
+
+	tx.Exec(`DELETE FROM card_transactions WHERE agent_id=$1`, id)
+	tx.Exec(`DELETE FROM agent_bonuses WHERE agent_id=$1`, id)
+	tx.Exec(`DELETE FROM referral_cards WHERE agent_id=$1`, id)
+
+	result, err := tx.Exec(`DELETE FROM referral_agents WHERE id=$1`, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Commit error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Agent deleted"})
+}
+
 func GetAgentHistory(c *gin.Context) {
 	code := c.Param("code")
 	var agentID int

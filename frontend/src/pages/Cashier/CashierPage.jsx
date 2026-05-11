@@ -5,7 +5,7 @@ import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X, CheckCircle, Search, 
 import { useNavigate } from 'react-router-dom'
 import './CashierPage.css'
 
-const statusLabels = { pending: 'Кутилмоқда', cooking: 'Тайёрланмоқда', ready: 'Тайёр', served: 'Берилди' }
+const statusLabels = { pending: "Kutilmoqda", cooking: "Tayyorlanmoqda", ready: "Tayyor", served: "Berildi" }
 const statusColors = { pending: 'badge-yellow', cooking: 'badge-orange', ready: 'badge-green', served: 'badge-gray' }
 
 export default function CashierPage() {
@@ -37,8 +37,8 @@ export default function CashierPage() {
       const msg = JSON.parse(e.data)
       if (msg.type === 'order_status_changed') {
         setOrders(prev => prev.map(o => o.id === msg.payload.id ? { ...o, status: msg.payload.status } : o))
-        if (msg.payload.status === 'ready') {
-          toast.success(`Буюртма №${msg.payload.order_code} тайёр!`, { duration: 6000, icon: '🍽️' })
+        if (msg.payload.status === 'served') {
+          toast.success(`Buyurtma №${msg.payload.order_code} tayyor va berildi!`, { duration: 6000, icon: '🍽️' })
         }
       }
     }
@@ -49,7 +49,7 @@ export default function CashierPage() {
     try {
       const res = await menuAPI.getAll()
       setMenu(res.data)
-    } catch { toast.error('Меню юкланмади') }
+    } catch { toast.error("Menyu yuklanmadi") }
   }
 
   const loadOrders = async () => {
@@ -91,15 +91,15 @@ export default function CashierPage() {
     try {
       const res = await agentsAPI.scanCard({ card_code: cardCode.trim(), order_total: cartTotal })
       setCardInfo(res.data)
-      toast.success(`Карта: ${res.data.agent_name} — чегирма ${res.data.discount.toLocaleString()} сум`)
+      toast.success(`Karta: ${res.data.agent_name} — chegirma ${res.data.discount.toLocaleString()} so'm`)
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Карта топилмади')
+      toast.error(e.response?.data?.error || "Karta topilmadi")
       setCardInfo(null)
     }
   }
 
   const submitOrder = async () => {
-    if (cart.length === 0) { toast.error('Саватча бўш'); return }
+    if (cart.length === 0) { toast.error("Savat bo'sh"); return }
     setSubmitting(true)
     try {
       const res = await ordersAPI.create({
@@ -112,10 +112,10 @@ export default function CashierPage() {
       setCardCode('')
       setCardInfo(null)
       setNote('')
-      toast.success(`Буюртма №${res.data.order_code} қабул қилинди!`)
+      toast.success(`Buyurtma №${res.data.order_code} qabul qilindi!`)
       loadOrders()
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Хатолик юз берди')
+      toast.error(e.response?.data?.error || "Xatolik yuz berdi")
     } finally {
       setSubmitting(false)
     }
@@ -123,37 +123,44 @@ export default function CashierPage() {
 
   return (
     <div className="cashier-page">
+      {/* Animated background blobs */}
+      <div className="cashier-bg">
+        <div className="blob blob-1" />
+        <div className="blob blob-2" />
+        <div className="blob blob-3" />
+      </div>
+
       <header className="cashier-header">
         <div className="cashier-header-left">
           <button className="btn-icon" onClick={() => navigate('/')}><Home size={20} /></button>
           <div className="cashier-logo">
             <span className="logo-text">YouIt Café</span>
-            <span className="logo-sub">Касса</span>
+            <span className="logo-sub">Kassa paneli</span>
           </div>
         </div>
         <div className="cashier-tabs">
           <button className={`tab ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>
-            Янги буюртма
+            Yangi buyurtma
           </button>
           <button className={`tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
-            Жорий буюртмалар
+            Joriy buyurtmalar
             {orders.length > 0 && <span className="tab-badge">{orders.length}</span>}
           </button>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={() => navigate('/kitchen')}>
-          <ChefHat size={16} /> Ошпаз
+          <ChefHat size={16} /> Oshpaz
         </button>
       </header>
 
       {activeTab === 'menu' ? (
         <div className="cashier-body">
           <div className="menu-section">
-            <div className="menu-controls">
+            <div className="menu-controls glass-panel">
               <div className="search-wrap">
                 <Search size={16} className="search-icon" />
                 <input
-                  className="input search-input"
-                  placeholder="Таом қидириш..."
+                  className="glass-input search-input"
+                  placeholder="Taom qidirish..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
@@ -165,7 +172,7 @@ export default function CashierPage() {
                     className={`cat-tab ${category === cat ? 'active' : ''}`}
                     onClick={() => setCategory(cat)}
                   >
-                    {cat === 'all' ? 'Барчаси' : cat}
+                    {cat === 'all' ? 'Barchasi' : cat}
                   </button>
                 ))}
               </div>
@@ -175,13 +182,13 @@ export default function CashierPage() {
               {filtered.map(item => {
                 const inCart = cart.find(c => c.id === item.id)
                 return (
-                  <div key={item.id} className={`menu-card ${inCart ? 'in-cart' : ''}`} onClick={() => addToCart(item)}>
+                  <div key={item.id} className={`menu-card glass-card ${inCart ? 'in-cart' : ''}`} onClick={() => addToCart(item)}>
                     <div className="menu-card-body">
                       <h3>{item.name}</h3>
                       <p>{item.description}</p>
                     </div>
                     <div className="menu-card-footer">
-                      <span className="price">{item.price.toLocaleString()} сум</span>
+                      <span className="price">{item.price.toLocaleString()} so'm</span>
                       {inCart ? (
                         <span className="qty-badge">{inCart.qty}</span>
                       ) : (
@@ -194,24 +201,24 @@ export default function CashierPage() {
             </div>
           </div>
 
-          <div className="cart-section">
+          <div className="cart-section glass-panel">
             <div className="cart-header">
               <ShoppingCart size={20} />
-              <span>Савача ({cart.reduce((s, c) => s + c.qty, 0)} та)</span>
+              <span>Savat ({cart.reduce((s, c) => s + c.qty, 0)} ta)</span>
             </div>
 
             <div className="cart-items">
               {cart.length === 0 ? (
                 <div className="cart-empty">
                   <ShoppingCart size={40} opacity={0.2} />
-                  <p>Саватча бўш</p>
+                  <p>Savat bo'sh</p>
                 </div>
               ) : (
                 cart.map(item => (
                   <div key={item.id} className="cart-item">
                     <div className="cart-item-info">
                       <span className="cart-item-name">{item.name}</span>
-                      <span className="cart-item-price">{(item.price * item.qty).toLocaleString()} сум</span>
+                      <span className="cart-item-price">{(item.price * item.qty).toLocaleString()} so'm</span>
                     </div>
                     <div className="cart-item-controls">
                       <button onClick={() => updateQty(item.id, -1)}><Minus size={14} /></button>
@@ -230,8 +237,8 @@ export default function CashierPage() {
               <div className="card-scan">
                 <div className="card-input-row">
                   <input
-                    className="input"
-                    placeholder="Карта кодини киритинг..."
+                    className="glass-input"
+                    placeholder="Karta kodini kiriting..."
                     value={cardCode}
                     onChange={e => setCardCode(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && scanCard()}
@@ -242,34 +249,34 @@ export default function CashierPage() {
                 </div>
                 {cardInfo && (
                   <div className="card-info">
-                    <CheckCircle size={14} color="var(--green)" />
+                    <CheckCircle size={14} color="#10B981" />
                     <span>{cardInfo.agent_name}</span>
-                    <span className="discount-amount">-{cardInfo.discount.toLocaleString()} сум</span>
+                    <span className="discount-amount">-{cardInfo.discount.toLocaleString()} so'm</span>
                     <button onClick={() => { setCardInfo(null); setCardCode('') }}><X size={14} /></button>
                   </div>
                 )}
               </div>
 
               <input
-                className="input"
-                placeholder="Изоҳ (ихтиёрий)..."
+                className="glass-input"
+                placeholder="Izoh (ixtiyoriy)..."
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 style={{ marginBottom: 12 }}
               />
 
               <div className="cart-totals">
-                <div className="total-row"><span>Жами:</span><span>{cartTotal.toLocaleString()} сум</span></div>
-                {discount > 0 && <div className="total-row discount"><span>Чегирма:</span><span>-{discount.toLocaleString()} сум</span></div>}
-                <div className="total-row final"><span>Тўлов:</span><span>{finalTotal.toLocaleString()} сум</span></div>
+                <div className="total-row"><span>Jami:</span><span>{cartTotal.toLocaleString()} so'm</span></div>
+                {discount > 0 && <div className="total-row discount"><span>Chegirma:</span><span>-{discount.toLocaleString()} so'm</span></div>}
+                <div className="total-row final"><span>To'lov:</span><span>{finalTotal.toLocaleString()} so'm</span></div>
               </div>
 
               <button
-                className="btn btn-primary btn-lg checkout-btn"
+                className="checkout-btn"
                 onClick={submitOrder}
                 disabled={submitting || cart.length === 0}
               >
-                {submitting ? 'Юборилмоқда...' : 'Буюртма беринг'}
+                {submitting ? 'Yuborilmoqda...' : "Buyurtma bering"}
               </button>
             </div>
           </div>
@@ -278,21 +285,21 @@ export default function CashierPage() {
         <div className="orders-list-section">
           <div className="orders-grid">
             {orders.length === 0 ? (
-              <div className="empty-state">Жорий буюртмалар йўқ</div>
+              <div className="empty-state">Joriy buyurtmalar yo'q</div>
             ) : (
               orders.map(order => (
-                <div key={order.id} className={`order-card status-${order.status}`}>
+                <div key={order.id} className={`order-card glass-card status-${order.status}`}>
                   <div className="order-card-header">
                     <span className="order-number">#{order.order_code}</span>
                     <span className={`badge ${statusColors[order.status]}`}>{statusLabels[order.status]}</span>
                   </div>
                   <div className="order-card-body">
-                    <span className="order-total">{order.final_price?.toLocaleString()} сум</span>
+                    <span className="order-total">{order.final_price?.toLocaleString()} so'm</span>
                     {order.card_code && <span className="order-card-code"><QrCode size={12} /> {order.card_code}</span>}
                     {order.note && <p className="order-note">{order.note}</p>}
                   </div>
                   <div className="order-time">
-                    {new Date(order.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(order.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               ))
@@ -306,17 +313,17 @@ export default function CashierPage() {
           <div className="order-success-card slide-in">
             <button className="modal-close" onClick={() => setLastOrder(null)}><X size={20} /></button>
             <div className="success-icon">✅</div>
-            <h2>Буюртма қабул қилинди!</h2>
+            <h2>Buyurtma qabul qilindi!</h2>
             <div className="order-code-big">#{lastOrder.order_code}</div>
-            <p>Мижозга ушбу рақамни беринг</p>
+            <p>Mijozga ushbu raqamni bering</p>
             <div className="order-summary">
-              <div className="summary-row"><span>Жами:</span><span>{lastOrder.total_price?.toLocaleString()} сум</span></div>
+              <div className="summary-row"><span>Jami:</span><span>{lastOrder.total_price?.toLocaleString()} so'm</span></div>
               {lastOrder.discount_amount > 0 && (
-                <div className="summary-row green"><span>Чегирма:</span><span>-{lastOrder.discount_amount?.toLocaleString()} сум</span></div>
+                <div className="summary-row green"><span>Chegirma:</span><span>-{lastOrder.discount_amount?.toLocaleString()} so'm</span></div>
               )}
-              <div className="summary-row bold"><span>Тўлов:</span><span>{lastOrder.final_price?.toLocaleString()} сум</span></div>
+              <div className="summary-row bold"><span>To'lov:</span><span>{lastOrder.final_price?.toLocaleString()} so'm</span></div>
             </div>
-            <button className="btn btn-primary" onClick={() => setLastOrder(null)}>Тушунарли</button>
+            <button className="checkout-btn" onClick={() => setLastOrder(null)}>Tushunarli</button>
           </div>
         </div>
       )}

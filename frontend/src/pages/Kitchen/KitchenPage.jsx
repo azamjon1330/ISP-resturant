@@ -1,32 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ordersAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { ChefHat, CheckCircle, Bell, Home, RefreshCw } from 'lucide-react'
+import { ChefHat, Bell, Home, RefreshCw, CheckCircle, Clock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import './KitchenPage.css'
-
-const COLUMNS = [
-  { status: 'pending',  label: 'Янги',           color: 'yellow', nextStatus: 'cooking', nextLabel: 'Тайёрлашни бошлаш' },
-  { status: 'cooking',  label: 'Тайёрланмоқда',  color: 'orange', nextStatus: 'ready',   nextLabel: 'Тайёр!' },
-  { status: 'ready',    label: 'Тайёр',           color: 'green',  nextStatus: 'served',  nextLabel: 'Берилди ✓' },
-]
 
 const fmtTime = (iso) => {
   const d = new Date(iso)
   const pad = n => String(n).padStart(2, '0')
-  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+const fmtElapsed = (iso) => {
+  const diff = Math.floor((Date.now() - new Date(iso)) / 60000)
+  if (diff < 1) return 'Hozir'
+  if (diff === 1) return '1 daqiqa'
+  return `${diff} daqiqa`
 }
 
 export default function KitchenPage() {
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [completing, setCompleting] = useState(null)
   const wsRef = useRef(null)
+  const timerRef = useRef(null)
+  const [, forceUpdate] = useState(0)
 
   useEffect(() => {
     load()
     connectWS()
-    return () => wsRef.current?.close()
+    timerRef.current = setInterval(() => forceUpdate(n => n + 1), 30000)
+    return () => {
+      wsRef.current?.close()
+      clearInterval(timerRef.current)
+    }
   }, [])
 
   const connectWS = () => {
@@ -37,10 +45,10 @@ export default function KitchenPage() {
       if (msg.type === 'new_order') {
         setOrders(prev => [msg.payload, ...prev])
         playSound()
-        toast('Янги буюртма! #' + msg.payload.order_code, { icon: '🔔', duration: 5000 })
+        toast(`Yangi buyurtma! #${msg.payload.order_code}`, { icon: '🔔', duration: 6000 })
       }
       if (msg.type === 'order_status_changed') {
-        setOrders(prev => prev.map(o => o.id === msg.payload.id ? { ...o, ...msg.payload } : o))
+        setOrders(prev => prev.filter(o => o.id !== msg.payload.id))
       }
     }
     wsRef.current = ws
@@ -55,10 +63,10 @@ export default function KitchenPage() {
       gain.connect(ctx.destination)
       osc.frequency.setValueAtTime(880, ctx.currentTime)
       osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1)
-      gain.gain.setValueAtTime(0.3, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+      gain.gain.setValueAtTime(0.4, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
       osc.start(ctx.currentTime)
-      osc.stop(ctx.currentTime + 0.4)
+      osc.stop(ctx.currentTime + 0.5)
     } catch {}
   }
 
@@ -66,27 +74,24 @@ export default function KitchenPage() {
     setLoading(true)
     try {
       const res = await ordersAPI.getAll()
-      setOrders(res.data.filter(o => o.status !== 'served'))
-    } catch { toast.error('Юкланмади') }
+      setOrders(res.data.filter(o => o.status === 'pending'))
+    } catch { toast.error('Yuklanmadi') }
     finally { setLoading(false) }
   }
 
-  const updateStatus = async (order, nextStatus) => {
+  const markDone = async (order) => {
+    setCompleting(order.id)
     try {
-      await ordersAPI.updateStatus(order.id, nextStatus)
-      setOrders(prev => {
-        if (nextStatus === 'served') return prev.filter(o => o.id !== order.id)
-        return prev.map(o => o.id === order.id ? { ...o, status: nextStatus } : o)
-      })
-      if (nextStatus === 'ready') toast.success(`Буюртма #${order.order_code} тайёр!`)
-    } catch { toast.error('Ҳолатни янгилашда хато') }
+      await ordersAPI.updateStatus(order.id, 'served')
+      setOrders(prev => prev.filter(o => o.id !== order.id))
+      toast.success(`Buyurtma #${order.order_code} tayyor!`, { icon: '✅', duration: 4000 })
+    } catch { toast.error('Xatolik yuz berdi') }
+    finally { setCompleting(null) }
   }
 
-  const col = (status) => orders.filter(o => o.status === status)
-
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F5F5F5' }}>
-      <ChefHat size={44} color="#FF6B35" className="animate-spin" />
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#1a1a2e' }}>
+      <ChefHat size={48} color="#FF6B35" className="animate-spin" />
     </div>
   )
 
@@ -95,71 +100,73 @@ export default function KitchenPage() {
       <header className="kitchen-header">
         <div className="kh-left">
           <button className="kh-icon-btn" onClick={() => navigate('/')}><Home size={20} /></button>
-          <ChefHat size={22} color="white" />
-          <h1 className="kh-title">Ошпазхона панели</h1>
+          <ChefHat size={24} color="white" />
+          <h1 className="kh-title">Oshpazxona paneli</h1>
         </div>
-        <div className="kh-stats">
-          <span className="kh-stat kh-stat-yellow"><Bell size={14} /> {col('pending').length} янги</span>
-          <span className="kh-stat kh-stat-orange">{col('cooking').length} тайёрланмоқда</span>
-          <span className="kh-stat kh-stat-green">{col('ready').length} тайёр</span>
+        <div className="kh-center">
+          {orders.length > 0 ? (
+            <span className="kh-badge-new">
+              <Bell size={15} />
+              {orders.length} ta yangi buyurtma
+            </span>
+          ) : (
+            <span className="kh-badge-empty">Buyurtma yo'q</span>
+          )}
         </div>
-        <button className="kh-refresh" onClick={load}><RefreshCw size={16} /> Янгилаш</button>
+        <button className="kh-refresh" onClick={load}>
+          <RefreshCw size={16} /> Yangilash
+        </button>
       </header>
 
-      <div className="kitchen-board">
-        {COLUMNS.map(col => (
-          <div key={col.status} className={`kboard-col col-${col.color}`}>
-            <div className="kboard-col-head">
-              <span className={`kdot dot-${col.color}`} />
-              <h2>{col.label}</h2>
-              <span className="kboard-count">{orders.filter(o => o.status === col.status).length}</span>
-            </div>
-
-            <div className="kboard-col-body">
-              {orders.filter(o => o.status === col.status).length === 0 ? (
-                <div className="kboard-empty">Буюртма йўқ</div>
-              ) : orders.filter(o => o.status === col.status).map(order => (
-                <div key={order.id} className={`kcard kcard-${col.color}`}>
-                  <div className="kcard-top">
-                    <span className="kcard-code">#{order.order_code}</span>
-                    <span className="kcard-time">{fmtTime(order.created_at)}</span>
-                  </div>
-
-                  {order.items?.length > 0 && (
-                    <ul className="kcard-items">
-                      {order.items.map((item, i) => (
-                        <li key={i} className="kcard-item">
-                          <div className="kcard-item-left">
-                            <span className="kcard-qty">×{item.quantity}</span>
-                            <span className="kcard-name">{item.item_name}</span>
-                          </div>
-                          {(item.price || item.unit_price) && (
-                            <span className="kcard-item-price">
-                              {((item.price || item.unit_price) * item.quantity).toLocaleString()} сум
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {order.note && <p className="kcard-note">💬 {order.note}</p>}
-
-                  <div className="kcard-foot">
-                    <span className="kcard-total">{order.final_price?.toLocaleString()} сум</span>
-                    <button
-                      className={`kcard-btn kcard-btn-${col.color}`}
-                      onClick={() => updateStatus(order, col.nextStatus)}
-                    >
-                      {col.nextStatus === 'ready' && <CheckCircle size={16} />}
-                      {col.nextLabel}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+      <div className="kitchen-main">
+        {orders.length === 0 ? (
+          <div className="kitchen-empty">
+            <ChefHat size={72} color="rgba(255,107,53,0.25)" />
+            <h2>Yangi buyurtmalar yo'q</h2>
+            <p>Buyurtmalar kelganda bu yerda ko'rinadi</p>
           </div>
-        ))}
+        ) : (
+          <div className="korders-grid">
+            {orders.map(order => (
+              <div key={order.id} className="korder-card">
+                <div className="korder-header">
+                  <span className="korder-code">#{order.order_code}</span>
+                  <span className="korder-time">
+                    <Clock size={13} />
+                    {fmtTime(order.created_at)} · {fmtElapsed(order.created_at)}
+                  </span>
+                </div>
+
+                {order.items?.length > 0 && (
+                  <ul className="korder-items">
+                    {order.items.map((item, i) => (
+                      <li key={i} className="korder-item">
+                        <span className="korder-qty">×{item.quantity}</span>
+                        <span className="korder-name">{item.item_name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {order.note && (
+                  <p className="korder-note">💬 {order.note}</p>
+                )}
+
+                <div className="korder-footer">
+                  <span className="korder-total">{order.final_price?.toLocaleString()} so'm</span>
+                  <button
+                    className={`korder-done-btn ${completing === order.id ? 'loading' : ''}`}
+                    onClick={() => markDone(order)}
+                    disabled={completing === order.id}
+                  >
+                    <CheckCircle size={18} />
+                    {completing === order.id ? 'Saqlanmoqda...' : 'Tayyor!'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

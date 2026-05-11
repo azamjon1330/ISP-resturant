@@ -40,6 +40,7 @@ export const ordersAPI = {
 export const agentsAPI = {
   getAll: () => api.get('/admin/agents'),
   create: (data) => api.post('/admin/agents', data),
+  delete: (id) => api.delete(`/admin/agents/${id}`),
   getById: (id) => api.get(`/admin/agents/${id}`),
   getByCode: (code) => api.get(`/agents/code/${code}`),
   getBonuses: (id) => api.get(`/admin/agents/${id}/bonuses`),
@@ -48,7 +49,7 @@ export const agentsAPI = {
 }
 
 export const analyticsAPI = {
-  get: (period) => api.get('/admin/analytics', { params: { period } }),
+  get: (period, date) => api.get('/admin/analytics', { params: { period, date } }),
   createExpense: (data) => api.post('/admin/expenses', data),
   getExpenses: () => api.get('/admin/expenses'),
 }
