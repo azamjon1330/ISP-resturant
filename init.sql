@@ -125,15 +125,15 @@ VALUES ('914751330', crypt('12345678', gen_salt('bf')), 'admin');
 
 -- Sample menu
 INSERT INTO menu_items (name, description, price, category) VALUES
-('Ош (Плов)', 'Традиционный узбекский плов с рисом, морковью и бараниной', 35000, 'Основные блюда'),
-('Самса', 'Хрустящая слоёная выпечка с мясом и луком', 8000, 'Выпечка'),
-('Лагман', 'Суп с домашней лапшой и тушёным мясом', 28000, 'Супы'),
-('Манты', 'Паровые пельмени с мясом и луком', 25000, 'Основные блюда'),
-('Шурпа', 'Наваристый суп из баранины с овощами', 30000, 'Супы'),
-('Шашлык (порция)', 'Мясо на углях, подаётся с лепёшкой', 45000, 'Гриль'),
-('Димлама', 'Тушёное мясо с овощами в казане', 32000, 'Основные блюда'),
-('Нон (лепёшка)', 'Свежеиспечённая тандырная лепёшка', 5000, 'Выпечка'),
-('Чайник зелёного чая', 'Ароматный зелёный чай', 7000, 'Напитки'),
-('Компот', 'Домашний компот из сухофруктов', 6000, 'Напитки'),
-('Мастава', 'Рисовый суп с мясом и овощами', 26000, 'Супы'),
-('Бешбармак', 'Мясо с домашней лапшой и луком', 38000, 'Основные блюда');
+('Palov', 'An''anaviy o''zbek palovi, guruch, sabzi va qo''y go''shti bilan', 35000, 'Asosiy taomlar'),
+('Samsa', 'Go''sht va piyoz bilan to''ldirilgan qatlamali pishiriq', 8000, 'Nonvoylik'),
+('Lag''mon', 'Uy lapmasi va qovurilgan go''sht bilan sho''rva', 28000, 'Sho''rvalar'),
+('Manti', 'Go''sht va piyoz bilan bug''da pishirilgan manti', 25000, 'Asosiy taomlar'),
+('Sho''rva', 'Qo''y go''shti va sabzavotlar bilan qaynagan sho''rva', 30000, 'Sho''rvalar'),
+('Shashlik (porsiya)', 'Ko''mirda pishirilgan go''sht, non bilan beriladi', 45000, 'Grill'),
+('Dimlama', 'Qozon ichida sabzavotlar bilan dim qilingan go''sht', 32000, 'Asosiy taomlar'),
+('Non', 'Tandirda yangi pishirilgan non', 5000, 'Nonvoylik'),
+('Yashil choy (choynak)', 'Xushbo''y yashil choy', 7000, 'Ichimliklar'),
+('Kompot', 'Quritilgan mevalardan tayyorlangan uy kompoti', 6000, 'Ichimliklar'),
+('Mastava', 'Go''sht va sabzavotlar bilan guruch sho''rvasi', 26000, 'Sho''rvalar'),
+('Beshbarmaq', 'Uy lapmasi va piyoz bilan go''sht', 38000, 'Asosiy taomlar');

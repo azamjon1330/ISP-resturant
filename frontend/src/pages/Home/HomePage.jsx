@@ -14,29 +14,29 @@ export default function HomePage() {
             🍽️ 🥘 🍜
           </div>
           <h1>YouIt Café</h1>
-          <p>Миллий таомлар кафеси бошқарув тизими</p>
+          <p>Milliy taomlar kafesi boshqaruv tizimi</p>
           <div className="home-divider" />
         </div>
 
         <div className="home-panels">
           <button className="home-panel" onClick={() => navigate('/cashier')}>
             <div className="panel-emoji">🧾</div>
-            <h2>Кассир</h2>
-            <p>Буюртма қабул қилиш ва тўлов</p>
+            <h2>Kassir</h2>
+            <p>Buyurtma qabul qilish va to'lov</p>
             <span className="panel-arrow">→</span>
           </button>
 
           <button className="home-panel" onClick={() => navigate('/kitchen')}>
             <div className="panel-emoji">👨‍🍳</div>
-            <h2>Ошпазхона</h2>
-            <p>Буюртмаларни кўриш ва тайёрлаш</p>
+            <h2>Oshpazxona</h2>
+            <p>Buyurtmalarni ko'rish va tayyorlash</p>
             <span className="panel-arrow">→</span>
           </button>
 
           <button className="home-panel" onClick={() => navigate('/admin')}>
             <div className="panel-emoji">⚙️</div>
-            <h2>Бошқарув</h2>
-            <p>Админ панели ва аналитика</p>
+            <h2>Boshqaruv</h2>
+            <p>Admin paneli va analitika</p>
             <span className="panel-arrow">→</span>
           </button>
         </div>
