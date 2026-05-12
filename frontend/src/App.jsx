@@ -9,6 +9,8 @@ import AdminLayout from './pages/Admin/AdminLayout'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 import AdminOrders from './pages/Admin/AdminOrders'
 import AdminMenu from './pages/Admin/AdminMenu'
+import AdminMenuDetail from './pages/Admin/AdminMenuDetail'
+import AdminInventory from './pages/Admin/AdminInventory'
 import AdminAgents from './pages/Admin/AdminAgents'
 import AdminAnalytics from './pages/Admin/AdminAnalytics'
 
@@ -31,6 +33,8 @@ export default function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="menu" element={<AdminMenu />} />
+          <Route path="menu/:id" element={<AdminMenuDetail />} />
+          <Route path="inventory" element={<AdminInventory />} />
           <Route path="agents" element={<AdminAgents />} />
           <Route path="analytics" element={<AdminAnalytics />} />
         </Route>

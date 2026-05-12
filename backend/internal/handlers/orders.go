@@ -326,6 +326,11 @@ func UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
+	// Auto-deduct ingredient inventory when an order is served
+	if body.Status == "served" {
+		go DeductInventoryForOrder(id)
+	}
+
 	var order models.Order
 	database.DB.QueryRow(`SELECT id, order_code, status FROM orders WHERE id=$1`, id).Scan(&order.ID, &order.OrderCode, &order.Status)
 	BroadcastMessage("order_status_changed", order)

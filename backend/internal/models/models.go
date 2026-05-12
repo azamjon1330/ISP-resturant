@@ -3,14 +3,31 @@ package models
 import "time"
 
 type MenuItem struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Price       float64   `json:"price"`
-	Category    string    `json:"category"`
-	ImageURL    string    `json:"image_url"`
-	Available   bool      `json:"available"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID            int       `json:"id"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description"`
+	Price         float64   `json:"price"`
+	Category      string    `json:"category"`
+	ImageURL      string    `json:"image_url"`
+	Available     bool      `json:"available"`
+	MarkupPercent float64   `json:"markup_percent"`
+	FoodCost      float64   `json:"food_cost"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+type MenuItemDetail struct {
+	ID            int                `json:"id"`
+	Name          string             `json:"name"`
+	Description   string             `json:"description"`
+	Price         float64            `json:"price"`
+	Category      string             `json:"category"`
+	ImageURL      string             `json:"image_url"`
+	Available     bool               `json:"available"`
+	MarkupPercent float64            `json:"markup_percent"`
+	FoodCost      float64            `json:"food_cost"`
+	SalePrice     float64            `json:"sale_price"`
+	Recipe        []RecipeItemDetail `json:"recipe"`
+	CreatedAt     time.Time          `json:"created_at"`
 }
 
 type Order struct {
@@ -37,21 +54,21 @@ type OrderItem struct {
 }
 
 type ReferralAgent struct {
-	ID                      int       `json:"id"`
-	Code                    string    `json:"code"`
-	Name                    string    `json:"name"`
-	Phone                   string    `json:"phone"`
-	GoldCardCode            string    `json:"gold_card_code"`
-	RegularCardCount        int       `json:"regular_card_count"`
-	DiscountAmount          float64   `json:"discount_amount"`
-	BonusThreshold          int       `json:"bonus_threshold"`
-	ReferralBonusThreshold  int       `json:"referral_bonus_threshold"`
-	GoldCardUses            int       `json:"gold_card_uses"`
-	ReferralCardTotalUses   int       `json:"referral_card_total_uses"`
-	TotalBonusEarned        int       `json:"total_bonus_earned"`
-	IsActive                bool      `json:"is_active"`
-	Cards                   []ReferralCard `json:"cards,omitempty"`
-	CreatedAt               time.Time `json:"created_at"`
+	ID                     int            `json:"id"`
+	Code                   string         `json:"code"`
+	Name                   string         `json:"name"`
+	Phone                  string         `json:"phone"`
+	GoldCardCode           string         `json:"gold_card_code"`
+	RegularCardCount       int            `json:"regular_card_count"`
+	DiscountAmount         float64        `json:"discount_amount"`
+	BonusThreshold         int            `json:"bonus_threshold"`
+	ReferralBonusThreshold int            `json:"referral_bonus_threshold"`
+	GoldCardUses           int            `json:"gold_card_uses"`
+	ReferralCardTotalUses  int            `json:"referral_card_total_uses"`
+	TotalBonusEarned       int            `json:"total_bonus_earned"`
+	IsActive               bool           `json:"is_active"`
+	Cards                  []ReferralCard `json:"cards,omitempty"`
+	CreatedAt              time.Time      `json:"created_at"`
 }
 
 type ReferralCard struct {
@@ -94,18 +111,18 @@ type Expense struct {
 }
 
 type Analytics struct {
-	TotalRevenue      float64          `json:"total_revenue"`
-	TotalDiscount     float64          `json:"total_discount"`
-	TotalExpenses     float64          `json:"total_expenses"`
-	MonthlyExpenses   float64          `json:"monthly_expenses"`
-	NetProfit         float64          `json:"net_profit"`
-	TotalOrders       int              `json:"total_orders"`
-	TodayOrders       int              `json:"today_orders"`
-	TodayRevenue      float64          `json:"today_revenue"`
-	PopularItems      []PopularItem    `json:"popular_items"`
-	DailyRevenue      []DailyRevenue   `json:"daily_revenue"`
-	HourlyRevenue     []HourlyRevenue  `json:"hourly_revenue"`
-	CategorySales     []CategorySale   `json:"category_sales"`
+	TotalRevenue    float64        `json:"total_revenue"`
+	TotalDiscount   float64        `json:"total_discount"`
+	TotalExpenses   float64        `json:"total_expenses"`
+	MonthlyExpenses float64        `json:"monthly_expenses"`
+	NetProfit       float64        `json:"net_profit"`
+	TotalOrders     int            `json:"total_orders"`
+	TodayOrders     int            `json:"today_orders"`
+	TodayRevenue    float64        `json:"today_revenue"`
+	PopularItems    []PopularItem  `json:"popular_items"`
+	DailyRevenue    []DailyRevenue `json:"daily_revenue"`
+	HourlyRevenue   []HourlyRevenue `json:"hourly_revenue"`
+	CategorySales   []CategorySale `json:"category_sales"`
 }
 
 type HourlyRevenue struct {
@@ -136,4 +153,53 @@ type CategorySale struct {
 type WSMessage struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
+}
+
+// Inventory models
+
+type Ingredient struct {
+	ID                int       `json:"id"`
+	Name              string    `json:"name"`
+	Category          string    `json:"category"`
+	MeasurementUnit   string    `json:"measurement_unit"`
+	Quantity          float64   `json:"quantity"`
+	UnitPrice         float64   `json:"unit_price"`
+	TotalCost         float64   `json:"total_cost"`
+	LowStockThreshold float64   `json:"low_stock_threshold"`
+	IsLowStock        bool      `json:"is_low_stock"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
+type IngredientPurchase struct {
+	ID               int       `json:"id"`
+	IngredientID     int       `json:"ingredient_id"`
+	QuantityPurchased float64  `json:"quantity_purchased"`
+	UnitPrice        float64   `json:"unit_price"`
+	TotalCost        float64   `json:"total_cost"`
+	Notes            string    `json:"notes"`
+	CreatedAt        time.Time `json:"created_at"`
+}
+
+type RecipeItemDetail struct {
+	ID             int     `json:"id"`
+	MenuItemID     int     `json:"menu_item_id"`
+	IngredientID   int     `json:"ingredient_id"`
+	IngredientName string  `json:"ingredient_name"`
+	QuantityUsed   float64 `json:"quantity_used"`
+	Unit           string  `json:"unit"`
+	IngredientUnit string  `json:"ingredient_unit"`
+	UnitPrice      float64 `json:"unit_price"`
+	Cost           float64 `json:"cost"`
+}
+
+type InventoryLog struct {
+	ID             int       `json:"id"`
+	IngredientID   int       `json:"ingredient_id"`
+	IngredientName string    `json:"ingredient_name"`
+	OrderID        int       `json:"order_id"`
+	MenuItemID     int       `json:"menu_item_id"`
+	QuantityChange float64   `json:"quantity_change"`
+	Action         string    `json:"action"`
+	Notes          string    `json:"notes"`
+	CreatedAt      time.Time `json:"created_at"`
 }

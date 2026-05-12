@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { menuAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Check } from 'lucide-react'
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Check, ChefHat, ExternalLink } from 'lucide-react'
 import '../Admin/AdminLayout.css'
 
 const CATS = ['Основные блюда', 'Супы', 'Гриль', 'Выпечка', 'Напитки', 'Десерты']
 const EMPTY = { name: '', description: '', price: '', category: 'Основные блюда', image_url: '', available: true }
 
 export default function AdminMenu() {
+  const navigate = useNavigate()
   const [menu, setMenu] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
@@ -83,9 +85,9 @@ export default function AdminMenu() {
       {loading ? (
         <div className="adm-loading"><div className="adm-spinner" /><span>Юкланмоқда...</span></div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 14 }}>
           {menu.map(item => (
-            <div key={item.id} className="adm-card" style={{ opacity: item.available ? 1 : 0.6 }}>
+            <div key={item.id} className="adm-card" style={{ opacity: item.available ? 1 : 0.6, position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <span className="adm-badge adm-badge-orange" style={{ fontSize: 11 }}>{item.category}</span>
                 <button onClick={() => toggle(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
@@ -94,13 +96,33 @@ export default function AdminMenu() {
                     : <ToggleLeft size={24} color="#9CA3AF" />}
                 </button>
               </div>
+
               <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>{item.name}</h3>
-              <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 14px', lineHeight: 1.4, minHeight: 36 }}>
+              <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 10px', lineHeight: 1.4, minHeight: 36 }}>
                 {item.description || '—'}
               </p>
+
+              {/* Food cost info strip */}
+              {item.food_cost > 0 && (
+                <div style={{ background: '#F9FAFB', borderRadius: 8, padding: '8px 10px', marginBottom: 10, display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ color: '#6B7280' }}>Таннарх: <strong style={{ color: '#374151' }}>{Number(item.food_cost).toLocaleString()}</strong></span>
+                  {item.markup_percent > 0 && (
+                    <span style={{ color: '#FF6B35', fontWeight: 700 }}>+{item.markup_percent}%</span>
+                  )}
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 16, fontWeight: 800, color: '#FF6B35' }}>{item.price?.toLocaleString()} сум</span>
                 <div style={{ display: 'flex', gap: 6 }}>
+                  {/* Recipe detail link */}
+                  <button
+                    onClick={() => navigate(`/admin/menu/${item.id}`)}
+                    title="Рецепт ва таннарх"
+                    style={{ padding: '6px 10px', borderRadius: 7, border: '1.5px solid #DBEAFE', background: '#EFF6FF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    <ChefHat size={14} color="#2563EB" />
+                  </button>
                   <button
                     onClick={() => openEdit(item)}
                     style={{ padding: '6px 10px', borderRadius: 7, border: '1.5px solid #E5E7EB', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -152,6 +174,17 @@ export default function AdminMenu() {
                 <label className="adm-label">Расм URL (ихтиёрий)</label>
                 <input className="adm-input" value={form.image_url} onChange={f('image_url')} placeholder="https://..." />
               </div>
+
+              {editing && (
+                <div style={{ background: '#EFF6FF', borderRadius: 9, padding: '10px 14px', marginBottom: 4, fontSize: 12, color: '#1D4ED8' }}>
+                  💡 Рецепт ва устама % ни созлаш учун <ExternalLink size={11} style={{ display: 'inline' }} />{' '}
+                  <button type="button" onClick={() => { setModal(false); navigate(`/admin/menu/${editing.id}`) }}
+                    style={{ background: 'none', border: 'none', color: '#1D4ED8', cursor: 'pointer', fontWeight: 700, padding: 0, fontFamily: 'inherit', fontSize: 12 }}>
+                    Рецепт саҳифасига ўтинг
+                  </button>
+                </div>
+              )}
+
               <div className="adm-modal-footer">
                 <button type="button" className="adm-btn adm-btn-secondary" onClick={() => setModal(false)}>Бекор</button>
                 <button type="submit" className="adm-btn adm-btn-primary" disabled={saving}>

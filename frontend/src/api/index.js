@@ -28,6 +28,11 @@ export const menuAPI = {
   update: (id, data) => api.put(`/admin/menu/${id}`, data),
   delete: (id) => api.delete(`/admin/menu/${id}`),
   toggleAvailability: (id, available) => api.patch(`/admin/menu/${id}/availability`, { available }),
+  // Detail + recipe
+  getDetail: (id) => api.get(`/admin/menu/${id}/detail`),
+  updateMarkup: (id, markup_percent) => api.patch(`/admin/menu/${id}/markup`, { markup_percent }),
+  addRecipeItem: (id, data) => api.post(`/admin/menu/${id}/recipe`, data),
+  deleteRecipeItem: (recipeItemId) => api.delete(`/admin/recipe/${recipeItemId}`),
 }
 
 export const ordersAPI = {
@@ -53,6 +58,15 @@ export const analyticsAPI = {
   get: (period, date) => api.get('/admin/analytics', { params: { period, date } }),
   createExpense: (data) => api.post('/admin/expenses', data),
   getExpenses: () => api.get('/admin/expenses'),
+}
+
+export const inventoryAPI = {
+  getAll: () => api.get('/admin/ingredients'),
+  create: (data) => api.post('/admin/ingredients', data),
+  update: (id, data) => api.put(`/admin/ingredients/${id}`, data),
+  restock: (id, data) => api.post(`/admin/ingredients/${id}/restock`, data),
+  delete: (id) => api.delete(`/admin/ingredients/${id}`),
+  getLogs: () => api.get('/admin/inventory/logs'),
 }
 
 export const authAPI = {

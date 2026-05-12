@@ -12,7 +12,8 @@ import (
 
 func GetMenu(c *gin.Context) {
 	rows, err := database.DB.Query(
-		`SELECT id, name, description, price, category, COALESCE(image_url,''), available, created_at
+		`SELECT id, name, description, price, category, COALESCE(image_url,''), available,
+		        COALESCE(markup_percent,0), COALESCE(food_cost,0), created_at
 		 FROM menu_items ORDER BY category, name`,
 	)
 	if err != nil {
@@ -24,7 +25,8 @@ func GetMenu(c *gin.Context) {
 	items := []models.MenuItem{}
 	for rows.Next() {
 		var m models.MenuItem
-		rows.Scan(&m.ID, &m.Name, &m.Description, &m.Price, &m.Category, &m.ImageURL, &m.Available, &m.CreatedAt)
+		rows.Scan(&m.ID, &m.Name, &m.Description, &m.Price, &m.Category, &m.ImageURL, &m.Available,
+			&m.MarkupPercent, &m.FoodCost, &m.CreatedAt)
 		items = append(items, m)
 	}
 	c.JSON(http.StatusOK, items)

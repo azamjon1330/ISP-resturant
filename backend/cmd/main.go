@@ -46,17 +46,38 @@ func main() {
 	admin := r.Group("/api/admin")
 	admin.Use(middleware.AdminAuth())
 	{
+		// Menu
 		admin.GET("/menu", handlers.GetMenu)
 		admin.POST("/menu", handlers.CreateMenuItem)
 		admin.PUT("/menu/:id", handlers.UpdateMenuItem)
 		admin.DELETE("/menu/:id", handlers.DeleteMenuItem)
 		admin.PATCH("/menu/:id/availability", handlers.ToggleMenuItemAvailability)
 
+		// Menu detail & recipe
+		admin.GET("/menu/:id/detail", handlers.GetMenuItemDetail)
+		admin.POST("/menu/:id/recipe", handlers.AddRecipeItem)
+		admin.PATCH("/menu/:id/markup", handlers.UpdateMenuMarkup)
+
+		// Recipe item deletion (by recipe_item id)
+		admin.DELETE("/recipe/:id", handlers.DeleteRecipeItem)
+
+		// Orders
 		admin.GET("/orders", handlers.GetOrders)
+
+		// Analytics & expenses
 		admin.GET("/analytics", handlers.GetAnalytics)
 		admin.POST("/expenses", handlers.CreateExpense)
 		admin.GET("/expenses", handlers.GetExpenses)
 
+		// Inventory
+		admin.GET("/ingredients", handlers.GetIngredients)
+		admin.POST("/ingredients", handlers.CreateIngredient)
+		admin.PUT("/ingredients/:id", handlers.UpdateIngredient)
+		admin.POST("/ingredients/:id/restock", handlers.RestockIngredient)
+		admin.DELETE("/ingredients/:id", handlers.DeleteIngredient)
+		admin.GET("/inventory/logs", handlers.GetInventoryLogs)
+
+		// Agents
 		admin.GET("/agents", handlers.GetAgents)
 		admin.POST("/agents", handlers.CreateAgent)
 		admin.GET("/agents/:id", handlers.GetAgentDetail)
