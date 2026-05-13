@@ -14,14 +14,14 @@ const NAV = [
 
 export default function AdminLayout() {
   const navigate = useNavigate()
-  const token = localStorage.getItem('youit_token')
+  const token = localStorage.getItem('eco_taomlar_token')
 
   if (!token) {
     return <Navigate to="/admin" replace />
   }
 
   const logout = () => {
-    localStorage.removeItem('youit_token')
+    localStorage.removeItem('eco_taomlar_token')
     navigate('/admin', { replace: true })
   }
 
