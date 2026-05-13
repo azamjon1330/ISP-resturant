@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "YouIt Café",
+    "name": "ECO taomlar",
     "slug": "youit-cafe",
     "scheme": "youit-cafe",
     "version": "1.0.0",
@@ -26,7 +26,7 @@
       "permissions": ["CAMERA"]
     },
     "plugins": [
-      ["expo-camera", { "cameraPermission": "YouIt Café needs camera for QR scanning" }]
+      ["expo-camera", { "cameraPermission": "ECO taomlar needs camera for QR scanning" }]
     ],
     "web": {
       "bundler": "metro",

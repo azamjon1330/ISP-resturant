@@ -70,7 +70,7 @@ export default function LoginScreen() {
             <View style={s.logoBox}>
               <Text style={s.logoEmoji}>🥘</Text>
             </View>
-            <Text style={s.appName}>YouIt Café</Text>
+            <Text style={s.appName}>ECO taomlar</Text>
             <Text style={s.tagline}>Milliy taomlar • Agent portali</Text>
             <View style={s.tagsRow}>
               <View style={s.tag}><Text style={s.tagText}>🍽️ Cafe</Text></View>

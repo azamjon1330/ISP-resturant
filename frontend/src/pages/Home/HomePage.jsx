@@ -13,7 +13,7 @@ export default function HomePage() {
           <div className="home-emoji-row">
             🍽️ 🥘 🍜
           </div>
-          <h1>YouIt Café</h1>
+          <h1>ECO taomlar</h1>
           <p>Milliy taomlar kafesi boshqaruv tizimi</p>
           <div className="home-divider" />
         </div>

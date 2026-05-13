@@ -48,7 +48,7 @@ export default function AdminLogin() {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{ fontSize: '56px', marginBottom: '12px' }}>🍽️</div>
-          <h1 style={{ fontSize: '26px', fontWeight: 900, color: '#111827', margin: 0 }}>YouIt Café</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: 900, color: '#111827', margin: 0 }}>ECO taomlar</h1>
           <p style={{ fontSize: '14px', color: '#6B7280', marginTop: '6px' }}>Бошқарув панелига кириш</p>
         </div>
 

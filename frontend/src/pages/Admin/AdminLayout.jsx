@@ -31,7 +31,7 @@ export default function AdminLayout() {
         <div className="al-logo">
           <span className="al-logo-icon">🍽️</span>
           <div>
-            <div className="al-logo-name">YouIt Café</div>
+            <div className="al-logo-name">ECO taomlar</div>
             <div className="al-logo-sub">Бошқарув панели</div>
           </div>
         </div>
