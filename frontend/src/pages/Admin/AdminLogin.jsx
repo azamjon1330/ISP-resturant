@@ -10,7 +10,7 @@ export default function AdminLogin() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  if (localStorage.getItem('youit_token')) {
+  if (localStorage.getItem('eco_taomlar_token')) {
     return <Navigate to="/admin/dashboard" replace />
   }
 
@@ -19,7 +19,7 @@ export default function AdminLogin() {
     setLoading(true)
     try {
       const res = await authAPI.login(username, password)
-      localStorage.setItem('youit_token', res.data.token)
+      localStorage.setItem('eco_taomlar_token', res.data.token)
       navigate('/admin/dashboard', { replace: true })
     } catch {
       toast.error('Нотўғри логин ёки парол')
