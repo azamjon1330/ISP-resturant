@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"youit-backend/internal/database"
@@ -62,6 +63,95 @@ func CreateOrder(c *gin.Context) {
 			Quantity:   item.Quantity,
 			UnitPrice:  price,
 		})
+	}
+
+	// ─── Проверка наличия ингредиентов на складе ───────────────────────────
+	type ingNeed struct {
+		name    string
+		unit    string
+		need    float64
+		inStock float64
+	}
+	needs := map[int]*ingNeed{}
+
+	for _, item := range req.Items {
+		rrows, qerr := tx.Query(`
+			SELECT ri.ingredient_id, ri.quantity_used, ri.unit,
+			       i.name, i.measurement_unit, i.quantity
+			FROM recipe_items ri
+			JOIN ingredients i ON ri.ingredient_id = i.id
+			WHERE ri.menu_item_id = $1
+		`, item.MenuItemID)
+		if qerr != nil {
+			continue
+		}
+		for rrows.Next() {
+			var ingID int
+			var qtyUsed, stock float64
+			var recipeUnit, ingName, ingUnit string
+			rrows.Scan(&ingID, &qtyUsed, &recipeUnit, &ingName, &ingUnit, &stock)
+			required := unitCostFactor(qtyUsed*float64(item.Quantity), recipeUnit, ingUnit)
+			if existing, ok := needs[ingID]; ok {
+				existing.need += required
+			} else {
+				needs[ingID] = &ingNeed{name: ingName, unit: ingUnit, need: required, inStock: stock}
+			}
+		}
+		rrows.Close()
+	}
+
+	var shortages []string
+	for _, n := range needs {
+		if n.need > n.inStock {
+			shortages = append(shortages, fmt.Sprintf("%s (керак: %.2f %s, мавжуд: %.2f %s)",
+				n.name, n.need, n.unit, n.inStock, n.unit))
+		}
+	}
+
+	if len(shortages) > 0 {
+		// Сохраняем заказ со статусом "rejected" (Отказ); склад не уменьшаем.
+		var rejectedCode string
+		for {
+			rejectedCode = generateOrderCode()
+			var exists bool
+			tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM orders WHERE order_code=$1)`, rejectedCode).Scan(&exists)
+			if !exists {
+				break
+			}
+		}
+
+		var rejectedID int
+		insErr := tx.QueryRow(
+			`INSERT INTO orders (order_code, total_price, discount_amount, final_price, status, card_code, note)
+			 VALUES ($1,$2,0,$2,'rejected',$3,$4) RETURNING id`,
+			rejectedCode, totalPrice, req.CardCode, req.Note,
+		).Scan(&rejectedID)
+		if insErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": insErr.Error()})
+			return
+		}
+
+		for i := range orderItems {
+			tx.Exec(
+				`INSERT INTO order_items (order_id, menu_item_id, item_name, quantity, unit_price)
+				 VALUES ($1,$2,$3,$4,$5)`,
+				rejectedID, orderItems[i].MenuItemID, orderItems[i].ItemName,
+				orderItems[i].Quantity, orderItems[i].UnitPrice,
+			)
+		}
+
+		if cmtErr := tx.Commit(); cmtErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Commit error"})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "Омборда ингредиентлар етарли эмас: " + strings.Join(shortages, "; "),
+			"status":     "rejected",
+			"order_code": rejectedCode,
+			"shortages":  shortages,
+		})
+		return
 	}
 
 	var discountAmount float64
