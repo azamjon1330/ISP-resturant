@@ -1,0 +1,148 @@
+package main
+
+import (
+	"log"
+	"os"
+
+	"youit-backend/internal/database"
+	"youit-backend/internal/handlers"
+	"youit-backend/internal/middleware"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	database.Connect()
+
+	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
+	// WebSocket
+	r.GET("/ws", handlers.WSHandler)
+
+	// Public routes
+	api := r.Group("/api")
+	{
+		api.POST("/auth/login", handlers.Login)
+		api.GET("/menu", handlers.GetMenu)
+		api.GET("/orders/:code", handlers.GetOrderByCode)
+		api.POST("/orders", middleware.ResolveCustomerOptional(), handlers.CreateOrder)
+		api.GET("/orders", handlers.GetOrders)
+		api.PATCH("/orders/:id/status", handlers.UpdateOrderStatus)
+		api.POST("/cards/scan", handlers.ScanCard)
+		api.GET("/agents/code/:code", handlers.GetAgentByCode)
+		api.GET("/agents/code/:code/history", handlers.GetAgentHistory)
+
+		// Customer auth (no SMS — phone-based registration)
+		api.POST("/customer/register", handlers.CustomerRegisterOrLogin)
+		api.POST("/customer/login", handlers.CustomerLogin)
+
+		// Public promo preview — used by the shop to show discount before checkout
+		api.POST("/promo/check", handlers.CheckPromoCode)
+	}
+
+	// Customer-authenticated routes
+	customer := r.Group("/api/customer")
+	customer.Use(middleware.CustomerAuth())
+	{
+		customer.GET("/me", handlers.CustomerMe)
+		customer.PUT("/me", handlers.CustomerUpdateMe)
+		customer.GET("/orders", handlers.CustomerOrders)
+		customer.GET("/addresses", handlers.CustomerAddresses)
+		customer.POST("/addresses", handlers.CustomerAddAddress)
+		customer.DELETE("/addresses/:id", handlers.CustomerDeleteAddress)
+		customer.POST("/orders/:code/cancel", handlers.CustomerCancelOrder)
+	}
+
+	// Courier (delivery rider) routes
+	api.POST("/courier/login", handlers.CourierLogin)
+	api.GET("/courier/courier-of/:code", handlers.PublicCourierForOrder)
+	courier := r.Group("/api/courier")
+	courier.Use(middleware.CourierAuth())
+	{
+		courier.GET("/me", handlers.CourierMe)
+		courier.GET("/orders/available", handlers.CourierAvailableOrders)
+		courier.GET("/orders/mine", handlers.CourierMyOrders)
+		courier.POST("/orders/:id/accept", handlers.CourierAcceptOrder)
+		courier.POST("/orders/:id/complete", handlers.CourierCompleteOrder)
+		courier.POST("/location", handlers.CourierUpdateLocation)
+	}
+
+	// Admin routes (protected)
+	admin := r.Group("/api/admin")
+	admin.Use(middleware.AdminAuth())
+	{
+		// Menu
+		admin.GET("/menu", handlers.GetMenu)
+		admin.POST("/menu", handlers.CreateMenuItem)
+		admin.PUT("/menu/:id", handlers.UpdateMenuItem)
+		admin.DELETE("/menu/:id", handlers.DeleteMenuItem)
+		admin.PATCH("/menu/:id/availability", handlers.ToggleMenuItemAvailability)
+
+		// Menu detail & recipe
+		admin.GET("/menu/:id/detail", handlers.GetMenuItemDetail)
+		admin.POST("/menu/:id/recipe", handlers.AddRecipeItem)
+		admin.PATCH("/menu/:id/markup", handlers.UpdateMenuMarkup)
+
+		// Recipe item deletion (by recipe_item id)
+		admin.DELETE("/recipe/:id", handlers.DeleteRecipeItem)
+
+		// Orders
+		admin.GET("/orders", handlers.GetOrders)
+
+		// Analytics & expenses
+		admin.GET("/analytics", handlers.GetAnalytics)
+		admin.POST("/expenses", handlers.CreateExpense)
+		admin.GET("/expenses", handlers.GetExpenses)
+
+		// Inventory
+		admin.GET("/ingredients", handlers.GetIngredients)
+		admin.POST("/ingredients", handlers.CreateIngredient)
+		admin.PUT("/ingredients/:id", handlers.UpdateIngredient)
+		admin.POST("/ingredients/:id/restock", handlers.RestockIngredient)
+		admin.DELETE("/ingredients/:id", handlers.DeleteIngredient)
+		admin.GET("/inventory/logs", handlers.GetInventoryLogs)
+
+		// Agents
+		admin.GET("/agents", handlers.GetAgents)
+		admin.POST("/agents", handlers.CreateAgent)
+		admin.GET("/agents/:id", handlers.GetAgentDetail)
+		admin.PUT("/agents/:id", handlers.UpdateAgent)
+		admin.GET("/agents/:id/bonuses", handlers.GetAgentBonuses)
+		admin.DELETE("/agents/:id", handlers.DeleteAgent)
+
+		// Promo QR discount (multiple codes, optional expiry)
+		admin.GET("/promo", handlers.GetPromoDiscount)
+		admin.POST("/promo", handlers.CreatePromoDiscount)
+		admin.PUT("/promo/:id", handlers.UpdatePromoDiscount)
+		admin.DELETE("/promo/:id", handlers.DeletePromoDiscount)
+
+		// VIP cards
+		admin.GET("/vip", handlers.GetVipCards)
+		admin.POST("/vip", handlers.CreateVipCard)
+		admin.PUT("/vip/:id", handlers.UpdateVipCard)
+		admin.DELETE("/vip/:id", handlers.DeleteVipCard)
+
+		// Couriers
+		admin.GET("/couriers", handlers.AdminListCouriers)
+		admin.POST("/couriers", handlers.AdminCreateCourier)
+		admin.PUT("/couriers/:id", handlers.AdminUpdateCourier)
+		admin.DELETE("/couriers/:id", handlers.AdminDeleteCourier)
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("YouIt Backend running on :%s", port)
+	r.Run(":" + port)
+}
