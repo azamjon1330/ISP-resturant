@@ -1,987 +1,1182 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { menuAPI, ordersAPI, customerAPI } from '../../api'
-import toast from 'react-hot-toast'
-import {
-  ShoppingCart, X, Plus, Minus, Trash2, ChevronRight, ChevronLeft,
-  MapPin, Phone, User, Truck, Star, Clock, Leaf, Globe, LogOut,
-  ClipboardList, Check, Loader, ChevronDown,
-} from 'lucide-react'
 import './LandingPage.css'
 
-/* ── TRANSLATIONS ──────────────────────────────────────────── */
+// ─── Translations ─────────────────────────────────────────────────────────────
 const LANG = {
   uz: {
-    appName: 'ECO Taomlar',
-    navMenu: 'Menyu', navAbout: 'Biz haqimizda', navContact: 'Aloqa',
-    btnSignup: "Ro'yxat / Kirish",
-    myOrders: 'Buyurtmalarim', logout: 'Chiqish',
-    heroTag:   ['🥘 Milliy taom', '🍲 Sho\'rva', '🍜 Lagman'],
-    heroTitle: ['Mazali O\'zbek', 'Issiq va To\'yimli', 'Qo\'lda Tayyorlangan'],
-    heroAccent:['Plov', 'Sho\'rva', 'Lagman'],
-    heroSub: [
-      'An\'anaviy retsept bo\'yicha tayyorlangan, siz uchun yetkaziladi',
-      'Ko\'p soatlik pishirilgan, to\'yimli va mazali',
-      'Uy uslubida, sevgi bilan tayyorlangan taom',
+    nav_menu: 'Menyu',
+    nav_about: 'Haqimizda',
+    cart: 'Savat',
+    auth_btn: "Ro'yxat / Kirish",
+    orders_btn: 'Buyurtmalarim',
+    logout: 'Chiqish',
+    hero_tag: '🥘 Milliy taom',
+    hero_btn1: 'Buyurtma berish',
+    hero_btn2: "Menyuni ko'rish",
+    hero_badge1: 'Tez yetkazish',
+    hero_badge2: '100% Halol',
+    hero_badge3: 'Milliy taomlar',
+    slides: [
+      { title: "Mazali O'zbek", titleOrange: 'Plov', sub: "An'anaviy retsept bo'yicha tayyorlangan, qo'zichoq go'shti va ziravorlar bilan." },
+      { title: "Issiq va To'yimli", titleOrange: "Sho'rva", sub: "Qo'y go'shtidan tayyorlangan milliy sho'rvamiz sizni to'yintiradi." },
+      { title: "Qo'lda Tayyorlangan", titleOrange: 'Lagman', sub: "Yangi qo'lda yoylgan xamir va go'sht bilan tayyorlangan an'anaviy lagman." },
     ],
-    heroCta: 'Hozir buyurtma bering',
-    heroBrowse: 'Menyu ko\'rish',
-    stat1: 'Mamnun mijoz', stat2: 'Taom turi',
-    stat3: 'Yetkazish', stat4: 'Halol',
-    catsTitle: 'Kategoriyani tanlang',
-    catAll: 'Barchasi',
-    popularTitle: 'Mashhur Taomlar',
-    popularSub: 'Har kuni yangi tayyorlangan',
-    addCart: 'Savatga', addedCart: 'Savatda',
-    offersTitle: 'Maxsus Takliflar',
-    offer1t: '🚚 Bepul yetkazish', offer1s: '50 000 so\'mdan yuqori buyurtmaga',
-    offer2t: '🔥 Birinchi buyurtma', offer2s: 'Birinchi buyurtmada 10% chegirma',
-    offer3t: '⭐ VIP bonus', offer3s: 'Har 10 buyurtmada bepul taom',
-    howTitle: 'Qanday ishlaydi?',
-    step1t: 'Tanlang', step1s: 'Menyudan sevimli taomingizni tanlang',
-    step2t: 'Buyurtma bering', step2s: 'Manzilingizni kiriting va tasdiqlang',
-    step3t: 'Oling', step3s: '45 daqiqada eshigingizga yetkazamiz',
-    reviewsTitle: 'Mijozlar fikri',
-    r1n: 'Aziz T.', r1t: 'Plov juda mazali! Har doim shu yerdan buyurtma qilaman.',
-    r2n: 'Malika S.', r2t: 'Tez yetkazildi, taomlar juda chiroyli va issiq edi.',
-    r3n: 'Bobur K.', r3t: 'Lagman ajoyib! Uy uslubida tayyorlangan kabi.',
-    footerDesc: 'O\'zbek milliy oshxonasining eng yaxshi ta\'mi',
-    footerLinks: 'Sahifalar', footerContact: 'Aloqa',
-    footerStaff: 'Xodimlar paneli',
-    cartTitle: 'Savat', cartEmpty: 'Savat bo\'sh', cartBrowse: 'Menyudan tanlang',
-    cartCheckout: 'Buyurtma berish',
-    cartTotal: 'Jami',
-    authTitle: "Ro'yxatdan o'ting",
-    authSubtitle: "Ro'yxatdan o'ting yoki kiring",
-    tabRegister: "Ro'yxat", tabLogin: 'Kirish',
-    phoneLbl: 'Telefon raqami', phonePh: '+998 90 123 45 67',
-    nameLbl: 'Ism *', namePh: 'Ismingiz',
-    lastNameLbl: 'Familiya', lastNamePh: 'Familiyangiz (ixtiyoriy)',
-    regBtn: "Ro'yxatdan o'tish", loginBtn: 'Kirish',
-    regNote: 'Telefon raqamingiz orqali tanib olamiz',
-    switchToLogin: 'Hisobingiz bormi? Kiring',
-    switchToReg: "Ro'yxatdan o'tmadingizmi? Ro'yxat",
-    checkoutTitle: 'Buyurtmani rasmiylashtirish',
-    addrLbl: 'Yetkazish manzili *', addrPh: 'Ko\'cha, uy, xonadon...',
-    noteLbl: 'Izoh', notePh: 'Oshpazga izoh (ixtiyoriy)',
-    promoLbl: 'Promokod', promoPh: 'Promokodingiz',
-    promoBtn: 'Qo\'llash',
-    orderBtn: 'Buyurtma berish', ordering: 'Yuborilmoqda...',
-    ordersTitle: 'Mening buyurtmalarim',
-    ordersEmpty: 'Hali buyurtma yo\'q',
-    ordersHint: 'Birinchi buyurtmangizni qiling!',
-    cancelBtn: 'Bekor qilish',
-    cancelConfirm: 'Buyurtmani bekor qilmoqchimisiz?',
-    orderDate: 'Sana',
-    statusPending: 'Qabul qilindi', statusCooking: 'Tayyorlanmoqda',
-    statusReady: 'Tayyor', statusOnWay: 'Yo\'lda', statusServed: 'Yetkazildi',
-    statusRejected: 'Bekor qilindi',
-    sum: 'so\'m',
+    stat1_num: '500+', stat1_lbl: 'Mamnun mijoz',
+    stat2_num: '30+',  stat2_lbl: 'Taom turi',
+    stat3_num: '30-45',stat3_lbl: 'daqiqa yetkazish',
+    stat4_num: '100%', stat4_lbl: 'Halol taomlar',
+    cat_all: 'Barchasi',
+    menu_label: 'MENYU',
+    menu_title: 'Mashhur',
+    menu_title_orange: 'Taomlar',
+    menu_sub: "Eng ko'p buyurtma qilingan taomlarimizdan tanlang",
+    menu_add: 'Savatga',
+    menu_empty: 'Taomlar topilmadi',
+    offers_label: 'TAKLIFLAR',
+    offers_title: 'Maxsus',
+    offers_title_orange: 'Chegirmalar',
+    offer1_title: 'Bepul yetkazish',
+    offer1_desc: "50 000 so'm dan yuqori buyurtmalarda yetkazish bepul!",
+    offer2_title: '20% Chegirma',
+    offer2_desc: 'Birinchi buyurtmangizda 20% chegirma oling. Hoziroq buyurtma bering!',
+    offer3_title: 'VIP Bonus',
+    offer3_desc: "Har bir buyurtmadan ball to'plang va sovg'alar yuting!",
+    how_label: 'JARAYON',
+    how_title: 'Qanday',
+    how_title_orange: 'Ishlaydi?',
+    step1_title: 'Tanlang',
+    step1_desc: 'Menyudan sevimli taomingizni tanlang',
+    step2_title: 'Buyurtma bering',
+    step2_desc: "Yetkazish manzilini kiriting va buyurtmani tasdiqlang",
+    step3_title: 'Oling',
+    step3_desc: "Taomingiz 30-45 daqiqada eshigingizga yetkaziladi",
+    step_label: (n) => `0${n}-qadam`,
+    test_label: 'SHARHLAR',
+    test_title: 'Mijozlar',
+    test_title_orange: 'Fikri',
+    reviews: [
+      { name: 'Aziz Karimov', sub: 'Toshkent', text: "ECO Taomlar plov tayyorlashda hech kimga o'xshamaydi! Har doim yangi va mazali. Tez yetkazishadi ham. Tavsiya qilaman!", avatar: '🧑', color: '#e05a28' },
+      { name: 'Malika Yusupova', sub: 'Chilonzor', text: "Lagmanlari ajoyib! Qo'lda tayyorlangan, shundayi ko'rinadi. Narxi ham mos, sifati a'lo. Oila bilan mamnunmiz!", avatar: '👩', color: '#6366f1' },
+      { name: 'Jasur Nazarov', sub: 'Yunusobod', text: "Sho'rvasi uyda tayyorlagandek mazali. Har haftada kamida bir marta buyurtma beraman. Xizmat ham zo'r!", avatar: '🧔', color: '#059669' },
+    ],
+    auth_register: "Ro'yxatdan o'tish",
+    auth_login: 'Kirish',
+    auth_phone: 'Telefon raqam',
+    auth_fname: 'Ism (majburiy)',
+    auth_lname: 'Familiya (ixtiyoriy)',
+    auth_register_btn: 'Davom etish',
+    auth_login_btn: 'Kirish',
+    auth_note: "Ro'yxatdan o'ting — keyingi safar faqat telefon raqam bilan kirasiz",
+    auth_login_note: 'Telefon raqamingizni kiriting va tizimga kiring',
+    auth_error_phone: 'Telefon raqam kiriting (masalan: +998901234567)',
+    auth_error_fname: 'Ismingizni kiriting',
+    orders_title: 'Mening buyurtmalarim',
+    orders_new: '+ Yangi buyurtma',
+    orders_loading: 'Yuklanmoqda...',
+    orders_empty: "Buyurtmalar yo'q",
+    order_cancel: 'Bekor qilish',
+    order_cancel_confirm: "Haqiqatan ham bekor qilmoqchimisiz?",
+    order_total: 'Jami:',
+    status_pending: 'Qabul',
+    status_cooking: 'Tayyorlanmoqda',
+    status_ready: 'Tayyor',
+    status_on_way: "Yo'lda",
+    status_delivered: 'Yetkazildi',
+    status_cancelled: 'Bekor qilindi',
+    checkout_title: 'Buyurtmani rasmiylashtirish',
+    checkout_items: 'Tanlangan taomlar',
+    checkout_address: 'Yetkazish manzili',
+    checkout_address_ph: "Ko'cha, uy, xonadon raqami...",
+    checkout_note: 'Izoh (ixtiyoriy)',
+    checkout_note_ph: "Qo'shimcha ko'rsatma...",
+    checkout_promo: 'Promo kod',
+    checkout_promo_ph: 'Promo kodni kiriting',
+    checkout_promo_apply: "Qo'llash",
+    checkout_total: 'Jami:',
+    checkout_discount: 'Chegirma:',
+    checkout_btn: 'Buyurtma berish',
+    checkout_required: 'Yetkazish manzilini kiriting',
+    success_title: 'Buyurtma qabul qilindi!',
+    success_sub: 'Taomingiz 30-45 daqiqa ichida yetkaziladi',
+    toast_added: (n) => `"${n}" savatga qo'shildi`,
+    toast_removed: (n) => `"${n}" savatdan olib tashlandi`,
+    toast_order_ok: 'Buyurtma muvaffaqiyatli berildi!',
+    toast_order_err: 'Xatolik yuz berdi',
+    toast_login_ok: (n) => `Xush kelibsiz, ${n}!`,
+    toast_reg_ok: (n) => `Ro'yxatdan o'tdingiz, ${n}!`,
+    toast_cancel_ok: 'Buyurtma bekor qilindi',
+    toast_promo_ok: (d) => `Promo qo'llandi! ${d}% chegirma`,
+    toast_promo_err: 'Promo kod yaroqsiz',
+    toast_ws_update: (c, s) => `#${c} buyurtma holati yangilandi: ${s}`,
+    footer_desc: "O'zbek milliy taomlarini tez va sifatli yetkazamiz.",
+    footer_links_title: 'Havolalar',
+    footer_contact_title: "Bog'lanish",
+    footer_staff_title: 'Xodimlar',
+    footer_staff_link: 'Xodimlar paneli',
+    footer_phone: '+998 71 123 45 67',
+    footer_address: "Toshkent sh., Amir Temur ko'chasi 10",
+    footer_hours: '09:00 — 23:00 (har kuni)',
+    footer_copy: '© 2025 ECO Taomlar. Barcha huquqlar himoyalangan.',
+    footer_tagline: 'Mazali taomlar — tez yetkazish',
+    sum: "so'm",
   },
   ru: {
-    appName: 'ECO Taomlar',
-    navMenu: 'Меню', navAbout: 'О нас', navContact: 'Контакты',
-    btnSignup: 'Войти / Регистрация',
-    myOrders: 'Мои заказы', logout: 'Выйти',
-    heroTag:   ['🥘 Нац. блюдо', '🍲 Шурпа', '🍜 Лагман'],
-    heroTitle: ['Вкусный Узбекский', 'Горячая и Сытная', 'Домашний'],
-    heroAccent:['Плов', 'Шурпа', 'Лагман'],
-    heroSub: [
-      'Приготовлен по традиционному рецепту, доставим к вам',
-      'Часами томлённый, сытный и ароматный',
-      'Приготовлен дома, с любовью и заботой',
+    nav_menu: 'Меню',
+    nav_about: 'О нас',
+    cart: 'Корзина',
+    auth_btn: 'Войти / Регистрация',
+    orders_btn: 'Мои заказы',
+    logout: 'Выйти',
+    hero_tag: '🥘 Национальная еда',
+    hero_btn1: 'Сделать заказ',
+    hero_btn2: 'Смотреть меню',
+    hero_badge1: 'Быстрая доставка',
+    hero_badge2: '100% Халяль',
+    hero_badge3: 'Национальные блюда',
+    slides: [
+      { title: 'Вкусный Узбекский', titleOrange: 'Плов', sub: 'Приготовлен по традиционному рецепту с бараниной и специями.' },
+      { title: 'Горячая и Сытная', titleOrange: 'Шурпа', sub: 'Наша национальная шурпа из баранины утолит любой голод.' },
+      { title: 'Домашний', titleOrange: 'Лагман', sub: 'Традиционный лагман с ручной лапшой и сочным мясом.' },
     ],
-    heroCta: 'Заказать сейчас',
-    heroBrowse: 'Смотреть меню',
-    stat1: 'Довольных клиентов', stat2: 'Видов блюд',
-    stat3: 'Доставка', stat4: 'Халяль',
-    catsTitle: 'Выберите категорию',
-    catAll: 'Все',
-    popularTitle: 'Популярные блюда',
-    popularSub: 'Ежедневно свежеприготовленные',
-    addCart: 'В корзину', addedCart: 'В корзине',
-    offersTitle: 'Специальные предложения',
-    offer1t: '🚚 Бесплатная доставка', offer1s: 'На заказы от 50 000 сум',
-    offer2t: '🔥 Первый заказ', offer2s: 'Скидка 10% на первый заказ',
-    offer3t: '⭐ VIP бонус', offer3s: 'Каждый 10-й заказ бесплатно',
-    howTitle: 'Как это работает?',
-    step1t: 'Выберите', step1s: 'Выберите любимые блюда из меню',
-    step2t: 'Закажите', step2s: 'Укажите адрес и подтвердите заказ',
-    step3t: 'Получите', step3s: 'Доставим за 45 минут к вашей двери',
-    reviewsTitle: 'Отзывы клиентов',
-    r1n: 'Азиз Т.', r1t: 'Плов очень вкусный! Всегда заказываю здесь.',
-    r2n: 'Малика С.', r2t: 'Быстрая доставка, блюда горячие и красивые.',
-    r3n: 'Бобур К.', r3t: 'Лагман отличный! Как домашний.',
-    footerDesc: 'Лучший вкус узбекской национальной кухни',
-    footerLinks: 'Страницы', footerContact: 'Контакты',
-    footerStaff: 'Панель сотрудников',
-    cartTitle: 'Корзина', cartEmpty: 'Корзина пуста', cartBrowse: 'Выбрать из меню',
-    cartCheckout: 'Оформить заказ',
-    cartTotal: 'Итого',
-    authTitle: 'Регистрация / Вход',
-    authSubtitle: 'Зарегистрируйтесь или войдите',
-    tabRegister: 'Регистрация', tabLogin: 'Войти',
-    phoneLbl: 'Номер телефона', phonePh: '+998 90 123 45 67',
-    nameLbl: 'Имя *', namePh: 'Ваше имя',
-    lastNameLbl: 'Фамилия', lastNamePh: 'Фамилия (необязательно)',
-    regBtn: 'Зарегистрироваться', loginBtn: 'Войти',
-    regNote: 'Узнаём вас по номеру телефона',
-    switchToLogin: 'Уже есть аккаунт? Войти',
-    switchToReg: 'Нет аккаунта? Регистрация',
-    checkoutTitle: 'Оформление заказа',
-    addrLbl: 'Адрес доставки *', addrPh: 'Улица, дом, квартира...',
-    noteLbl: 'Комментарий', notePh: 'Комментарий для повара (необязательно)',
-    promoLbl: 'Промокод', promoPh: 'Ваш промокод',
-    promoBtn: 'Применить',
-    orderBtn: 'Заказать', ordering: 'Отправляется...',
-    ordersTitle: 'Мои заказы',
-    ordersEmpty: 'Заказов пока нет',
-    ordersHint: 'Сделайте первый заказ!',
-    cancelBtn: 'Отменить',
-    cancelConfirm: 'Отменить заказ?',
-    orderDate: 'Дата',
-    statusPending: 'Принят', statusCooking: 'Готовится',
-    statusReady: 'Готов', statusOnWay: 'В пути', statusServed: 'Доставлен',
-    statusRejected: 'Отменён',
+    stat1_num: '500+', stat1_lbl: 'Довольных клиентов',
+    stat2_num: '30+',  stat2_lbl: 'Видов блюд',
+    stat3_num: '30-45',stat3_lbl: 'минут доставка',
+    stat4_num: '100%', stat4_lbl: 'Халяль еда',
+    cat_all: 'Все',
+    menu_label: 'МЕНЮ',
+    menu_title: 'Популярные',
+    menu_title_orange: 'Блюда',
+    menu_sub: 'Выберите из наших самых заказываемых блюд',
+    menu_add: 'В корзину',
+    menu_empty: 'Блюда не найдены',
+    offers_label: 'ПРЕДЛОЖЕНИЯ',
+    offers_title: 'Специальные',
+    offers_title_orange: 'Скидки',
+    offer1_title: 'Бесплатная доставка',
+    offer1_desc: 'При заказе от 50 000 сум доставка бесплатная!',
+    offer2_title: 'Скидка 20%',
+    offer2_desc: 'Получите 20% скидку на первый заказ. Заказывайте сейчас!',
+    offer3_title: 'VIP Бонус',
+    offer3_desc: 'Копите баллы с каждого заказа и выигрывайте призы!',
+    how_label: 'КАК ЭТО РАБОТАЕТ',
+    how_title: 'Как это',
+    how_title_orange: 'Работает?',
+    step1_title: 'Выберите',
+    step1_desc: 'Выберите любимое блюдо из меню',
+    step2_title: 'Оформите заказ',
+    step2_desc: 'Введите адрес доставки и подтвердите заказ',
+    step3_title: 'Получите',
+    step3_desc: 'Ваше блюдо будет доставлено за 30-45 минут',
+    step_label: (n) => `Шаг 0${n}`,
+    test_label: 'ОТЗЫВЫ',
+    test_title: 'Мнения',
+    test_title_orange: 'Клиентов',
+    reviews: [
+      { name: 'Азиз Каримов', sub: 'Ташкент', text: 'ECO Taomlar готовит плов как никто другой! Всегда свежо и вкусно. Доставляют быстро. Рекомендую!', avatar: '🧑', color: '#e05a28' },
+      { name: 'Малика Юсупова', sub: 'Чиланзар', text: 'Лагман просто восхитительный! Ручной, это видно. Цена соответствует качеству. Вся семья в восторге!', avatar: '👩', color: '#6366f1' },
+      { name: 'Жасур Назаров', sub: 'Юнусабад', text: 'Шурпа как домашняя! Заказываю минимум раз в неделю. Сервис тоже отличный!', avatar: '🧔', color: '#059669' },
+    ],
+    auth_register: 'Регистрация',
+    auth_login: 'Войти',
+    auth_phone: 'Номер телефона',
+    auth_fname: 'Имя (обязательно)',
+    auth_lname: 'Фамилия (необязательно)',
+    auth_register_btn: 'Продолжить',
+    auth_login_btn: 'Войти',
+    auth_note: 'Зарегистрируйтесь — в следующий раз войдите только по номеру',
+    auth_login_note: 'Введите номер телефона для входа',
+    auth_error_phone: 'Введите номер телефона (например: +998901234567)',
+    auth_error_fname: 'Введите ваше имя',
+    orders_title: 'Мои заказы',
+    orders_new: '+ Новый заказ',
+    orders_loading: 'Загрузка...',
+    orders_empty: 'Заказов нет',
+    order_cancel: 'Отменить',
+    order_cancel_confirm: 'Вы уверены, что хотите отменить?',
+    order_total: 'Итого:',
+    status_pending: 'Принят',
+    status_cooking: 'Готовится',
+    status_ready: 'Готов',
+    status_on_way: 'В пути',
+    status_delivered: 'Доставлен',
+    status_cancelled: 'Отменён',
+    checkout_title: 'Оформление заказа',
+    checkout_items: 'Выбранные блюда',
+    checkout_address: 'Адрес доставки',
+    checkout_address_ph: 'Улица, дом, квартира...',
+    checkout_note: 'Примечание (необязательно)',
+    checkout_note_ph: 'Дополнительные инструкции...',
+    checkout_promo: 'Промо код',
+    checkout_promo_ph: 'Введите промо код',
+    checkout_promo_apply: 'Применить',
+    checkout_total: 'Итого:',
+    checkout_discount: 'Скидка:',
+    checkout_btn: 'Оформить заказ',
+    checkout_required: 'Введите адрес доставки',
+    success_title: 'Заказ принят!',
+    success_sub: 'Ваше блюдо будет доставлено за 30-45 минут',
+    toast_added: (n) => `"${n}" добавлен в корзину`,
+    toast_removed: (n) => `"${n}" удалён из корзины`,
+    toast_order_ok: 'Заказ успешно оформлен!',
+    toast_order_err: 'Произошла ошибка',
+    toast_login_ok: (n) => `Добро пожаловать, ${n}!`,
+    toast_reg_ok: (n) => `Вы зарегистрированы, ${n}!`,
+    toast_cancel_ok: 'Заказ отменён',
+    toast_promo_ok: (d) => `Промо применён! ${d}% скидка`,
+    toast_promo_err: 'Промо код недействителен',
+    toast_ws_update: (c, s) => `Заказ #${c} обновлён: ${s}`,
+    footer_desc: 'Доставляем узбекские национальные блюда быстро и качественно.',
+    footer_links_title: 'Ссылки',
+    footer_contact_title: 'Контакты',
+    footer_staff_title: 'Сотрудники',
+    footer_staff_link: 'Панель сотрудников',
+    footer_phone: '+998 71 123 45 67',
+    footer_address: 'г. Ташкент, ул. Амира Темура 10',
+    footer_hours: '09:00 — 23:00 (ежедневно)',
+    footer_copy: '© 2025 ECO Taomlar. Все права защищены.',
+    footer_tagline: 'Вкусная еда — быстрая доставка',
     sum: 'сум',
   },
 }
 
-const HERO_IMGS = [
+// ─── Constants ────────────────────────────────────────────────────────────────
+const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1645696301019-35adcc18b6da?auto=format&fit=crop&w=1400&q=90',
   'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1400&q=90',
   'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1400&q=90',
 ]
 
-const CAT_EMOJI = {
-  "Sho'rva":'🍲','Shurpa':'🍲','Ikkinchi taom':'🍛','Milliy taomlar':'🫕',
-  'Salatlar':'🥗','Ichimliklar':'🥤','Dessert':'🍮','Non':'🫓',
-  'Lagman':'🍜','Kebab':'🥩','Grill':'🔥','default':'🍽️',
+const CAT_EMOJI_MAP = {
+  plov: '🍚', lagman: '🍜', shorva: '🍲', kebab: '🥩',
+  salat: '🥗', non: '🫓', somsa: '🥟', manti: '🥟',
+  shashlik: '🔥', dimlama: '🫕', mastava: '🍲',
+  ichimlik: '🥤', dessert: '🍮', default: '🍽️',
 }
-const CAT_GRAD = {
-  "Sho'rva":'linear-gradient(135deg,#ff6b35,#e8511a)',
-  'Ikkinchi taom':'linear-gradient(135deg,#ffb347,#ff6b35)',
-  'Milliy taomlar':'linear-gradient(135deg,#f7971e,#ffd200)',
-  'Salatlar':'linear-gradient(135deg,#56ab2f,#a8e063)',
-  'Ichimliklar':'linear-gradient(135deg,#667eea,#764ba2)',
-  'Dessert':'linear-gradient(135deg,#f857a6,#ff5858)',
-  'default':'linear-gradient(135deg,#ff6b35,#ffb347)',
-}
-const STATUS_STEPS = ['pending','cooking','ready','on_way','served']
 
-function getEmoji(cat){ return CAT_EMOJI[cat]||CAT_EMOJI.default }
-function getGrad(cat){ return CAT_GRAD[cat]||CAT_GRAD.default }
-function statusLabel(s, T){
-  const m = {
-    pending: T.statusPending, cooking: T.statusCooking,
-    ready: T.statusReady, on_way: T.statusOnWay,
-    served: T.statusServed, rejected: T.statusRejected,
+const getCatEmoji = (cat) => {
+  if (!cat) return CAT_EMOJI_MAP.default
+  const lower = cat.toLowerCase()
+  for (const key of Object.keys(CAT_EMOJI_MAP)) {
+    if (lower.includes(key)) return CAT_EMOJI_MAP[key]
   }
-  return m[s] || s
-}
-function fmtDate(iso){
-  if (!iso) return ''
-  const d = new Date(iso)
-  return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
+  return CAT_EMOJI_MAP.default
 }
 
-/* ── INTERSECTION OBSERVER hook ──────────────────────────── */
-function useReveal(ref) {
-  useEffect(() => {
-    if (!ref.current) return
-    const obs = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('lp-visible') }),
-      { threshold: 0.12 }
-    )
-    ref.current.querySelectorAll('.lp-reveal').forEach(el => obs.observe(el))
-    return () => obs.disconnect()
-  }, [ref])
+const STATUS_STEPS = ['pending', 'cooking', 'ready', 'on_way', 'delivered']
+const STATUS_KEY = {
+  pending: 'status_pending', cooking: 'status_cooking',
+  ready: 'status_ready', on_way: 'status_on_way',
+  delivered: 'status_delivered', cancelled: 'status_cancelled',
 }
 
-/* ══════════════════════════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════════════════════════ */
+const fmt = (n) => `${Number(n || 0).toLocaleString('uz-UZ')} so'm`
+
+let _toastId = 0
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  LANDING PAGE
+// ═════════════════════════════════════════════════════════════════════════════
 export default function LandingPage() {
+
+  // ── Language ──────────────────────────────────────────────────────────────
   const [lang, setLang] = useState(() => localStorage.getItem('eco_lang') || 'uz')
   const T = LANG[lang]
 
-  const [slide, setSlide]         = useState(0)
-  const [menu, setMenu]           = useState([])
-  const [cats, setCats]           = useState([])
-  const [activeCat, setActiveCat] = useState('all')
-  const [cart, setCart]           = useState([])
-  const [cartOpen, setCartOpen]   = useState(false)
-  const [authOpen, setAuthOpen]   = useState(false)
-  const [authTab, setAuthTab]     = useState('register')
-  const [ordersOpen, setOrdersOpen] = useState(false)
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [customer, setCustomer]   = useState(null)
-  const [myOrders, setMyOrders]   = useState([])
-  const [ordersLoading, setOrdersLoading] = useState(false)
-  const [navScrolled, setNavScrolled] = useState(false)
-  const [langOpen, setLangOpen]   = useState(false)
+  const switchLang = (l) => { setLang(l); localStorage.setItem('eco_lang', l) }
 
-  // Auth form
-  const [regPhone, setRegPhone]   = useState('')
-  const [regName,  setRegName]    = useState('')
-  const [regLast,  setRegLast]    = useState('')
-  const [loginPhone, setLoginPhone] = useState('')
-  const [authBusy, setAuthBusy]   = useState(false)
+  // ── Customer auth ─────────────────────────────────────────────────────────
+  const [customer, setCustomer] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('eco_customer_data') || 'null') } catch { return null }
+  })
 
-  // Checkout form
-  const [address, setAddress]     = useState('')
-  const [note, setNote]           = useState('')
-  const [promoCode, setPromoCode] = useState('')
-  const [promoDiscount, setPromoDiscount] = useState(0)
-  const [promoApplied, setPromoApplied]   = useState(false)
-  const [promoLoading, setPromoLoading]   = useState(false)
-  const [placing, setPlacing]     = useState(false)
-
-  const wsRef = useRef(null)
-  const slideTimer = useRef(null)
-  const menuRef   = useRef(null)
-  const catRef    = useRef(null)
-  const howRef    = useRef(null)
-  const revRef    = useRef(document)
-  const profileRef = useRef(null)
-
-  useReveal(revRef)
-
-  /* ── LOAD ──────────────────────────────────────────────── */
-  useEffect(() => {
-    try {
-      const d = localStorage.getItem('eco_customer_data')
-      if (d) setCustomer(JSON.parse(d))
-    } catch {}
-
-    menuAPI.getAll().then(r => {
-      const avail = r.data.filter(i => i.available)
-      setMenu(avail)
-      setCats([...new Set(avail.map(i => i.category))])
-    }).catch(() => {})
-
-    const onScroll = () => setNavScrolled(window.scrollY > 70)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  /* ── SLIDE TIMER (1 minute each) ───────────────────────── */
-  useEffect(() => {
-    slideTimer.current = setInterval(() => setSlide(s => (s+1)%3), 60000)
-    return () => clearInterval(slideTimer.current)
-  }, [])
-
-  const goSlide = (dir) => {
-    clearInterval(slideTimer.current)
-    setSlide(s => (s + dir + 3) % 3)
-    slideTimer.current = setInterval(() => setSlide(s => (s+1)%3), 60000)
-  }
-
-  /* ── WEBSOCKET ─────────────────────────────────────────── */
-  useEffect(() => {
-    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${proto}//${window.location.host}/ws`)
-    ws.onmessage = e => {
-      try {
-        const msg = JSON.parse(e.data)
-        if (msg.type === 'order_status_changed') {
-          setMyOrders(prev => prev.map(o =>
-            o.id === msg.payload.id ? { ...o, status: msg.payload.status } : o
-          ))
-        }
-      } catch {}
-    }
-    wsRef.current = ws
-    return () => ws.close()
-  }, [])
-
-  /* ── CLOSE DROPDOWNS ON OUTSIDE CLICK ─────────────────── */
-  useEffect(() => {
-    const handler = e => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false)
-      setLangOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  /* ── CART HELPERS ──────────────────────────────────────── */
-  const addToCart = useCallback(item => {
-    setCart(prev => {
-      const ex = prev.find(c => c.id === item.id)
-      return ex
-        ? prev.map(c => c.id === item.id ? { ...c, qty: c.qty+1 } : c)
-        : [...prev, { ...item, qty: 1 }]
-    })
-  }, [])
-
-  const updateQty = (id, d) =>
-    setCart(prev => prev.map(c => c.id === id ? { ...c, qty: c.qty+d } : c).filter(c => c.qty > 0))
-
-  const removeFromCart = id => setCart(prev => prev.filter(c => c.id !== id))
-
-  const cartCount = cart.reduce((s,c) => s+c.qty, 0)
-  const cartTotal = cart.reduce((s,c) => s+c.price*c.qty, 0)
-  const finalTotal = Math.max(0, cartTotal - promoDiscount)
-
-  /* ── AUTH ─────────────────────────────────────────────── */
-  const handleRegister = async e => {
-    e.preventDefault()
-    if (!regPhone || !regName) { toast.error(T.errorRegister || 'Telefon va ism kiritilishi shart'); return }
-    setAuthBusy(true)
-    try {
-      const r = await customerAPI.register({ phone: regPhone, first_name: regName, last_name: regLast })
-      const cust = r.data.customer
-      localStorage.setItem('eco_customer_token', r.data.token)
-      localStorage.setItem('eco_customer_data', JSON.stringify(cust))
-      setCustomer(cust)
-      setAuthOpen(false)
-      toast.success(`Xush kelibsiz, ${cust.first_name}! 🎉`)
-      if (cart.length) setCheckoutOpen(true)
-    } catch(err) {
-      toast.error(err.response?.data?.error || 'Xatolik yuz berdi')
-    } finally { setAuthBusy(false) }
-  }
-
-  const handleLogin = async e => {
-    e.preventDefault()
-    if (!loginPhone) { toast.error('Telefon raqamini kiriting'); return }
-    setAuthBusy(true)
-    try {
-      const r = await customerAPI.login({ phone: loginPhone })
-      const cust = r.data.customer
-      localStorage.setItem('eco_customer_token', r.data.token)
-      localStorage.setItem('eco_customer_data', JSON.stringify(cust))
-      setCustomer(cust)
-      setAuthOpen(false)
-      toast.success(`Xush kelibsiz, ${cust.first_name}!`)
-      if (cart.length) setCheckoutOpen(true)
-    } catch(err) {
-      toast.error(err.response?.data?.error || 'Foydalanuvchi topilmadi')
-    } finally { setAuthBusy(false) }
-  }
-
-  const logout = () => {
+  const doLogout = () => {
     localStorage.removeItem('eco_customer_token')
     localStorage.removeItem('eco_customer_data')
     setCustomer(null)
-    setProfileOpen(false)
-    toast.success(T.logout)
+    setShowUserMenu(false)
   }
 
-  /* ── MY ORDERS ─────────────────────────────────────────── */
-  const openOrders = async () => {
-    setOrdersOpen(true)
+  // ── UI state ──────────────────────────────────────────────────────────────
+  const [scrolled, setScrolled]         = useState(false)
+  const [showCart, setShowCart]         = useState(false)
+  const [showAuth, setShowAuth]         = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false)
+  const [showOrders, setShowOrders]     = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [authTab, setAuthTab]           = useState('register')
+
+  // ── Toasts ────────────────────────────────────────────────────────────────
+  const [toasts, setToasts] = useState([])
+
+  const addToast = useCallback((msg, type = 'success') => {
+    const id = ++_toastId
+    setToasts(prev => [...prev, { id, msg, type }])
+    setTimeout(() => {
+      setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t))
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 320)
+    }, 3200)
+  }, [])
+
+  // ── Cart ──────────────────────────────────────────────────────────────────
+  const [cart, setCart] = useState([])
+
+  const addToCart = useCallback((item) => {
+    setCart(prev => {
+      const i = prev.findIndex(c => c.item.id === item.id)
+      if (i >= 0) { const n = [...prev]; n[i] = { ...n[i], qty: n[i].qty + 1 }; return n }
+      return [...prev, { item, qty: 1 }]
+    })
+  }, [])
+
+  const changeQty = useCallback((id, d) => {
+    setCart(prev => {
+      const n = prev.map(c => c.item.id === id ? { ...c, qty: c.qty + d } : c)
+      return n.filter(c => c.qty > 0)
+    })
+  }, [])
+
+  const removeItem = useCallback((id) => setCart(prev => prev.filter(c => c.item.id !== id)), [])
+
+  const cartCount = cart.reduce((s, c) => s + c.qty, 0)
+  const cartTotal = cart.reduce((s, c) => s + c.item.price * c.qty, 0)
+
+  // ── Hero carousel ─────────────────────────────────────────────────────────
+  const [heroSlide, setHeroSlide] = useState(0)
+  const heroTimer = useRef(null)
+
+  const startHeroTimer = useCallback(() => {
+    clearInterval(heroTimer.current)
+    heroTimer.current = setInterval(() => setHeroSlide(s => (s + 1) % 3), 60000)
+  }, [])
+
+  useEffect(() => { startHeroTimer(); return () => clearInterval(heroTimer.current) }, [startHeroTimer])
+
+  const gotoSlide = (i) => { setHeroSlide(i); startHeroTimer() }
+  const prevSlide = () => gotoSlide((heroSlide + 2) % 3)
+  const nextSlide = () => gotoSlide((heroSlide + 1) % 3)
+
+  // ── Menu data ─────────────────────────────────────────────────────────────
+  const [menuItems, setMenuItems]     = useState([])
+  const [menuLoading, setMenuLoading] = useState(true)
+  const [activeCat, setActiveCat]     = useState('all')
+
+  useEffect(() => {
+    menuAPI.getAll()
+      .then(res => {
+        const raw = res.data?.items || res.data || []
+        setMenuItems(Array.isArray(raw) ? raw.filter(i => i.available !== false) : [])
+      })
+      .catch(() => setMenuItems([]))
+      .finally(() => setMenuLoading(false))
+  }, [])
+
+  const categories = ['all', ...Array.from(new Set(menuItems.map(i => i.category).filter(Boolean)))]
+  const filtered   = activeCat === 'all' ? menuItems : menuItems.filter(i => i.category === activeCat)
+
+  // ── Scroll detection ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 60)
+    window.addEventListener('scroll', h, { passive: true })
+    return () => window.removeEventListener('scroll', h)
+  }, [])
+
+  // ── Scroll reveal ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const els = document.querySelectorAll('.lp-reveal')
+    if (!els.length) return
+    const obs = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target) } }),
+      { threshold: 0.1 }
+    )
+    els.forEach(el => obs.observe(el))
+    return () => obs.disconnect()
+  })
+
+  // ── Close user menu on outside click ─────────────────────────────────────
+  const userMenuRef = useRef(null)
+  useEffect(() => {
+    if (!showUserMenu) return
+    const h = (e) => { if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [showUserMenu])
+
+  // ── Auth form ─────────────────────────────────────────────────────────────
+  const [authPhone, setAuthPhone]       = useState('')
+  const [authFName, setAuthFName]       = useState('')
+  const [authLName, setAuthLName]       = useState('')
+  const [authError, setAuthError]       = useState('')
+  const [authLoading, setAuthLoading]   = useState(false)
+
+  const openAuth = (tab = 'register') => {
+    setAuthTab(tab); setAuthError(''); setAuthPhone(''); setAuthFName(''); setAuthLName('')
+    setShowAuth(true)
+  }
+
+  const handleAuth = async () => {
+    setAuthError('')
+    if (!authPhone.trim()) { setAuthError(T.auth_error_phone); return }
+    if (authTab === 'register' && !authFName.trim()) { setAuthError(T.auth_error_fname); return }
+    setAuthLoading(true)
+    try {
+      const res = authTab === 'register'
+        ? await customerAPI.register({ phone: authPhone.trim(), first_name: authFName.trim(), last_name: authLName.trim() || undefined })
+        : await customerAPI.login({ phone: authPhone.trim() })
+      const { token, customer: cust } = res.data
+      localStorage.setItem('eco_customer_token', token)
+      localStorage.setItem('eco_customer_data', JSON.stringify(cust))
+      setCustomer(cust)
+      setShowAuth(false)
+      addToast(authTab === 'register' ? T.toast_reg_ok(cust.first_name) : T.toast_login_ok(cust.first_name))
+    } catch (err) {
+      setAuthError(err.response?.data?.error || err.response?.data?.message || T.toast_order_err)
+    } finally { setAuthLoading(false) }
+  }
+
+  // ── Orders ────────────────────────────────────────────────────────────────
+  const [orders, setOrders]             = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [flashOrders, setFlashOrders]   = useState(new Set())
+
+  const loadOrders = async () => {
     setOrdersLoading(true)
     try {
-      const r = await customerAPI.orders()
-      setMyOrders(r.data || [])
-    } catch { setMyOrders([]) }
+      const res = await customerAPI.orders()
+      const data = res.data?.orders || res.data || []
+      setOrders(Array.isArray(data) ? data : [])
+    } catch { setOrders([]) }
     finally { setOrdersLoading(false) }
   }
 
-  const cancelOrder = async (code) => {
-    if (!window.confirm(T.cancelConfirm)) return
-    try {
-      await customerAPI.cancelOrder(code, '')
-      setMyOrders(prev => prev.map(o => o.order_code === code ? { ...o, status: 'rejected' } : o))
-      toast.success(T.statusRejected)
-    } catch(err) {
-      toast.error(err.response?.data?.error || 'Xatolik')
-    }
+  const openOrders = () => {
+    if (!customer) { openAuth('login'); return }
+    setShowOrders(true); loadOrders()
   }
 
-  /* ── CHECKOUT ──────────────────────────────────────────── */
-  const handleCheckout = () => {
-    if (!cart.length) return
-    if (!customer) { setAuthOpen(true); setAuthTab('register'); return }
-    setCartOpen(false)
-    setCheckoutOpen(true)
+  const cancelOrder = async (code) => {
+    if (!window.confirm(T.order_cancel_confirm)) return
+    try {
+      await customerAPI.cancelOrder(code, '')
+      addToast(T.toast_cancel_ok)
+      loadOrders()
+    } catch (err) { addToast(err.response?.data?.error || T.toast_order_err, 'error') }
+  }
+
+  // ── WebSocket ─────────────────────────────────────────────────────────────
+  const wsRef = useRef(null)
+  useEffect(() => {
+    if (!customer) return
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const ws = new WebSocket(`${proto}//${window.location.host}/ws`)
+    wsRef.current = ws
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data)
+        if (msg.type === 'order_status_changed') {
+          const { order_code, status } = msg.payload
+          setOrders(prev => prev.map(o => o.order_code === order_code ? { ...o, status } : o))
+          setFlashOrders(prev => new Set([...prev, order_code]))
+          setTimeout(() => setFlashOrders(prev => { const s = new Set(prev); s.delete(order_code); return s }), 3000)
+          addToast(T.toast_ws_update(order_code, T[STATUS_KEY[status]] || status), 'info')
+        }
+      } catch {}
+    }
+    ws.onerror = () => {}
+    return () => ws.close()
+  }, [customer]) // eslint-disable-line
+
+  // ── Checkout ──────────────────────────────────────────────────────────────
+  const [coAddr, setCoAddr]           = useState('')
+  const [coNote, setCoNote]           = useState('')
+  const [coPromo, setCoPromo]         = useState('')
+  const [promoResult, setPromoResult] = useState(null)
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [coLoading, setCoLoading]     = useState(false)
+  const [coSuccess, setCoSuccess]     = useState(false)
+  const [coError, setCoError]         = useState('')
+
+  const openCheckout = () => {
+    if (!customer) { openAuth('login'); return }
+    setCoAddr(''); setCoNote(''); setCoPromo(''); setPromoResult(null)
+    setCoError(''); setCoSuccess(false); setShowCheckout(true)
   }
 
   const applyPromo = async () => {
-    if (!promoCode.trim()) return
+    if (!coPromo.trim()) return
     setPromoLoading(true)
     try {
-      const r = await fetch('/api/promo/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode.trim(), order_total: cartTotal }),
-      })
-      const data = await r.json()
-      if (!r.ok) throw new Error(data.error)
-      setPromoDiscount(data.discount || 0)
-      setPromoApplied(true)
-      toast.success(T.promoApplied || 'Promokod qo\'llandi!')
-    } catch(err) {
-      toast.error(err.message || 'Noto\'g\'ri promokod')
-    } finally { setPromoLoading(false) }
+      const { promoAPI } = await import('../../api')
+      const res = await promoAPI.check(coPromo.trim(), cartTotal)
+      setPromoResult(res.data)
+      addToast(T.toast_promo_ok(res.data.discount_percent))
+    } catch { addToast(T.toast_promo_err, 'error'); setPromoResult(null) }
+    finally { setPromoLoading(false) }
   }
+
+  const discountedTotal = promoResult
+    ? cartTotal - Math.round(cartTotal * promoResult.discount_percent / 100)
+    : cartTotal
 
   const submitOrder = async () => {
-    if (!address.trim()) { toast.error(T.addrLbl); return }
-    setPlacing(true)
+    if (!coAddr.trim()) { setCoError(T.checkout_required); return }
+    setCoLoading(true); setCoError('')
     try {
       await ordersAPI.create({
-        items: cart.map(c => ({ menu_item_id: c.id, quantity: c.qty })),
+        items: cart.map(c => ({ menu_item_id: c.item.id, quantity: c.qty })),
         order_type: 'delivery',
-        delivery_address: address.trim(),
-        customer_name: `${customer.first_name} ${customer.last_name||''}`.trim(),
-        customer_phone: customer.phone || '',
-        customer_id: customer.id || 0,
-        note,
-        promo_code: promoApplied ? promoCode : '',
+        delivery_address: coAddr.trim(),
+        customer_name: [customer.first_name, customer.last_name].filter(Boolean).join(' '),
+        customer_phone: customer.phone,
+        customer_id: customer.id,
+        note: coNote.trim() || undefined,
+        promo_code: coPromo.trim() || undefined,
       })
-      setCart([])
-      setAddress('')
-      setNote('')
-      setPromoCode('')
-      setPromoDiscount(0)
-      setPromoApplied(false)
-      setCheckoutOpen(false)
-      toast.success(T.orderAccepted || 'Buyurtma qabul qilindi! 🎉', { duration: 5000 })
-    } catch(err) {
-      toast.error(err.response?.data?.error || 'Xatolik yuz berdi')
-    } finally { setPlacing(false) }
+      setCart([]); setCoSuccess(true)
+      addToast(T.toast_order_ok)
+      setTimeout(() => { setShowCheckout(false); setShowCart(false) }, 2800)
+    } catch (err) {
+      const msg = err.response?.data?.error || err.response?.data?.message || T.toast_order_err
+      setCoError(msg); addToast(msg, 'error')
+    } finally { setCoLoading(false) }
   }
 
-  const changeLang = l => { setLang(l); localStorage.setItem('eco_lang', l); setLangOpen(false) }
+  // ── Scroll to section ─────────────────────────────────────────────────────
+  const scrollTo = (id) => { const el = document.getElementById(id); el?.scrollIntoView({ behavior: 'smooth' }) }
 
-  /* ── FILTERED MENU ─────────────────────────────────────── */
-  const filtered = activeCat === 'all' ? menu : menu.filter(i => i.category === activeCat)
-
-  /* ════════════════════════════════════════════════════════
-     RENDER
-  ════════════════════════════════════════════════════════ */
+  // ═══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="lp">
+    <div className="lp-root">
 
-      {/* ── NAV ─────────────────────────────────────────────── */}
-      <nav className={`lp-nav ${navScrolled ? 'lp-nav--solid' : ''}`}>
-        <div className="lp-nav__inner">
-          <a href="/" className="lp-logo">
-            <span className="lp-logo__icon">🍽️</span>
-            <span className="lp-logo__name">ECO<span className="lp-logo__accent"> Taomlar</span></span>
-          </a>
+      {/* ══════════ HEADER ══════════════════════════════════════════════ */}
+      <header className={`lp-header${scrolled ? ' lp-header--scrolled' : ''}`}>
+        <a className="lp-header__logo" href="/">🍽️ ECO <span>Taomlar</span></a>
 
-          <div className="lp-nav__links">
-            <button onClick={() => menuRef.current?.scrollIntoView({ behavior:'smooth' })}>{T.navMenu}</button>
-            <button onClick={() => howRef.current?.scrollIntoView({ behavior:'smooth' })}>{T.navAbout}</button>
+        <nav className="lp-header__nav">
+          <a href="#menu" onClick={e => { e.preventDefault(); scrollTo('menu') }}>{T.nav_menu}</a>
+          <a href="#haqimizda" onClick={e => { e.preventDefault(); scrollTo('haqimizda') }}>{T.nav_about}</a>
+        </nav>
+
+        <div className="lp-header__right">
+          <div className="lp-lang-toggle">
+            <button className={lang === 'uz' ? 'active' : ''} onClick={() => switchLang('uz')}>🇺🇿 O'z</button>
+            <button className={lang === 'ru' ? 'active' : ''} onClick={() => switchLang('ru')}>🇷🇺 Рус</button>
           </div>
 
-          <div className="lp-nav__right">
-            {/* Language */}
-            <div className="lp-lang" ref={null}>
-              <button className="lp-lang__btn" onClick={() => setLangOpen(v => !v)}>
-                <Globe size={15}/> {lang === 'uz' ? 'O\'z' : 'Рус'} <ChevronDown size={12}/>
+          <button className="lp-cart-btn" onClick={() => setShowCart(true)}>
+            🛒 <span>{T.cart}</span>
+            {cartCount > 0 && <span className="lp-cart-btn__badge">{cartCount}</span>}
+          </button>
+
+          {customer ? (
+            <div className="lp-user-menu" ref={userMenuRef}>
+              <button className="lp-user-menu__trigger" onClick={() => setShowUserMenu(v => !v)}>
+                👤 {customer.first_name} ▾
               </button>
-              {langOpen && (
-                <div className="lp-lang__drop">
-                  <button onClick={() => changeLang('uz')}>🇺🇿 O'zbek</button>
-                  <button onClick={() => changeLang('ru')}>🇷🇺 Русский</button>
+              {showUserMenu && (
+                <div className="lp-user-menu__dropdown">
+                  <button onClick={() => { setShowUserMenu(false); openOrders() }}>📦 {T.orders_btn}</button>
+                  <button className="danger" onClick={doLogout}>🚪 {T.logout}</button>
                 </div>
               )}
             </div>
-
-            {/* Cart */}
-            <button className="lp-cart-btn" onClick={() => setCartOpen(true)}>
-              <ShoppingCart size={20}/>
-              {cartCount > 0 && <span className="lp-cart-badge">{cartCount}</span>}
-            </button>
-
-            {/* Auth */}
-            {customer ? (
-              <div className="lp-profile" ref={profileRef}>
-                <button className="lp-profile__btn" onClick={() => setProfileOpen(v => !v)}>
-                  <div className="lp-avatar">{customer.first_name[0]?.toUpperCase()}</div>
-                  <span>{customer.first_name}</span>
-                  <ChevronDown size={14}/>
-                </button>
-                {profileOpen && (
-                  <div className="lp-profile__drop">
-                    <button onClick={() => { openOrders(); setProfileOpen(false) }}>
-                      <ClipboardList size={16}/> {T.myOrders}
-                    </button>
-                    <button onClick={logout} className="lp-profile__logout">
-                      <LogOut size={16}/> {T.logout}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button className="lp-btn lp-btn--orange lp-btn--sm"
-                onClick={() => { setAuthOpen(true); setAuthTab('register') }}>
-                {T.btnSignup}
-              </button>
-            )}
-          </div>
+          ) : (
+            <button className="lp-auth-btn" onClick={() => openAuth('register')}>{T.auth_btn}</button>
+          )}
         </div>
-      </nav>
+      </header>
 
-      {/* ── HERO CAROUSEL ────────────────────────────────────── */}
+      {/* ══════════ HERO CAROUSEL ════════════════════════════════════════ */}
       <section className="lp-hero">
-        {HERO_IMGS.map((img, i) => (
-          <div key={i} className={`lp-hero__slide ${slide === i ? 'lp-hero__slide--active' : ''}`}
-            style={{ backgroundImage: `url(${img})` }}/>
-        ))}
-        <div className="lp-hero__overlay"/>
+        <div className="lp-hero__glow lp-hero__glow--1" />
+        <div className="lp-hero__glow lp-hero__glow--2" />
 
-        <button className="lp-hero__arrow lp-hero__arrow--left" onClick={() => goSlide(-1)}>
-          <ChevronLeft size={28}/>
-        </button>
-        <button className="lp-hero__arrow lp-hero__arrow--right" onClick={() => goSlide(1)}>
-          <ChevronRight size={28}/>
-        </button>
+        <div className="lp-hero__orbs">
+          {['🍚','🥩','🍜','🥘','🫕','🍲'].map((e, i) => (
+            <span key={i} className="lp-hero__orb" style={{
+              left: `${12 + i * 14}%`,
+              top: `${18 + (i % 3) * 22}%`,
+              animationDuration: `${5.5 + i * 1.3}s`,
+              animationDelay: `${i * 0.7}s`,
+            }}>{e}</span>
+          ))}
+        </div>
 
-        <div className="lp-hero__content">
-          {HERO_IMGS.map((_, i) => (
-            <div key={i} className={`lp-hero__text-block ${slide === i ? 'active' : ''}`}>
-              <div className="lp-hero__tag">{T.heroTag[i]}</div>
+        {[0, 1, 2].map(idx => (
+          <div key={idx} className={`lp-hero__slide${heroSlide === idx ? ' lp-hero__slide--active' : ''}`}>
+            <div className="lp-hero__content">
+              <div className="lp-hero__tag">{T.hero_tag}</div>
               <h1 className="lp-hero__title">
-                {T.heroTitle[i]}<br/>
-                <span className="lp-hero__accent">{T.heroAccent[i]}</span>
+                {T.slides[idx].title}<br /><em>{T.slides[idx].titleOrange}</em>
               </h1>
-              <p className="lp-hero__sub">{T.heroSub[i]}</p>
-              <div className="lp-hero__btns">
-                <button className="lp-btn lp-btn--hero-primary"
-                  onClick={() => menuRef.current?.scrollIntoView({ behavior:'smooth' })}>
-                  {T.heroCta} <ChevronRight size={18}/>
-                </button>
-                <button className="lp-btn lp-btn--hero-ghost"
-                  onClick={() => menuRef.current?.scrollIntoView({ behavior:'smooth' })}>
-                  {T.heroBrowse}
-                </button>
+              <p className="lp-hero__sub">{T.slides[idx].sub}</p>
+              <div className="lp-hero__actions">
+                <button className="lp-btn-primary" onClick={() => scrollTo('menu')}>{T.hero_btn1}</button>
+                <button className="lp-btn-secondary" onClick={() => scrollTo('menu')}>{T.hero_btn2}</button>
               </div>
               <div className="lp-hero__badges">
-                <div className="lp-hero__badge"><Truck size={14}/> 30-45 {lang==='uz'?'daqiqa':'мин'}</div>
-                <div className="lp-hero__badge"><Leaf size={14}/> {T.stat4}</div>
-                <div className="lp-hero__badge"><Star size={14}/> 4.9 ★</div>
+                {[T.hero_badge1, T.hero_badge2, T.hero_badge3].map((b, i) => (
+                  <div key={i} className="lp-hero__badge">
+                    <span className="lp-hero__badge-dot" />{b}
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+
+            <div className="lp-hero__image-side">
+              <div
+                className="lp-hero__bg-img"
+                style={{ backgroundImage: `url(${HERO_IMAGES[idx]}), linear-gradient(135deg,#1a0a00,#0a0a0a)` }}
+              />
+              <div className="lp-hero__image-overlay" />
+            </div>
+          </div>
+        ))}
+
+        <div className="lp-hero__arrows">
+          <button className="lp-hero__arrow" onClick={prevSlide} aria-label="prev">‹</button>
+          <button className="lp-hero__arrow" onClick={nextSlide} aria-label="next">›</button>
         </div>
 
         <div className="lp-hero__dots">
-          {[0,1,2].map(i => (
-            <button key={i} className={`lp-hero__dot ${slide===i?'active':''}`}
-              onClick={() => { clearInterval(slideTimer.current); setSlide(i); slideTimer.current=setInterval(()=>setSlide(s=>(s+1)%3),60000) }}/>
+          {[0, 1, 2].map(i => (
+            <button key={i} className={`lp-hero__dot${heroSlide === i ? ' lp-hero__dot--active' : ''}`}
+              onClick={() => gotoSlide(i)} aria-label={`Slide ${i + 1}`} />
           ))}
-        </div>
-
-        <div className="lp-hero__wave">
-          <svg viewBox="0 0 1440 80" preserveAspectRatio="none">
-            <path d="M0,40 C480,80 960,0 1440,40 L1440,80 L0,80 Z" fill="#fff"/>
-          </svg>
         </div>
       </section>
 
-      {/* ── STATS BAR ────────────────────────────────────────── */}
-      <div className="lp-stats">
-        <div className="lp-stat lp-reveal"><span className="lp-stat__n">500+</span><span className="lp-stat__l">{T.stat1}</span></div>
-        <div className="lp-stat-divider"/>
-        <div className="lp-stat lp-reveal"><span className="lp-stat__n">30+</span><span className="lp-stat__l">{T.stat2}</span></div>
-        <div className="lp-stat-divider"/>
-        <div className="lp-stat lp-reveal"><span className="lp-stat__n">30-45</span><span className="lp-stat__l">{T.stat3}</span></div>
-        <div className="lp-stat-divider"/>
-        <div className="lp-stat lp-reveal"><span className="lp-stat__n">100%</span><span className="lp-stat__l">{T.stat4}</span></div>
+      {/* ══════════ STATS BAR ════════════════════════════════════════════ */}
+      <div className="lp-stats lp-reveal">
+        <div className="lp-stats__inner">
+          {[
+            { num: T.stat1_num, lbl: T.stat1_lbl },
+            { num: T.stat2_num, lbl: T.stat2_lbl },
+            { num: T.stat3_num, lbl: T.stat3_lbl },
+            { num: T.stat4_num, lbl: T.stat4_lbl },
+          ].map((s, i) => (
+            <div key={i} className="lp-stats__item">
+              <div className="lp-stats__number">{s.num}</div>
+              <div className="lp-stats__label">{s.lbl}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* ── CATEGORIES ──────────────────────────────────────── */}
-      <section className="lp-cats-section" ref={catRef}>
-        <div className="lp-section-head lp-reveal"><h2>{T.catsTitle}</h2></div>
-        <div className="lp-cats-scroll">
-          <button className={`lp-cat-item ${activeCat==='all'?'active':''}`}
-            onClick={() => setActiveCat('all')}>
-            <div className="lp-cat-icon" style={{ background:'linear-gradient(135deg,#ff6b35,#ffb347)' }}>🍽️</div>
-            <span>{T.catAll}</span>
-          </button>
-          {cats.map(cat => (
-            <button key={cat} className={`lp-cat-item ${activeCat===cat?'active':''}`}
-              onClick={() => setActiveCat(cat)}>
-              <div className="lp-cat-icon" style={{ background: getGrad(cat) }}>{getEmoji(cat)}</div>
-              <span>{cat}</span>
-            </button>
-          ))}
+      {/* ══════════ MENU SECTION ═════════════════════════════════════════ */}
+      <section id="menu">
+        <div className="lp-section">
+          <div className="lp-section__header lp-reveal">
+            <div className="lp-section__label">{T.menu_label}</div>
+            <h2 className="lp-section__title">{T.menu_title} <em>{T.menu_title_orange}</em></h2>
+            <p className="lp-section__sub">{T.menu_sub}</p>
+          </div>
+
+          <div className="lp-categories lp-reveal">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                className={`lp-cat-pill${activeCat === cat ? ' lp-cat-pill--active' : ''}`}
+                onClick={() => setActiveCat(cat)}
+              >
+                <span className="lp-cat-icon">{cat === 'all' ? '🍽️' : getCatEmoji(cat)}</span>
+                {cat === 'all' ? T.cat_all : cat}
+              </button>
+            ))}
+          </div>
+
+          <div className="lp-menu-grid">
+            {menuLoading
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="lp-menu-card" style={{ animationDelay: `${i * 0.06}s` }}>
+                    <div className="lp-skeleton" style={{ height: 190 }} />
+                    <div className="lp-menu-card__body">
+                      <div className="lp-skeleton" style={{ height: 18, marginBottom: 8, borderRadius: 6 }} />
+                      <div className="lp-skeleton" style={{ height: 13, marginBottom: 6, borderRadius: 6, width: '75%' }} />
+                      <div className="lp-skeleton" style={{ height: 13, marginBottom: 16, borderRadius: 6, width: '55%' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="lp-skeleton" style={{ height: 20, width: 80, borderRadius: 6 }} />
+                        <div className="lp-skeleton" style={{ height: 34, width: 90, borderRadius: 20 }} />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              : filtered.length === 0
+                ? <div className="lp-menu-empty">🍽️ {T.menu_empty}</div>
+                : filtered.map((item, i) => {
+                    const inCart = cart.find(c => c.item.id === item.id)
+                    const catBg = `linear-gradient(135deg, #1a0d06, #2d1608)`
+                    return (
+                      <div
+                        key={item.id}
+                        className="lp-menu-card"
+                        style={{ animationDelay: `${(i % 8) * 0.07}s` }}
+                      >
+                        <div className="lp-menu-card__img">
+                          {item.image_url
+                            ? <img
+                                src={item.image_url}
+                                alt={item.name}
+                                loading="lazy"
+                                onError={e => {
+                                  e.target.style.display = 'none'
+                                  e.target.nextSibling && (e.target.nextSibling.style.display = 'flex')
+                                }}
+                              />
+                            : null
+                          }
+                          <div
+                            className="lp-menu-card__img-placeholder"
+                            style={{ display: item.image_url ? 'none' : 'flex', background: catBg }}
+                          >
+                            {getCatEmoji(item.category)}
+                          </div>
+                          {item.category && <span className="lp-menu-card__badge">{item.category}</span>}
+                          {inCart && <span className="lp-menu-card__qty">{inCart.qty}</span>}
+                        </div>
+                        <div className="lp-menu-card__body">
+                          <div className="lp-menu-card__name">{item.name}</div>
+                          <div className="lp-menu-card__desc">{item.description || ''}</div>
+                          <div className="lp-menu-card__footer">
+                            <div className="lp-menu-card__price">{fmt(item.price)}</div>
+                            <button
+                              className="lp-menu-card__add"
+                              onClick={() => { addToCart(item); addToast(T.toast_added(item.name)) }}
+                            >
+                              + {T.menu_add}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+            }
+          </div>
         </div>
       </section>
 
-      {/* ── POPULAR DISHES ──────────────────────────────────── */}
-      <section className="lp-menu-section" ref={menuRef}>
-        <div className="lp-section-head lp-reveal">
-          <h2>{T.popularTitle}</h2>
-          <p>{T.popularSub}</p>
+      {/* ══════════ OFFERS ════════════════════════════════════════════════ */}
+      <div className="lp-section-wrap lp-section-wrap--alt">
+        <div className="lp-section">
+          <div className="lp-section__header lp-reveal">
+            <div className="lp-section__label">{T.offers_label}</div>
+            <h2 className="lp-section__title">{T.offers_title} <em>{T.offers_title_orange}</em></h2>
+          </div>
+          <div className="lp-offers-grid">
+            {[
+              { cls: 'lp-offer-card--1', icon: '🚚', title: T.offer1_title, desc: T.offer1_desc },
+              { cls: 'lp-offer-card--2', icon: '🔥', title: T.offer2_title, desc: T.offer2_desc },
+              { cls: 'lp-offer-card--3', icon: '⭐', title: T.offer3_title, desc: T.offer3_desc },
+            ].map((o, i) => (
+              <div key={i} className={`lp-offer-card ${o.cls} lp-reveal`} style={{ animationDelay: `${i * 0.12}s` }}>
+                <span className="lp-offer-card__icon">{o.icon}</span>
+                <div className="lp-offer-card__title">{o.title}</div>
+                <div className="lp-offer-card__desc">{o.desc}</div>
+                <div className="lp-offer-card__deco" />
+              </div>
+            ))}
+          </div>
         </div>
-        {menu.length === 0 ? (
-          <div className="lp-loading"><div className="lp-spinner"/></div>
-        ) : (
-          <div className="lp-menu-grid">
-            {filtered.map((item, i) => {
-              const inCart = cart.find(c => c.id === item.id)
-              return (
-                <div key={item.id} className="lp-dish-card lp-reveal"
-                  style={{ animationDelay: `${(i%8)*0.07}s` }}>
-                  <div className="lp-dish-card__img"
-                    style={{ background: item.image_url ? undefined : getGrad(item.category) }}>
-                    {item.image_url
-                      ? <img src={item.image_url} alt={item.name} loading="lazy"/>
-                      : <span className="lp-dish-card__emoji">{getEmoji(item.category)}</span>
-                    }
-                    <div className="lp-dish-card__cat">{item.category}</div>
-                    {inCart && <div className="lp-dish-card__in-cart">✓ {inCart.qty}</div>}
-                  </div>
-                  <div className="lp-dish-card__body">
-                    <div className="lp-dish-card__stars">
-                      {[1,2,3,4,5].map(s => <Star key={s} size={12} fill="#FF6B35" color="#FF6B35"/>)}
-                    </div>
-                    <h3 className="lp-dish-card__name">{item.name}</h3>
-                    {item.description && <p className="lp-dish-card__desc">{item.description}</p>}
-                    <div className="lp-dish-card__footer">
-                      <span className="lp-dish-card__price">
-                        {item.price.toLocaleString()} <span className="lp-price-unit">{T.sum}</span>
-                      </span>
-                      <button className={`lp-add-btn ${inCart?'lp-add-btn--added':''}`}
-                        onClick={() => { addToCart(item); setCartOpen(true) }}>
-                        {inCart ? <><Check size={15}/> {T.addedCart}</> : <><Plus size={15}/> {T.addCart}</>}
-                      </button>
-                    </div>
+      </div>
+
+      {/* ══════════ HOW IT WORKS ══════════════════════════════════════════ */}
+      <section id="haqimizda">
+        <div className="lp-section">
+          <div className="lp-section__header lp-reveal">
+            <div className="lp-section__label">{T.how_label}</div>
+            <h2 className="lp-section__title">{T.how_title} <em>{T.how_title_orange}</em></h2>
+          </div>
+          <div className="lp-steps">
+            {[
+              { icon: '🛒', title: T.step1_title, desc: T.step1_desc },
+              { icon: '📋', title: T.step2_title, desc: T.step2_desc },
+              { icon: '🚀', title: T.step3_title, desc: T.step3_desc },
+            ].map((s, i) => (
+              <div key={i} className="lp-step-card lp-reveal" style={{ animationDelay: `${i * 0.13}s` }}>
+                <div className="lp-step-card__num">{s.icon}</div>
+                <span className="lp-step-card__step">{T.step_label(i + 1)}</span>
+                <div className="lp-step-card__title">{s.title}</div>
+                <div className="lp-step-card__desc">{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ TESTIMONIALS ══════════════════════════════════════════ */}
+      <div className="lp-section-wrap lp-section-wrap--alt">
+        <div className="lp-section">
+          <div className="lp-section__header lp-reveal">
+            <div className="lp-section__label">{T.test_label}</div>
+            <h2 className="lp-section__title">{T.test_title} <em>{T.test_title_orange}</em></h2>
+          </div>
+          <div className="lp-testimonials-grid">
+            {T.reviews.map((r, i) => (
+              <div key={i} className="lp-testi-card lp-reveal" style={{ animationDelay: `${i * 0.12}s` }}>
+                <div className="lp-testi-card__stars">★★★★★</div>
+                <p className="lp-testi-card__text">"{r.text}"</p>
+                <div className="lp-testi-card__author">
+                  <div className="lp-testi-card__avatar" style={{ background: r.color }}>{r.avatar}</div>
+                  <div>
+                    <div className="lp-testi-card__name">{r.name}</div>
+                    <div className="lp-testi-card__sub">{r.sub}</div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* ── OFFERS ──────────────────────────────────────────── */}
-      <section className="lp-offers">
-        <div className="lp-section-head lp-reveal"><h2>{T.offersTitle}</h2></div>
-        <div className="lp-offers-grid">
-          <div className="lp-offer-card lp-offer-card--dark lp-reveal">
-            <div className="lp-offer-card__icon">🚚</div>
-            <h3>{T.offer1t}</h3>
-            <p>{T.offer1s}</p>
-          </div>
-          <div className="lp-offer-card lp-offer-card--orange lp-reveal" style={{ animationDelay:'.1s' }}>
-            <div className="lp-offer-card__icon">🔥</div>
-            <h3>{T.offer2t}</h3>
-            <p>{T.offer2s}</p>
-            <button className="lp-btn lp-btn--white-sm" onClick={() => { setAuthOpen(true); setAuthTab('register') }}>
-              {T.btnSignup}
-            </button>
-          </div>
-          <div className="lp-offer-card lp-offer-card--gold lp-reveal" style={{ animationDelay:'.2s' }}>
-            <div className="lp-offer-card__icon">⭐</div>
-            <h3>{T.offer3t}</h3>
-            <p>{T.offer3s}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ────────────────────────────────────── */}
-      <section className="lp-how" ref={howRef}>
-        <div className="lp-section-head lp-reveal"><h2>{T.howTitle}</h2></div>
-        <div className="lp-how-steps">
-          {[
-            { icon:'🛒', t: T.step1t, s: T.step1s },
-            { icon:'📋', t: T.step2t, s: T.step2s },
-            { icon:'🚀', t: T.step3t, s: T.step3s },
-          ].map((step, i) => (
-            <div key={i} className="lp-how-step lp-reveal" style={{ animationDelay: `${i*0.15}s` }}>
-              <div className="lp-how-step__num">{i+1}</div>
-              <div className="lp-how-step__icon">{step.icon}</div>
-              <h3>{step.t}</h3>
-              <p>{step.s}</p>
-              {i < 2 && <div className="lp-how-step__arrow">→</div>}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── REVIEWS ─────────────────────────────────────────── */}
-      <section className="lp-reviews">
-        <div className="lp-section-head lp-reveal"><h2>{T.reviewsTitle}</h2></div>
-        <div className="lp-reviews-grid">
-          {[
-            { n: T.r1n, t: T.r1t, avatar: '👨' },
-            { n: T.r2n, t: T.r2t, avatar: '👩' },
-            { n: T.r3n, t: T.r3t, avatar: '👨‍💼' },
-          ].map((r, i) => (
-            <div key={i} className="lp-review-card lp-reveal" style={{ animationDelay: `${i*0.1}s` }}>
-              <div className="lp-review-stars">
-                {[1,2,3,4,5].map(s => <Star key={s} size={16} fill="#FF6B35" color="#FF6B35"/>)}
               </div>
-              <p className="lp-review-text">"{r.t}"</p>
-              <div className="lp-review-author">
-                <span className="lp-review-avatar">{r.avatar}</span>
-                <span className="lp-review-name">{r.n}</span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── FOOTER ──────────────────────────────────────────── */}
+      {/* ══════════ FOOTER ════════════════════════════════════════════════ */}
       <footer className="lp-footer">
-        <div className="lp-footer__top">
-          <div className="lp-footer__brand">
-            <div className="lp-logo lp-logo--footer">
-              <span className="lp-logo__icon">🍽️</span>
-              <span className="lp-logo__name">ECO<span className="lp-logo__accent"> Taomlar</span></span>
+        <div className="lp-footer__inner">
+          <div>
+            <div className="lp-footer__logo">🍽️ ECO <span>Taomlar</span></div>
+            <p className="lp-footer__desc">{T.footer_desc}</p>
+            <div className="lp-footer__contact">
+              <a href={`tel:${T.footer_phone.replace(/\s/g, '')}`}>📞 {T.footer_phone}</a>
+              <span>📍 {T.footer_address}</span>
+              <span>🕐 {T.footer_hours}</span>
             </div>
-            <p>{T.footerDesc}</p>
           </div>
-          <div className="lp-footer__col">
-            <h4>{T.footerLinks}</h4>
-            <button onClick={() => menuRef.current?.scrollIntoView({ behavior:'smooth' })}>{T.navMenu}</button>
-            <button onClick={() => howRef.current?.scrollIntoView({ behavior:'smooth' })}>{T.navAbout}</button>
-            <a href="/staff">{T.footerStaff}</a>
+          <div>
+            <div className="lp-footer__col-title">{T.footer_links_title}</div>
+            <div className="lp-footer__links">
+              <a href="#menu" onClick={e => { e.preventDefault(); scrollTo('menu') }}>{T.nav_menu}</a>
+              <a href="#haqimizda" onClick={e => { e.preventDefault(); scrollTo('haqimizda') }}>{T.nav_about}</a>
+            </div>
           </div>
-          <div className="lp-footer__col">
-            <h4>{T.footerContact}</h4>
-            <p>📞 +998 90 000 00 00</p>
-            <p>📍 Toshkent sh.</p>
-            <p>🕐 09:00 – 22:00</p>
+          <div>
+            <div className="lp-footer__col-title">{T.footer_contact_title}</div>
+            <div className="lp-footer__links">
+              <a href={`tel:${T.footer_phone.replace(/\s/g, '')}`}>{T.footer_phone}</a>
+              <span style={{ color: 'var(--text-muted)', fontSize: '.88rem' }}>{T.footer_address}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '.88rem' }}>{T.footer_hours}</span>
+            </div>
+          </div>
+          <div>
+            <div className="lp-footer__col-title">{T.footer_staff_title}</div>
+            <div className="lp-footer__links">
+              <a href="/staff">{T.footer_staff_link}</a>
+              <a href="/admin">Admin panel</a>
+            </div>
           </div>
         </div>
         <div className="lp-footer__bottom">
-          © 2024 ECO Taomlar.{' '}
-          <a href="/staff" style={{ color:'rgba(255,255,255,.4)', textDecoration:'none' }}> Xodimlar</a>
+          <span className="lp-footer__copy">{T.footer_copy}</span>
+          <span className="lp-footer__tagline">{T.footer_tagline}</span>
         </div>
       </footer>
 
-      {/* ════ CART SIDEBAR ════════════════════════════════════ */}
-      {cartOpen && (
-        <div className="lp-overlay" onClick={() => setCartOpen(false)}>
-          <div className="lp-cart-sidebar" onClick={e => e.stopPropagation()}>
-            <div className="lp-panel-head">
-              <h3><ShoppingCart size={20}/> {T.cartTitle} ({cartCount})</h3>
-              <button className="lp-icon-btn" onClick={() => setCartOpen(false)}><X size={22}/></button>
+      {/* ══════════════════════════════════════════════════════════════════
+          OVERLAYS / PANELS
+      ══════════════════════════════════════════════════════════════════ */}
+
+      {/* ─── CART SIDEBAR ───────────────────────────────────────────── */}
+      {showCart && (
+        <>
+          <div className="lp-overlay" onClick={() => setShowCart(false)} />
+          <aside className="lp-cart">
+            <div className="lp-cart__header">
+              <span className="lp-cart__title">🛒 {T.cart}{cartCount > 0 ? ` (${cartCount})` : ''}</span>
+              <button className="lp-cart__close" onClick={() => setShowCart(false)}>✕</button>
             </div>
-            <div className="lp-cart-items">
-              {!cart.length ? (
-                <div className="lp-empty-state">
-                  <span>🛒</span><p>{T.cartEmpty}</p>
-                  <button className="lp-btn lp-btn--orange" onClick={() => setCartOpen(false)}>{T.cartBrowse}</button>
+
+            <div className="lp-cart__body">
+              {cart.length === 0 ? (
+                <div className="lp-cart__empty">
+                  <span className="lp-cart__empty-icon">🛒</span>
+                  <span>{lang === 'uz' ? "Savat bo'sh" : 'Корзина пуста'}</span>
                 </div>
-              ) : cart.map(item => (
-                <div key={item.id} className="lp-cart-row">
-                  <div className="lp-cart-row__img" style={{ background: getGrad(item.category) }}>
-                    {item.image_url ? <img src={item.image_url} alt="" loading="lazy"/> : getEmoji(item.category)}
+              ) : cart.map(({ item, qty }) => (
+                <div key={item.id} className="lp-cart-item">
+                  <div className="lp-cart-item__img">
+                    {item.image_url
+                      ? <img src={item.image_url} alt={item.name} onError={e => e.target.style.display = 'none'} />
+                      : getCatEmoji(item.category)
+                    }
                   </div>
-                  <div className="lp-cart-row__info">
-                    <span className="lp-cart-row__name">{item.name}</span>
-                    <span className="lp-cart-row__price">{(item.price*item.qty).toLocaleString()} {T.sum}</span>
+                  <div className="lp-cart-item__info">
+                    <div className="lp-cart-item__name">{item.name}</div>
+                    <div className="lp-cart-item__price">{fmt(item.price * qty)}</div>
                   </div>
-                  <div className="lp-cart-row__ctrl">
-                    <button onClick={() => updateQty(item.id,-1)}><Minus size={13}/></button>
-                    <span>{item.qty}</span>
-                    <button onClick={() => updateQty(item.id,1)}><Plus size={13}/></button>
-                    <button className="lp-del-btn" onClick={() => removeFromCart(item.id)}><Trash2 size={13}/></button>
+                  <div className="lp-cart-item__qty">
+                    <button className="lp-qty-btn" onClick={() => changeQty(item.id, -1)}>−</button>
+                    <span className="lp-qty-val">{qty}</span>
+                    <button className="lp-qty-btn" onClick={() => changeQty(item.id, 1)}>+</button>
                   </div>
-                </div>
-              ))}
-            </div>
-            {cart.length > 0 && (
-              <div className="lp-cart-footer">
-                <div className="lp-cart-total-row">
-                  <span>{T.cartTotal}</span>
-                  <span className="lp-cart-total-amount">{cartTotal.toLocaleString()} {T.sum}</span>
-                </div>
-                <button className="lp-btn lp-btn--checkout-main" onClick={handleCheckout}>
-                  <Truck size={18}/> {T.cartCheckout}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ════ AUTH MODAL ══════════════════════════════════════ */}
-      {authOpen && (
-        <div className="lp-overlay lp-overlay--center" onClick={() => setAuthOpen(false)}>
-          <div className="lp-modal lp-auth-modal" onClick={e => e.stopPropagation()}>
-            <button className="lp-modal-close" onClick={() => setAuthOpen(false)}><X size={20}/></button>
-            <div className="lp-modal-icon">🍽️</div>
-            <h2 className="lp-modal-title">{T.authTitle}</h2>
-            <div className="lp-auth-tabs">
-              <button className={authTab==='register'?'active':''} onClick={() => setAuthTab('register')}>{T.tabRegister}</button>
-              <button className={authTab==='login'?'active':''} onClick={() => setAuthTab('login')}>{T.tabLogin}</button>
-            </div>
-
-            {authTab === 'register' ? (
-              <form className="lp-auth-form" onSubmit={handleRegister}>
-                <div className="lp-field">
-                  <label><Phone size={13}/> {T.phoneLbl}</label>
-                  <input type="tel" placeholder={T.phonePh} value={regPhone}
-                    onChange={e => setRegPhone(e.target.value)} required/>
-                </div>
-                <div className="lp-field-row">
-                  <div className="lp-field">
-                    <label><User size={13}/> {T.nameLbl}</label>
-                    <input type="text" placeholder={T.namePh} value={regName}
-                      onChange={e => setRegName(e.target.value)} required/>
-                  </div>
-                  <div className="lp-field">
-                    <label><User size={13}/> {T.lastNameLbl}</label>
-                    <input type="text" placeholder={T.lastNamePh} value={regLast}
-                      onChange={e => setRegLast(e.target.value)}/>
-                  </div>
-                </div>
-                <p className="lp-field-note">{T.regNote}</p>
-                <button className="lp-btn lp-btn--orange lp-btn--full" disabled={authBusy}>
-                  {authBusy ? <Loader size={18} className="lp-spin"/> : T.regBtn}
-                </button>
-                <p className="lp-auth-switch">
-                  <button type="button" onClick={() => setAuthTab('login')}>{T.switchToLogin}</button>
-                </p>
-              </form>
-            ) : (
-              <form className="lp-auth-form" onSubmit={handleLogin}>
-                <div className="lp-field">
-                  <label><Phone size={13}/> {T.phoneLbl}</label>
-                  <input type="tel" placeholder={T.phonePh} value={loginPhone}
-                    onChange={e => setLoginPhone(e.target.value)} required/>
-                </div>
-                <button className="lp-btn lp-btn--orange lp-btn--full" disabled={authBusy}>
-                  {authBusy ? <Loader size={18} className="lp-spin"/> : T.loginBtn}
-                </button>
-                <p className="lp-auth-switch">
-                  <button type="button" onClick={() => setAuthTab('register')}>{T.switchToReg}</button>
-                </p>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ════ CHECKOUT MODAL ══════════════════════════════════ */}
-      {checkoutOpen && (
-        <div className="lp-overlay lp-overlay--center" onClick={() => setCheckoutOpen(false)}>
-          <div className="lp-modal lp-checkout-modal" onClick={e => e.stopPropagation()}>
-            <button className="lp-modal-close" onClick={() => setCheckoutOpen(false)}><X size={20}/></button>
-            <h2 className="lp-modal-title"><MapPin size={20}/> {T.checkoutTitle}</h2>
-
-            {customer && (
-              <div className="lp-checkout-customer">
-                <div className="lp-avatar lp-avatar--sm">{customer.first_name[0]}</div>
-                {customer.first_name} {customer.last_name || ''} · {customer.phone}
-              </div>
-            )}
-
-            <div className="lp-order-summary">
-              {cart.map(item => (
-                <div key={item.id} className="lp-summary-row">
-                  <span>{getEmoji(item.category)} {item.name} × {item.qty}</span>
-                  <span>{(item.price*item.qty).toLocaleString()} {T.sum}</span>
-                </div>
-              ))}
-              {promoDiscount > 0 && (
-                <div className="lp-summary-row lp-summary-row--green">
-                  <span>Chegirma</span><span>-{promoDiscount.toLocaleString()} {T.sum}</span>
-                </div>
-              )}
-              <div className="lp-summary-row lp-summary-row--total">
-                <span>{T.cartTotal}</span>
-                <span>{finalTotal.toLocaleString()} {T.sum}</span>
-              </div>
-            </div>
-
-            <div className="lp-field">
-              <label><MapPin size={13}/> {T.addrLbl}</label>
-              <textarea className="lp-textarea" placeholder={T.addrPh} rows={3}
-                value={address} onChange={e => setAddress(e.target.value)} required/>
-            </div>
-
-            <div className="lp-promo-row">
-              <input className="lp-promo-input" placeholder={T.promoPh}
-                value={promoCode} onChange={e => setPromoCode(e.target.value)}
-                disabled={promoApplied}/>
-              <button className="lp-btn lp-btn--ghost-orange" onClick={applyPromo}
-                disabled={promoLoading || promoApplied}>
-                {promoLoading ? <Loader size={15} className="lp-spin"/> : T.promoBtn}
-              </button>
-            </div>
-
-            <div className="lp-field">
-              <label>{T.noteLbl}</label>
-              <input type="text" placeholder={T.notePh} value={note} onChange={e => setNote(e.target.value)}/>
-            </div>
-
-            <button className="lp-btn lp-btn--checkout-main lp-btn--full"
-              onClick={submitOrder} disabled={placing || !address.trim()}>
-              {placing ? <Loader size={18} className="lp-spin"/> : <><Truck size={18}/> {T.orderBtn}</>}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ════ MY ORDERS PANEL ═════════════════════════════════ */}
-      {ordersOpen && (
-        <div className="lp-overlay" onClick={() => setOrdersOpen(false)}>
-          <div className="lp-orders-panel" onClick={e => e.stopPropagation()}>
-            <div className="lp-panel-head">
-              <h3><ClipboardList size={20}/> {T.ordersTitle}</h3>
-              <button className="lp-icon-btn" onClick={() => setOrdersOpen(false)}><X size={22}/></button>
-            </div>
-            <div className="lp-orders-list">
-              {ordersLoading ? (
-                <div className="lp-loading"><div className="lp-spinner"/></div>
-              ) : !myOrders.length ? (
-                <div className="lp-empty-state">
-                  <span>📋</span>
-                  <p>{T.ordersEmpty}</p>
-                  <p className="lp-empty-hint">{T.ordersHint}</p>
-                  <button className="lp-btn lp-btn--orange"
-                    onClick={() => { setOrdersOpen(false); menuRef.current?.scrollIntoView({ behavior:'smooth' }) }}>
-                    {T.heroCta}
+                  <button className="lp-cart-item__remove" onClick={() => { removeItem(item.id); addToast(T.toast_removed(item.name)) }}>
+                    🗑
                   </button>
                 </div>
-              ) : myOrders.map(order => {
-                const stepIdx = STATUS_STEPS.indexOf(order.status)
-                const cancellable = ['pending','cooking'].includes(order.status)
+              ))}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="lp-cart__footer">
+                <div className="lp-cart__total">
+                  {lang === 'uz' ? 'Jami:' : 'Итого:'}<strong>{fmt(cartTotal)}</strong>
+                </div>
+                <button className="lp-cart__checkout" onClick={openCheckout}>
+                  📦 {lang === 'uz' ? 'Buyurtma berish' : 'Оформить заказ'}
+                </button>
+              </div>
+            )}
+          </aside>
+        </>
+      )}
+
+      {/* ─── AUTH MODAL ─────────────────────────────────────────────── */}
+      {showAuth && (
+        <div className="lp-modal-bg" onClick={e => { if (e.target === e.currentTarget) setShowAuth(false) }}>
+          <div className="lp-modal">
+            <div className="lp-modal__head">
+              <span className="lp-modal__title">
+                {authTab === 'register' ? `🍽️ ${T.auth_register}` : `👤 ${T.auth_login}`}
+              </span>
+              <button className="lp-modal__close" onClick={() => setShowAuth(false)}>✕</button>
+            </div>
+
+            <div className="lp-modal__tabs">
+              <button className={`lp-modal__tab${authTab === 'register' ? ' lp-modal__tab--active' : ''}`}
+                onClick={() => { setAuthTab('register'); setAuthError('') }}>{T.auth_register}</button>
+              <button className={`lp-modal__tab${authTab === 'login' ? ' lp-modal__tab--active' : ''}`}
+                onClick={() => { setAuthTab('login'); setAuthError('') }}>{T.auth_login}</button>
+            </div>
+
+            <div className="lp-modal__body">
+              {authError && <div className="lp-error-msg">{authError}</div>}
+
+              <div className="lp-form-group">
+                <label>{T.auth_phone}</label>
+                <input
+                  type="tel"
+                  placeholder="+998 90 123 45 67"
+                  value={authPhone}
+                  onChange={e => setAuthPhone(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAuth()}
+                  autoFocus
+                />
+              </div>
+
+              {authTab === 'register' && (
+                <>
+                  <div className="lp-form-group">
+                    <label>{T.auth_fname}</label>
+                    <input
+                      type="text"
+                      placeholder={lang === 'uz' ? 'Ismingiz' : 'Ваше имя'}
+                      value={authFName}
+                      onChange={e => setAuthFName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAuth()}
+                    />
+                  </div>
+                  <div className="lp-form-group">
+                    <label>{T.auth_lname}</label>
+                    <input
+                      type="text"
+                      placeholder={lang === 'uz' ? 'Familiyangiz' : 'Ваша фамилия'}
+                      value={authLName}
+                      onChange={e => setAuthLName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAuth()}
+                    />
+                  </div>
+                  <p className="lp-modal__note">{T.auth_note}</p>
+                </>
+              )}
+              {authTab === 'login' && <p className="lp-modal__note">{T.auth_login_note}</p>}
+
+              <button className="lp-modal__submit" onClick={handleAuth} disabled={authLoading}>
+                {authLoading
+                  ? <><span className="lp-spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> {lang === 'uz' ? 'Kutib turing...' : 'Подождите...'}</>
+                  : (authTab === 'register' ? T.auth_register_btn : T.auth_login_btn)
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── CHECKOUT MODAL ─────────────────────────────────────────── */}
+      {showCheckout && (
+        <div className="lp-modal-bg" onClick={e => { if (e.target === e.currentTarget && !coLoading) setShowCheckout(false) }}>
+          <div className="lp-modal lp-checkout">
+            {coSuccess ? (
+              <div className="lp-success-anim">
+                <span className="lp-success-anim__icon">🎉</span>
+                <div className="lp-success-anim__title">{T.success_title}</div>
+                <p className="lp-success-anim__sub">{T.success_sub}</p>
+              </div>
+            ) : (
+              <>
+                <div className="lp-modal__head">
+                  <span className="lp-modal__title">📦 {T.checkout_title}</span>
+                  <button className="lp-modal__close" onClick={() => setShowCheckout(false)}>✕</button>
+                </div>
+                <div className="lp-modal__body">
+                  <div className="lp-form-group">
+                    <label>{T.checkout_items}</label>
+                  </div>
+                  <div className="lp-checkout-items">
+                    {cart.map(({ item, qty }) => (
+                      <div key={item.id} className="lp-checkout-item">
+                        <span className="lp-checkout-item__name">{item.name}</span>
+                        <span className="lp-checkout-item__qty">× {qty}</span>
+                        <span className="lp-checkout-item__price">{fmt(item.price * qty)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="lp-form-group">
+                    <label>{T.checkout_address} *</label>
+                    <textarea rows={3} placeholder={T.checkout_address_ph}
+                      value={coAddr} onChange={e => setCoAddr(e.target.value)} />
+                  </div>
+                  <div className="lp-form-group">
+                    <label>{T.checkout_note}</label>
+                    <textarea rows={2} placeholder={T.checkout_note_ph}
+                      value={coNote} onChange={e => setCoNote(e.target.value)} />
+                  </div>
+
+                  <div className="lp-form-group">
+                    <label>{T.checkout_promo}</label>
+                    <div className="lp-promo-row">
+                      <input
+                        type="text"
+                        placeholder={T.checkout_promo_ph}
+                        value={coPromo}
+                        onChange={e => { setCoPromo(e.target.value); setPromoResult(null) }}
+                      />
+                      <button className="lp-promo-apply" onClick={applyPromo}
+                        disabled={promoLoading || !coPromo.trim()}>
+                        {promoLoading
+                          ? <span className="lp-spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                          : T.checkout_promo_apply
+                        }
+                      </button>
+                    </div>
+                  </div>
+
+                  {promoResult && (
+                    <div className="lp-promo-success">
+                      🎉 {T.toast_promo_ok(promoResult.discount_percent)}
+                    </div>
+                  )}
+
+                  <div className="lp-checkout-total">
+                    <span className="lp-checkout-total__label">{T.checkout_total}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {promoResult && <span className="lp-checkout-total__old">{fmt(cartTotal)}</span>}
+                      <span className="lp-checkout-total__price">{fmt(discountedTotal)}</span>
+                    </div>
+                  </div>
+
+                  {coError && <div className="lp-error-msg">{coError}</div>}
+
+                  <button className="lp-modal__submit" onClick={submitOrder} disabled={coLoading}>
+                    {coLoading
+                      ? <><span className="lp-spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> {lang === 'uz' ? 'Yuborilmoqda...' : 'Отправка...'}</>
+                      : `🚀 ${T.checkout_btn}`
+                    }
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── ORDERS PANEL ───────────────────────────────────────────── */}
+      {showOrders && (
+        <>
+          <div className="lp-overlay" onClick={() => setShowOrders(false)} />
+          <aside className="lp-orders">
+            <div className="lp-orders__header">
+              <span className="lp-orders__title">📦 {T.orders_title}</span>
+              <button className="lp-orders__new-btn" onClick={() => { setShowOrders(false); scrollTo('menu') }}>
+                {T.orders_new}
+              </button>
+              <button className="lp-orders__close" onClick={() => setShowOrders(false)}>✕</button>
+            </div>
+
+            <div className="lp-orders__body">
+              {ordersLoading ? (
+                <div className="lp-orders__loading"><div className="lp-spinner" /><span>{T.orders_loading}</span></div>
+              ) : orders.length === 0 ? (
+                <div className="lp-orders__empty"><span style={{ fontSize: '2.5rem' }}>📭</span><span>{T.orders_empty}</span></div>
+              ) : orders.map(order => {
+                const stepIdx    = STATUS_STEPS.indexOf(order.status)
+                const isCancelled = order.status === 'cancelled'
+                const canCancel  = ['pending', 'cooking'].includes(order.status)
+
                 return (
-                  <div key={order.id} className={`lp-order-card status-${order.status}`}>
-                    <div className="lp-order-card__head">
-                      <span className="lp-order-code">#{order.order_code}</span>
+                  <div key={order.id} className={`lp-order-card${flashOrders.has(order.order_code) ? ' lp-order-card--updated' : ''}`}>
+                    <div className="lp-order-card__top">
+                      <span className="lp-order-card__code">#{order.order_code}</span>
+                      <span className="lp-order-card__date">
+                        {order.created_at
+                          ? new Date(order.created_at).toLocaleString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                          : ''}
+                      </span>
                       <span className={`lp-status-badge lp-status-badge--${order.status}`}>
-                        {statusLabel(order.status, T)}
+                        {T[STATUS_KEY[order.status]] || order.status}
                       </span>
                     </div>
 
-                    {/* Status progress */}
-                    {order.status !== 'rejected' && (
-                      <div className="lp-order-progress">
-                        {STATUS_STEPS.map((step, si) => (
-                          <div key={step} className={`lp-progress-step ${si <= stepIdx ? 'done' : ''} ${si === stepIdx ? 'active' : ''}`}>
-                            <div className="lp-progress-dot"/>
-                            <span>{statusLabel(step, T)}</span>
-                            {si < STATUS_STEPS.length-1 && <div className={`lp-progress-line ${si < stepIdx ? 'done' : ''}`}/>}
-                          </div>
-                        ))}
+                    <div className="lp-order-card__items">
+                      {(order.items || []).map((it, j) => (
+                        <div key={j} className="lp-order-card__item">
+                          <span>{it.menu_item_name || it.name || it.menu_item?.name || `#${it.menu_item_id}`}{it.quantity > 1 ? ` × ${it.quantity}` : ''}</span>
+                          <span className="lp-order-card__item-price">{it.price ? fmt(it.price * (it.quantity || 1)) : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="lp-order-card__total">
+                      {T.order_total} <span>{fmt(order.total_price || order.total || order.final_price || 0)}</span>
+                    </div>
+
+                    {!isCancelled && (
+                      <div className="lp-status-bar">
+                        <div className="lp-status-bar__steps">
+                          {STATUS_STEPS.map((step, si) => (
+                            <div key={step} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                              <div className={`lp-status-step${si === stepIdx ? ' lp-status-step--active' : ''}${si < stepIdx ? ' lp-status-step--done' : ''}`}>
+                                <div className="lp-status-step__dot" />
+                                <span className="lp-status-step__label">{T[STATUS_KEY[step]]}</span>
+                              </div>
+                              {si < STATUS_STEPS.length - 1 && (
+                                <div className={`lp-status-connector${si < stepIdx ? ' lp-status-connector--done' : ''}`} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    <div className="lp-order-card__body">
-                      {order.items?.map((item, ii) => (
-                        <span key={ii} className="lp-order-item-chip">{item.item_name} ×{item.quantity}</span>
-                      ))}
-                    </div>
-                    <div className="lp-order-card__foot">
-                      <span className="lp-order-total">{order.final_price?.toLocaleString()} {T.sum}</span>
-                      <span className="lp-order-date">{fmtDate(order.created_at)}</span>
-                      {cancellable && (
-                        <button className="lp-cancel-btn" onClick={() => cancelOrder(order.order_code)}>
-                          <X size={13}/> {T.cancelBtn}
-                        </button>
-                      )}
-                    </div>
+                    {canCancel && (
+                      <button className="lp-order-card__cancel" onClick={() => cancelOrder(order.order_code)}>
+                        ✕ {T.order_cancel}
+                      </button>
+                    )}
                   </div>
                 )
               })}
             </div>
-          </div>
-        </div>
+          </aside>
+        </>
       )}
+
+      {/* ─── TOAST CONTAINER ────────────────────────────────────────── */}
+      <div className="lp-toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`lp-toast lp-toast--${t.type}${t.exiting ? ' lp-toast--exiting' : ''}`}>
+            {t.msg}
+          </div>
+        ))}
+      </div>
+
     </div>
   )
 }
