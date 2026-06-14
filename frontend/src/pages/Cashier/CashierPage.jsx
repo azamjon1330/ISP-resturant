@@ -185,7 +185,7 @@ export default function CashierPage() {
 
       <header className="cashier-header">
         <div className="cashier-header-left">
-          <button className="btn-icon" onClick={() => navigate('/')}><Home size={20} /></button>
+          <button className="btn-icon" onClick={() => navigate('/staff')}><Home size={20} /></button>
           <div className="cashier-logo">
             <span className="logo-text">ECO taomlar</span>
             <span className="logo-sub">Kassa paneli</span>

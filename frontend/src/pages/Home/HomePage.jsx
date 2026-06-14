@@ -15,6 +15,12 @@ export default function HomePage() {
           </div>
           <h1>ECO taomlar</h1>
           <p>Milliy taomlar kafesi boshqaruv tizimi</p>
+          <button
+            style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,.5)', fontSize:13, marginTop:4 }}
+            onClick={() => navigate('/')}
+          >
+            ← Asosiy sahifaga qaytish
+          </button>
           <div className="home-divider" />
         </div>
 
