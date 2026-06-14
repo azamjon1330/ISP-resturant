@@ -7,6 +7,7 @@ import './CashierPage.css'
 
 const statusLabels = { pending: "Kutilmoqda", cooking: "Tayyorlanmoqda", ready: "Tayyor", served: "Berildi" }
 const statusColors = { pending: 'badge-yellow', cooking: 'badge-orange', ready: 'badge-green', served: 'badge-gray' }
+const ORDER_TYPE_LABELS = { delivery: '🚚 Yetkazish', dine_in: '🍽️ Ichkarida' }
 
 export default function CashierPage() {
   const navigate = useNavigate()
@@ -132,7 +133,7 @@ export default function CashierPage() {
 
       <header className="cashier-header">
         <div className="cashier-header-left">
-          <button className="btn-icon" onClick={() => navigate('/')}><Home size={20} /></button>
+          <button className="btn-icon" onClick={() => navigate('/staff')}><Home size={20} /></button>
           <div className="cashier-logo">
             <span className="logo-text">ECO taomlar</span>
             <span className="logo-sub">Kassa paneli</span>
@@ -291,10 +292,27 @@ export default function CashierPage() {
                 <div key={order.id} className={`order-card glass-card status-${order.status}`}>
                   <div className="order-card-header">
                     <span className="order-number">#{order.order_code}</span>
-                    <span className={`badge ${statusColors[order.status]}`}>{statusLabels[order.status]}</span>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {order.order_type === 'delivery' && (
+                        <span className="badge badge-blue" style={{ background: '#1d4ed8', color: '#fff' }}>
+                          🚚 Yetkazish
+                        </span>
+                      )}
+                      <span className={`badge ${statusColors[order.status]}`}>{statusLabels[order.status]}</span>
+                    </div>
                   </div>
                   <div className="order-card-body">
                     <span className="order-total">{order.final_price?.toLocaleString()} so'm</span>
+                    {order.customer_name && (
+                      <p className="order-note" style={{ color: '#3b82f6', marginBottom: 4 }}>
+                        👤 {order.customer_name} {order.customer_phone ? `· ${order.customer_phone}` : ''}
+                      </p>
+                    )}
+                    {order.delivery_address && (
+                      <p className="order-note" style={{ color: '#059669' }}>
+                        📍 {order.delivery_address}
+                      </p>
+                    )}
                     {order.card_code && <span className="order-card-code"><QrCode size={12} /> {order.card_code}</span>}
                     {order.note && <p className="order-note">{order.note}</p>}
                   </div>

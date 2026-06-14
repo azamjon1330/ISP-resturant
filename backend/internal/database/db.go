@@ -92,6 +92,23 @@ func runMigrations() {
 			notes            TEXT,
 			created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
+
+		// Online ordering: customer accounts
+		`CREATE TABLE IF NOT EXISTS customers (
+			id            SERIAL PRIMARY KEY,
+			name          VARCHAR(255) NOT NULL,
+			last_name     VARCHAR(255) DEFAULT '',
+			phone         VARCHAR(20)  UNIQUE NOT NULL,
+			password_hash VARCHAR(255) NOT NULL,
+			created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Online ordering: delivery fields on orders
+		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_type       VARCHAR(20)  DEFAULT 'dine_in'`,
+		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT         DEFAULT ''`,
+		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name    VARCHAR(255) DEFAULT ''`,
+		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone   VARCHAR(20)  DEFAULT ''`,
+		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id      INTEGER`,
 	}
 
 	for _, q := range migrations {

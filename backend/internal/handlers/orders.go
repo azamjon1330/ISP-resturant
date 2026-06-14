@@ -16,9 +16,14 @@ import (
 )
 
 type CreateOrderRequest struct {
-	Items    []OrderItemReq `json:"items" binding:"required"`
-	CardCode string         `json:"card_code"`
-	Note     string         `json:"note"`
+	Items           []OrderItemReq `json:"items" binding:"required"`
+	CardCode        string         `json:"card_code"`
+	Note            string         `json:"note"`
+	OrderType       string         `json:"order_type"`
+	DeliveryAddress string         `json:"delivery_address"`
+	CustomerName    string         `json:"customer_name"`
+	CustomerPhone   string         `json:"customer_phone"`
+	CustomerID      int            `json:"customer_id"`
 }
 
 type OrderItemReq struct {
@@ -108,6 +113,11 @@ func CreateOrder(c *gin.Context) {
 		}
 	}
 
+	orderType := req.OrderType
+	if orderType == "" {
+		orderType = "dine_in"
+	}
+
 	if len(shortages) > 0 {
 		// Сохраняем заказ со статусом "rejected" (Отказ); склад не уменьшаем.
 		var rejectedCode string
@@ -122,9 +132,10 @@ func CreateOrder(c *gin.Context) {
 
 		var rejectedID int
 		insErr := tx.QueryRow(
-			`INSERT INTO orders (order_code, total_price, discount_amount, final_price, status, card_code, note)
-			 VALUES ($1,$2,0,$2,'rejected',$3,$4) RETURNING id`,
+			`INSERT INTO orders (order_code, total_price, discount_amount, final_price, status, card_code, note, order_type, delivery_address, customer_name, customer_phone, customer_id)
+			 VALUES ($1,$2,0,$2,'rejected',$3,$4,$5,$6,$7,$8,NULLIF($9,0)) RETURNING id`,
 			rejectedCode, totalPrice, req.CardCode, req.Note,
+			orderType, req.DeliveryAddress, req.CustomerName, req.CustomerPhone, req.CustomerID,
 		).Scan(&rejectedID)
 		if insErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": insErr.Error()})
@@ -183,9 +194,10 @@ func CreateOrder(c *gin.Context) {
 
 	var orderID int
 	err = tx.QueryRow(
-		`INSERT INTO orders (order_code, total_price, discount_amount, final_price, status, card_code, note)
-		 VALUES ($1,$2,$3,$4,'pending',$5,$6) RETURNING id`,
+		`INSERT INTO orders (order_code, total_price, discount_amount, final_price, status, card_code, note, order_type, delivery_address, customer_name, customer_phone, customer_id)
+		 VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,NULLIF($11,0)) RETURNING id`,
 		orderCode, totalPrice, discountAmount, finalPrice, req.CardCode, req.Note,
+		orderType, req.DeliveryAddress, req.CustomerName, req.CustomerPhone, req.CustomerID,
 	).Scan(&orderID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -220,16 +232,21 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	order := models.Order{
-		ID:             orderID,
-		OrderCode:      orderCode,
-		TotalPrice:     totalPrice,
-		DiscountAmount: discountAmount,
-		FinalPrice:     finalPrice,
-		Status:         "pending",
-		CardCode:       req.CardCode,
-		Note:           req.Note,
-		Items:          orderItems,
-		CreatedAt:      time.Now(),
+		ID:              orderID,
+		OrderCode:       orderCode,
+		TotalPrice:      totalPrice,
+		DiscountAmount:  discountAmount,
+		FinalPrice:      finalPrice,
+		Status:          "pending",
+		CardCode:        req.CardCode,
+		Note:            req.Note,
+		OrderType:       orderType,
+		DeliveryAddress: req.DeliveryAddress,
+		CustomerName:    req.CustomerName,
+		CustomerPhone:   req.CustomerPhone,
+		CustomerID:      req.CustomerID,
+		Items:           orderItems,
+		CreatedAt:       time.Now(),
 	}
 
 	BroadcastMessage("new_order", order)
@@ -323,7 +340,10 @@ func GetOrders(c *gin.Context) {
 	}
 
 	orderQuery := `SELECT id, order_code, total_price, discount_amount, final_price, status,
-	               COALESCE(card_code,''), COALESCE(note,''), created_at, updated_at
+	               COALESCE(card_code,''), COALESCE(note,''),
+	               COALESCE(order_type,'dine_in'), COALESCE(delivery_address,''),
+	               COALESCE(customer_name,''), COALESCE(customer_phone,''), COALESCE(customer_id,0),
+	               created_at, updated_at
 	               FROM orders` + whereClause + ` ORDER BY created_at DESC LIMIT 200`
 
 	rows, err := database.DB.Query(orderQuery, args...)
@@ -338,7 +358,9 @@ func GetOrders(c *gin.Context) {
 	for rows.Next() {
 		var o models.Order
 		rows.Scan(&o.ID, &o.OrderCode, &o.TotalPrice, &o.DiscountAmount, &o.FinalPrice,
-			&o.Status, &o.CardCode, &o.Note, &o.CreatedAt, &o.UpdatedAt)
+			&o.Status, &o.CardCode, &o.Note,
+			&o.OrderType, &o.DeliveryAddress, &o.CustomerName, &o.CustomerPhone, &o.CustomerID,
+			&o.CreatedAt, &o.UpdatedAt)
 		o.Items = []models.OrderItem{}
 		orderMap[o.ID] = len(orders)
 		orders = append(orders, o)
@@ -373,10 +395,15 @@ func GetOrderByCode(c *gin.Context) {
 	var o models.Order
 	err := database.DB.QueryRow(
 		`SELECT id, order_code, total_price, discount_amount, final_price, status,
-		 COALESCE(card_code,''), COALESCE(note,''), created_at, updated_at
+		 COALESCE(card_code,''), COALESCE(note,''),
+		 COALESCE(order_type,'dine_in'), COALESCE(delivery_address,''),
+		 COALESCE(customer_name,''), COALESCE(customer_phone,''), COALESCE(customer_id,0),
+		 created_at, updated_at
 		 FROM orders WHERE order_code=$1`, code,
 	).Scan(&o.ID, &o.OrderCode, &o.TotalPrice, &o.DiscountAmount, &o.FinalPrice,
-		&o.Status, &o.CardCode, &o.Note, &o.CreatedAt, &o.UpdatedAt)
+		&o.Status, &o.CardCode, &o.Note,
+		&o.OrderType, &o.DeliveryAddress, &o.CustomerName, &o.CustomerPhone, &o.CustomerID,
+		&o.CreatedAt, &o.UpdatedAt)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		return

@@ -73,4 +73,9 @@ export const authAPI = {
   login: (username, password) => api.post('/auth/login', { username, password }),
 }
 
+export const customerAPI = {
+  register: (data) => api.post('/auth/customer/register', data),
+  login: (data) => api.post('/auth/customer/login', data),
+}
+
 export default api

@@ -104,7 +104,7 @@ export default function KitchenPage() {
       </div>
       <header className="kitchen-header">
         <div className="kh-left">
-          <button className="kh-icon-btn" onClick={() => navigate('/')}><Home size={20} /></button>
+          <button className="kh-icon-btn" onClick={() => navigate('/staff')}><Home size={20} /></button>
           <ChefHat size={24} color="white" />
           <h1 className="kh-title">Oshpazxona paneli</h1>
         </div>

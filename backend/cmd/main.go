@@ -32,6 +32,8 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/auth/login", handlers.Login)
+		api.POST("/auth/customer/register", handlers.CustomerRegister)
+		api.POST("/auth/customer/login", handlers.CustomerLogin)
 		api.GET("/menu", handlers.GetMenu)
 		api.GET("/orders/:code", handlers.GetOrderByCode)
 		api.POST("/orders", handlers.CreateOrder)
