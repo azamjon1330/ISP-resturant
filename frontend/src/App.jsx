@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import LandingPage from './pages/Landing/LandingPage'
 import HomePage from './pages/Home/HomePage'
 import CashierPage from './pages/Cashier/CashierPage'
 import KitchenPage from './pages/Kitchen/KitchenPage'
@@ -30,7 +31,7 @@ export default function App() {
         }}
       />
       <Routes>
-        <Route path="/" element={<ShopPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/staff" element={<HomePage />} />
         <Route path="/shop" element={<ShopPage />} />
         <Route path="/courier" element={<CourierPage />} />
