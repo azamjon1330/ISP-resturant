@@ -1243,17 +1243,21 @@ export default function LandingPage() {
                         </button>
                       </div>
                       {mapOpen && (
-                        <div className="lp-map-wrap">
+                        <div className="lp-map-wrap" style={{ height: 260 }}>
                           <MapPicker
                             lat={delivLat} lng={delivLng}
-                            onChange={({ lat, lng }) => { setDLat(lat); setDLng(lng) }}
+                            showSearch
+                            onChange={({ lat, lng, address }) => {
+                              setDLat(lat); setDLng(lng)
+                              if (address) setAddr(address)
+                            }}
                           />
-                          {delivLat && (
-                            <p className="lp-map-coords">
-                              <MapPin size={12} /> {delivLat.toFixed(5)}, {delivLng.toFixed(5)}
-                            </p>
-                          )}
                         </div>
+                      )}
+                      {delivLat && (
+                        <p className="lp-map-coords">
+                          <MapPin size={12} /> {delivLat.toFixed(5)}, {delivLng.toFixed(5)}
+                        </p>
                       )}
                     </div>
                   )}
@@ -1264,8 +1268,8 @@ export default function LandingPage() {
                         {lang === 'uz' ? "Olib ketish manzili" : "Место самовывоза"}
                         {restSettings.pickup_address && <span style={{ fontWeight: 400, marginLeft: 6 }}>— {restSettings.pickup_address}</span>}
                       </p>
-                      <div className="lp-map-wrap">
-                        <MapPicker lat={restSettings.pickup_lat} lng={restSettings.pickup_lng} readonly zoom={15} isPickup />
+                      <div className="lp-map-wrap" style={{ height: 220 }}>
+                        <MapPicker lat={restSettings.pickup_lat} lng={restSettings.pickup_lng} readonly zoom={16} isPickup />
                       </div>
                     </div>
                   )}
