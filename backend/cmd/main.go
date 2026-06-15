@@ -47,6 +47,9 @@ func main() {
 
 		// Public promo preview — used by the shop to show discount before checkout
 		api.POST("/promo/check", handlers.CheckPromoCode)
+
+		// Public restaurant settings (pickup location, etc.)
+		api.GET("/settings", handlers.GetSettings)
 	}
 
 	// Customer-authenticated routes
@@ -140,6 +143,9 @@ func main() {
 		admin.POST("/couriers", handlers.AdminCreateCourier)
 		admin.PUT("/couriers/:id", handlers.AdminUpdateCourier)
 		admin.DELETE("/couriers/:id", handlers.AdminDeleteCourier)
+
+		// Restaurant settings (pickup location, etc.)
+		admin.POST("/settings", handlers.UpdateSetting)
 	}
 
 	port := os.Getenv("PORT")

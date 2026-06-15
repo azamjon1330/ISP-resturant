@@ -5,8 +5,9 @@ import {
   User, LogOut, ClipboardList, Star, Truck, Package,
   Search, ClipboardCheck, Rocket, MapPin, Phone, Utensils,
   CheckCircle, Loader, ChevronDown, Send, Moon, Sun, Menu,
-  Clock,
+  Clock, Navigation,
 } from 'lucide-react'
+import MapPicker from '../../components/MapPicker'
 import './LandingPage.css'
 
 /* ─── API helper for reviews ─────────────────────────────────────────────────── */
@@ -242,6 +243,10 @@ export default function LandingPage() {
   const [checkoutDone, setCkD] = useState(false)
   const [delivType, setDT]     = useState('pickup')
   const [addrVal, setAddr]     = useState('')
+  const [delivLat, setDLat]    = useState(null)
+  const [delivLng, setDLng]    = useState(null)
+  const [mapOpen, setMapOpen]  = useState(false)
+  const [restSettings, setRS]  = useState({ pickup_lat: 41.2995, pickup_lng: 69.2401, pickup_address: '' })
   const [noteVal, setNote]     = useState('')
   const [promoVal, setPromo]   = useState('')
   const [promoRes, setPromoR]  = useState(null)
@@ -333,6 +338,15 @@ export default function LandingPage() {
     // Reviews
     reviewsAPI.getAll().then(data => {
       if (Array.isArray(data)) setRvs(data)
+    }).catch(() => {})
+
+    // Restaurant settings (pickup location)
+    fetch('/api/settings').then(r => r.json()).then(s => {
+      if (s.pickup_lat) setRS({
+        pickup_lat: parseFloat(s.pickup_lat),
+        pickup_lng: parseFloat(s.pickup_lng),
+        pickup_address: s.pickup_address || '',
+      })
     }).catch(() => {})
 
     // Preload hero images
@@ -518,6 +532,8 @@ export default function LandingPage() {
         items: cart.map(c => ({ menu_item_id: c.id, quantity: c.quantity })),
         delivery_type: delivType,
         delivery_address: delivType === 'delivery' ? addrVal : '',
+        delivery_lat: delivType === 'delivery' ? delivLat : null,
+        delivery_lng: delivType === 'delivery' ? delivLng : null,
         note: noteVal,
         customer_first_name: customer?.first_name || '',
         customer_last_name:  customer?.last_name  || '',
@@ -1220,7 +1236,37 @@ export default function LandingPage() {
                   {delivType === 'delivery' && (
                     <div className="lp-field">
                       <label>{T.addr_lbl}</label>
-                      <input placeholder={T.addr_ph} value={addrVal} onChange={e => setAddr(e.target.value)} />
+                      <div className="lp-addr-row">
+                        <input placeholder={T.addr_ph} value={addrVal} onChange={e => setAddr(e.target.value)} />
+                        <button className="lp-map-btn" type="button" onClick={() => setMapOpen(m => !m)} title="Выбрать на карте">
+                          <MapPin size={16} />
+                        </button>
+                      </div>
+                      {mapOpen && (
+                        <div className="lp-map-wrap">
+                          <MapPicker
+                            lat={delivLat} lng={delivLng}
+                            onChange={({ lat, lng }) => { setDLat(lat); setDLng(lng) }}
+                          />
+                          {delivLat && (
+                            <p className="lp-map-coords">
+                              <Navigation size={12} /> {delivLat.toFixed(5)}, {delivLng.toFixed(5)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {delivType === 'pickup' && (
+                    <div className="lp-pickup-map">
+                      <p className="lp-pickup-label">
+                        <MapPin size={13} />
+                        {lang === 'uz' ? "Olib ketish manzili" : "Место самовывоза"}
+                        {restSettings.pickup_address && <span style={{ fontWeight: 400, marginLeft: 6 }}>— {restSettings.pickup_address}</span>}
+                      </p>
+                      <div className="lp-map-wrap">
+                        <MapPicker lat={restSettings.pickup_lat} lng={restSettings.pickup_lng} readonly zoom={15} />
+                      </div>
                     </div>
                   )}
 

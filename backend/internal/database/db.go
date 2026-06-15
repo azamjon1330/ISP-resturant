@@ -282,6 +282,15 @@ func runMigrations() {
 		)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS reviews_order_id_unique ON reviews(order_id)`,
 
+		// ── Restaurant settings (pickup location, etc.) ───────────────────────
+		`CREATE TABLE IF NOT EXISTS restaurant_settings (
+			key   VARCHAR(100) PRIMARY KEY,
+			value TEXT NOT NULL
+		)`,
+		`INSERT INTO restaurant_settings (key, value) VALUES ('pickup_lat', '41.2995') ON CONFLICT (key) DO NOTHING`,
+		`INSERT INTO restaurant_settings (key, value) VALUES ('pickup_lng', '69.2401') ON CONFLICT (key) DO NOTHING`,
+		`INSERT INTO restaurant_settings (key, value) VALUES ('pickup_address', 'Toshkent, O''zbekiston') ON CONFLICT (key) DO NOTHING`,
+
 		// ── Trigger: auto-update orders.updated_at ────────────────────────────
 		`CREATE OR REPLACE FUNCTION update_updated_at()
 		 RETURNS TRIGGER AS $$
