@@ -148,11 +148,12 @@ func runMigrations() {
 		)`,
 
 		`CREATE TABLE IF NOT EXISTS customers (
-			id         SERIAL PRIMARY KEY,
-			phone      VARCHAR(30) UNIQUE NOT NULL,
-			first_name VARCHAR(100) NOT NULL DEFAULT '',
-			last_name  VARCHAR(100) DEFAULT '',
-			created_at TIMESTAMPTZ DEFAULT NOW()
+			id            SERIAL PRIMARY KEY,
+			phone         VARCHAR(30) UNIQUE NOT NULL,
+			first_name    VARCHAR(100) NOT NULL DEFAULT '',
+			last_name     VARCHAR(100) DEFAULT '',
+			password_hash VARCHAR(255),
+			created_at    TIMESTAMPTZ DEFAULT NOW()
 		)`,
 
 		`CREATE TABLE IF NOT EXISTS customer_addresses (
@@ -204,6 +205,7 @@ func runMigrations() {
 		)`,
 
 		// ── Additive columns (safe to re-run with IF NOT EXISTS) ─────────────
+		`ALTER TABLE customers ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`,
 		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id)`,
 		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier_id INTEGER NULL REFERENCES couriers(id) ON DELETE SET NULL`,
 		`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS expense_type VARCHAR(20) DEFAULT 'one_time'`,

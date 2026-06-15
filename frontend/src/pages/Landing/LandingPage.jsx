@@ -27,11 +27,11 @@ const LANG = {
     nav_menu: 'Menyu', nav_about: 'Haqimizda', nav_contact: 'Aloqa',
     auth_btn: "Kirish / Ro'yxat", orders_btn: 'Buyurtmalarim', logout: 'Chiqish',
     slides: [
-      { eye: '🥘 O\'ZBEK MILLIY TAOMI', title: "Yoqimli", accent: 'O\'zbek Oshi', sub: "Qo'zichoq go'shti, ziravorlar va yangi guruchdan tayyorlangan an'anaviy plov. Har bir qoshiq — milliy meros." },
-      { eye: '🍲 ISSIQ VA TO\'YIMLI',    title: "Badanga Shifo",   accent: "Sho'rva",  sub: "Qo'y go'shtidan sekin pishirilgan, ko'katlar va sabzavotlar bilan boyitilgan milliy sho'rva." },
-      { eye: '🍜 QO\'LDA TAYYORLANGAN', title: "Uy Ta'midi",      accent: 'Lagman',   sub: "Yangi qo'lda yoylgan xamir, go'sht va rang-barang sabzavotlar bilan tayyorlangan issiq lagman." },
-      { eye: '🥟 TENDER VA SHIRINLIK',  title: "Nozik va Mazali", accent: 'Manti',    sub: "Yupqa xamirga o'ralgan, bug'da pishirilgan mol go'shtli manti. Bir tekis va to'yimli." },
-      { eye: '🔥 TANDIRDA PISHIRILGAN', title: "Qaynoq va Yangi", accent: 'Samsa',   sub: "Tandir issiqligida oltin rangga pishirilgan, go'sht yoki sabzavot to'ldirmalari bilan samsa." },
+      { eye: "O'ZBEK MILLIY TAOMI",  title: "Yoqimli",        accent: "O'zbek Oshi", sub: "Qo'zichoq go'shti, ziravorlar va yangi guruchdan tayyorlangan an'anaviy plov. Har bir qoshiq — milliy meros." },
+      { eye: "TENDER VA SHIRINLIK",  title: "Nozik va Mazali", accent: "Manti",       sub: "Yupqa xamirga o'ralgan, bug'da pishirilgan mol go'shtli manti. Bir tekis va to'yimli." },
+      { eye: "ISSIQ VA TO'YIMLI",    title: "Badanga Shifo",   accent: "Sho'rva",     sub: "Qo'y go'shtidan sekin pishirilgan, ko'katlar va sabzavotlar bilan boyitilgan milliy sho'rva." },
+      { eye: "TANDIRDA PISHIRILGAN", title: "Qaynoq va Yangi", accent: "Samsa",       sub: "Tandir issiqligida oltin rangga pishirilgan, go'sht yoki sabzavot to'ldirmalari bilan samsa." },
+      { eye: "QO'LDA TAYYORLANGAN",  title: "Uy Ta'midi",      accent: "Lagman",      sub: "Yangi qo'lda yoylgan xamir, go'sht va rang-barang sabzavotlar bilan tayyorlangan issiq lagman." },
     ],
     order_now: 'Hozir buyurtma bering', view_menu: "Menyuni ko'rish",
     menu_eye: 'BIZNING MENYU', menu_title: 'Sevimli Taomlaringiz', menu_sub: 'Har kuni yangi tayyorlangan, milliy retseptlar asosida',
@@ -53,10 +53,11 @@ const LANG = {
     auth_ttl: 'Xush kelibsiz', tab_reg: "Ro'yxat", tab_login: 'Kirish',
     fname_lbl: 'Ism *', fname_ph: 'Ismingiz',
     lname_lbl: 'Familiya', lname_ph: 'Familiyangiz (ixtiyoriy)',
-    phone_lbl: 'Telefon raqami *', phone_ph: '+998 90 123 45 67',
+    phone_lbl: 'Telefon raqami *', phone_ph: '90 123 45 67',
+    pass_lbl: 'Parol *', pass_ph: 'Parolingiz',
     reg_btn: "Ro'yxatdan o'tish", login_btn: 'Kirish',
-    reg_note: "Telefon raqamingizni kiriting. Hisobingiz bo'lsa, avtomatik kiriladi.",
-    login_note: "Ro'yxatdan o'tgan raqamingizni kiriting.",
+    reg_note: "Telefon va parol kiritish majburiy. Minimal 4 ta belgi.",
+    login_note: "Telefon raqami va parolingizni kiriting.",
     co_ttl: 'Buyurtmani rasmiylashtirish',
     delivery: 'Yetkazish', pickup: 'Olib ketish',
     addr_lbl: 'Yetkazish manzili *', addr_ph: 'Ko\'cha, uy, xonadon...',
@@ -85,11 +86,11 @@ const LANG = {
     nav_menu: 'Меню', nav_about: 'О нас', nav_contact: 'Контакты',
     auth_btn: 'Войти / Регистрация', orders_btn: 'Мои заказы', logout: 'Выйти',
     slides: [
-      { eye: '🥘 УЗБЕКСКАЯ КУХНЯ',    title: 'Настоящий',         accent: 'Узбекский Плов', sub: 'Традиционный плов из баранины, приправ и свежего риса. Каждая ложка — частица национального наследия.' },
-      { eye: '🍲 ГОРЯЧЕЕ И СЫТНОЕ',   title: 'Целебный',           accent: 'Шурпа',          sub: 'Медленно приготовленная шурпа из баранины, обогащённая зеленью и овощами.' },
-      { eye: '🍜 РУЧНАЯ РАБОТА',      title: 'Домашний вкус',      accent: 'Лагман',         sub: 'Лапша ручного приготовления с мясом и овощами. Горячий и ароматный.' },
-      { eye: '🥟 НЕЖНОЕ И ВКУСНОЕ',   title: 'Нежное и Сытное',   accent: 'Манты',          sub: 'Тонкое тесто с мясной начинкой, приготовленное на пару. Сочно и питательно.' },
-      { eye: '🔥 ИЗ ТАНДИРА',         title: 'Горячее и Свежее',   accent: 'Самса',          sub: 'Самса, запечённая в тандире до золотистой корочки, с мясом или овощами.' },
+      { eye: 'УЗБЕКСКАЯ КУХНЯ',   title: 'Настоящий',       accent: 'Узбекский Плов', sub: 'Традиционный плов из баранины, приправ и свежего риса. Каждая ложка — частица национального наследия.' },
+      { eye: 'НЕЖНОЕ И ВКУСНОЕ',  title: 'Нежное и Сытное', accent: 'Манты',          sub: 'Тонкое тесто с мясной начинкой, приготовленное на пару. Сочно и питательно.' },
+      { eye: 'ГОРЯЧЕЕ И СЫТНОЕ',  title: 'Целебный',        accent: 'Шурпа',          sub: 'Медленно приготовленная шурпа из баранины, обогащённая зеленью и овощами.' },
+      { eye: 'ИЗ ТАНДИРА',        title: 'Горячее и Свежее', accent: 'Самса',         sub: 'Самса, запечённая в тандире до золотистой корочки, с мясом или овощами.' },
+      { eye: 'РУЧНАЯ РАБОТА',     title: 'Домашний вкус',   accent: 'Лагман',         sub: 'Лапша ручного приготовления с мясом и овощами. Горячий и ароматный.' },
     ],
     order_now: 'Заказать сейчас', view_menu: 'Смотреть меню',
     menu_eye: 'НАШЕ МЕНЮ', menu_title: 'Ваши любимые блюда', menu_sub: 'Каждый день свежее, по национальным рецептам',
@@ -111,10 +112,11 @@ const LANG = {
     auth_ttl: 'Добро пожаловать', tab_reg: 'Регистрация', tab_login: 'Войти',
     fname_lbl: 'Имя *', fname_ph: 'Ваше имя',
     lname_lbl: 'Фамилия', lname_ph: 'Ваша фамилия (необязательно)',
-    phone_lbl: 'Номер телефона *', phone_ph: '+998 90 123 45 67',
+    phone_lbl: 'Номер телефона *', phone_ph: '90 123 45 67',
+    pass_lbl: 'Пароль *', pass_ph: 'Ваш пароль',
     reg_btn: 'Зарегистрироваться', login_btn: 'Войти',
-    reg_note: 'Введите номер телефона. Если аккаунт существует, вы войдёте автоматически.',
-    login_note: 'Введите зарегистрированный номер телефона.',
+    reg_note: 'Телефон и пароль обязательны. Минимум 4 символа.',
+    login_note: 'Введите номер телефона и пароль.',
     co_ttl: 'Оформление заказа',
     delivery: 'Доставка', pickup: 'Самовывоз',
     addr_lbl: 'Адрес доставки *', addr_ph: 'Улица, дом, квартира...',
@@ -143,11 +145,11 @@ const LANG = {
 
 /* ─── Slide images ───────────────────────────────────────────────────────────── */
 const SLIDES_IMG = [
-  'https://images.unsplash.com/photo-ojDzHZHcVx4?w=1920&q=85&auto=format&fit=crop',   // Plov - rice with meat & vegetables
-  'https://images.unsplash.com/photo-qFpTSS7BSuM?w=1920&q=85&auto=format&fit=crop',   // Shorva - meat & vegetable soup/bone broth
-  'https://images.unsplash.com/photo-xvAaSlU-zpM?w=1920&q=85&auto=format&fit=crop',   // Lagman - noodles with meat & vegetables
-  'https://images.unsplash.com/photo-UCGeYgaAP0Y?w=1920&q=85&auto=format&fit=crop',   // Manti - steaming dumplings in bamboo basket
-  'https://images.unsplash.com/photo-rjRctqPNCZU?w=1920&q=85&auto=format&fit=crop',   // Samsa - baked pastry
+  '/images/plov.jpg',    // Plov
+  '/images/manti.jpg',   // Manti
+  '/images/shorva.jpg',  // Shorva
+  '/images/samsa.jpg',   // Samsa
+  '/images/lagman.jpg',  // Lagman
 ]
 
 /* ─── Status config ──────────────────────────────────────────────────────────── */
@@ -354,24 +356,29 @@ export default function LandingPage() {
   const removeFromCart = id => setCart(prev => prev.filter(c => c.id !== id))
 
   // ─── Auth ─────────────────────────────────────────────────────────────────────
-  const [authPhone, setAuthPhone]   = useState('')
-  const [authFName, setAuthFName]   = useState('')
-  const [authLName, setAuthLName]   = useState('')
-  const [authErr, setAuthErr]       = useState('')
-  const [authLoading, setAuthL]     = useState(false)
+  const [authPhone, setAuthPhone]       = useState('')
+  const [authFName, setAuthFName]       = useState('')
+  const [authLName, setAuthLName]       = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authErr, setAuthErr]           = useState('')
+  const [authLoading, setAuthL]         = useState(false)
 
-  const openAuth = (tab = 'register') => { setATab(tab); setAuthErr(''); setAO(true) }
+  const openAuth = (tab = 'register') => {
+    setATab(tab); setAuthErr(''); setAuthPhone(''); setAuthPassword(''); setAO(true)
+  }
 
   const handleAuth = async () => {
-    if (!authPhone.trim()) { setAuthErr(T.err_phone); return }
+    const fullPhone = '+998' + authPhone.replace(/\D/g, '')
+    if (authPhone.replace(/\D/g, '').length !== 9) { setAuthErr(T.err_phone); return }
+    if (!authPassword || authPassword.length < 4) { setAuthErr(T.err_fill); return }
     if (authTab === 'register' && !authFName.trim()) { setAuthErr(T.err_fill); return }
     setAuthL(true); setAuthErr('')
     try {
       let res
       if (authTab === 'register') {
-        res = await customerAPI.register({ phone: authPhone, first_name: authFName, last_name: authLName })
+        res = await customerAPI.register({ phone: fullPhone, first_name: authFName, last_name: authLName, password: authPassword })
       } else {
-        res = await customerAPI.login({ phone: authPhone })
+        res = await customerAPI.login({ phone: fullPhone, password: authPassword })
       }
       const { token, customer } = res.data || {}
       if (!token) { setAuthErr(res.data?.error || 'Xatolik'); return }
@@ -851,8 +858,27 @@ export default function LandingPage() {
               )}
               <div className="lp-fld">
                 <label>{T.phone_lbl}</label>
-                <input type="tel" placeholder={T.phone_ph} value={authPhone} onChange={e => setAuthPhone(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+                <div className="lp-phone-row">
+                  <span className="lp-phone-prefix">+998</span>
+                  <input
+                    type="tel"
+                    placeholder={T.phone_ph}
+                    value={authPhone}
+                    maxLength={9}
+                    onChange={e => setAuthPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    onKeyDown={e => e.key === 'Enter' && handleAuth()}
+                  />
+                </div>
+              </div>
+              <div className="lp-fld">
+                <label>{T.pass_lbl}</label>
+                <input
+                  type="password"
+                  placeholder={T.pass_ph}
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAuth()}
+                />
               </div>
 
               {authErr && <p className="lp-err">{authErr}</p>}

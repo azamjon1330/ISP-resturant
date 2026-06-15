@@ -40,17 +40,18 @@ func normalizePhone(p string) string {
 
 // CustomerRegisterOrLogin
 //
-// Phone-based onboarding. If the phone already exists, the existing customer
-// record is updated with the new name and a fresh token is returned (= login).
-// If it doesn't, a new customer is created and a token is returned.
+// Phone + password onboarding.
+//   - New user: creates account with hashed password.
+//   - Existing user: verifies password, then updates name and returns token.
 func CustomerRegisterOrLogin(c *gin.Context) {
 	var req struct {
-		Phone     string `json:"phone" binding:"required"`
-		FirstName string `json:"first_name" binding:"required"`
+		Phone     string `json:"phone"       binding:"required"`
+		FirstName string `json:"first_name"  binding:"required"`
 		LastName  string `json:"last_name"`
+		Password  string `json:"password"    binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Telefon va ism kiritilishi shart"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Telefon, ism va parol kiritilishi shart"})
 		return
 	}
 	req.Phone = normalizePhone(req.Phone)
@@ -60,43 +61,89 @@ func CustomerRegisterOrLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Telefon va ism kiritilishi shart"})
 		return
 	}
+	if len(req.Password) < 4 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parol kamida 4 ta belgidan iborat bo'lishi kerak"})
+		return
+	}
 
-	var cust models.Customer
+	// Check if phone already exists
+	var existingID int
+	var existingHash sql.NullString
 	err := database.DB.QueryRow(
-		`INSERT INTO customers (phone, first_name, last_name)
-		 VALUES ($1,$2,$3)
-		 ON CONFLICT (phone) DO UPDATE
-		    SET first_name = EXCLUDED.first_name,
-		        last_name  = EXCLUDED.last_name
-		 RETURNING id, phone, first_name, COALESCE(last_name,''), created_at`,
-		req.Phone, req.FirstName, req.LastName,
-	).Scan(&cust.ID, &cust.Phone, &cust.FirstName, &cust.LastName, &cust.CreatedAt)
+		`SELECT id, password_hash FROM customers WHERE phone=$1`, req.Phone,
+	).Scan(&existingID, &existingHash)
+
+	if err == sql.ErrNoRows {
+		// New customer — create with hashed password
+		var cust models.Customer
+		err = database.DB.QueryRow(
+			`INSERT INTO customers (phone, first_name, last_name, password_hash)
+			 VALUES ($1, $2, $3, crypt($4, gen_salt('bf')))
+			 RETURNING id, phone, first_name, COALESCE(last_name,''), created_at`,
+			req.Phone, req.FirstName, req.LastName, req.Password,
+		).Scan(&cust.ID, &cust.Phone, &cust.FirstName, &cust.LastName, &cust.CreatedAt)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"token": makeCustomerToken(cust.ID), "customer": cust})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"token":    makeCustomerToken(cust.ID),
-		"customer": cust,
-	})
+	// Existing customer — verify password
+	if existingHash.Valid {
+		var match bool
+		database.DB.QueryRow(
+			`SELECT password_hash = crypt($1, password_hash) FROM customers WHERE id=$2`,
+			req.Password, existingID,
+		).Scan(&match)
+		if !match {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Noto'g'ri parol"})
+			return
+		}
+	}
+
+	// Update name (and refresh password hash)
+	var cust models.Customer
+	database.DB.QueryRow(
+		`UPDATE customers
+		 SET first_name=COALESCE(NULLIF($1,''), first_name),
+		     last_name=$2,
+		     password_hash=crypt($3, gen_salt('bf'))
+		 WHERE id=$4
+		 RETURNING id, phone, first_name, COALESCE(last_name,''), created_at`,
+		req.FirstName, req.LastName, req.Password, existingID,
+	).Scan(&cust.ID, &cust.Phone, &cust.FirstName, &cust.LastName, &cust.CreatedAt)
+	if cust.ID == 0 {
+		cust.ID = existingID
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": makeCustomerToken(cust.ID), "customer": cust})
 }
 
-// CustomerLogin: phone-only re-issue token if customer exists.
+// CustomerLogin: phone + password authentication.
 func CustomerLogin(c *gin.Context) {
 	var req struct {
-		Phone string `json:"phone" binding:"required"`
+		Phone    string `json:"phone"    binding:"required"`
+		Password string `json:"password" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Telefon kiritilishi shart"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Telefon va parol kiritilishi shart"})
 		return
 	}
 	req.Phone = normalizePhone(req.Phone)
+
 	var cust models.Customer
+	var passwordHash sql.NullString
 	err := database.DB.QueryRow(
-		`SELECT id, phone, first_name, COALESCE(last_name,''), created_at FROM customers WHERE phone=$1`,
+		`SELECT id, phone, first_name, COALESCE(last_name,''), password_hash, created_at
+		 FROM customers WHERE phone=$1`,
 		req.Phone,
-	).Scan(&cust.ID, &cust.Phone, &cust.FirstName, &cust.LastName, &cust.CreatedAt)
+	).Scan(&cust.ID, &cust.Phone, &cust.FirstName, &cust.LastName, &passwordHash, &cust.CreatedAt)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Bunday foydalanuvchi topilmadi"})
 		return
@@ -105,6 +152,20 @@ func CustomerLogin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Verify password (skip check for legacy accounts with no password)
+	if passwordHash.Valid {
+		var match bool
+		database.DB.QueryRow(
+			`SELECT password_hash = crypt($1, password_hash) FROM customers WHERE id=$2`,
+			req.Password, cust.ID,
+		).Scan(&match)
+		if !match {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Noto'g'ri parol"})
+			return
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"token":    makeCustomerToken(cust.ID),
 		"customer": cust,
