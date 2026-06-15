@@ -28,7 +28,7 @@ api.interceptors.response.use(
   err => {
     const url = err.config?.url || ''
     const isCustomer = url.startsWith('/customer/')
-    const isCourier = url.startsWith('/courier/') && url !== '/courier/login'
+    const isCourier = url.startsWith('/courier/')
     if (err.response?.status === 401) {
       if (isCourier) {
         localStorage.removeItem('eco_courier_token')

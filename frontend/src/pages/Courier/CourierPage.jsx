@@ -310,8 +310,12 @@ export default function CourierPage() {
         setCourier(res.data.courier)
         toast.success(`Xush kelibsiz, ${res.data.courier?.first_name || 'Kuryer'}!`)
       }
-    } catch {
-      toast.error("Telefon yoki PIN noto'g'ri")
+    } catch (err) {
+      if (err.response?.status === 403) {
+        toast.error("Sizning hisobingiz faolsiz. Admin bilan bog'laning")
+      } else {
+        toast.error("Telefon yoki PIN noto'g'ri")
+      }
     }
     setAL(false)
   }, [authPhone, authPin])
