@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { menuAPI, ordersAPI, agentsAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X, CheckCircle, Search, QrCode, ChefHat, Home } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X, CheckCircle, Search, QrCode, ChefHat, Home, Camera, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode'
 import './CashierPage.css'
 
 const statusLabels = { pending: "Kutilmoqda", cooking: "Tayyorlanmoqda", ready: "Tayyor", served: "Berildi" }
 const statusColors = { pending: 'badge-yellow', cooking: 'badge-orange', ready: 'badge-green', served: 'badge-gray' }
-const ORDER_TYPE_LABELS = { delivery: '🚚 Yetkazish', dine_in: '🍽️ Ichkarida' }
 
 export default function CashierPage() {
   const navigate = useNavigate()
@@ -22,7 +22,9 @@ export default function CashierPage() {
   const [lastOrder, setLastOrder] = useState(null)
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState('menu')
+  const [scannerOpen, setScannerOpen] = useState(false)
   const wsRef = useRef(null)
+  const scanCardRef = useRef(null)
 
   useEffect(() => {
     loadMenu()
@@ -62,11 +64,13 @@ export default function CashierPage() {
 
   const categories = ['all', ...new Set(menu.map(m => m.category))]
 
-  const filtered = menu.filter(m => {
-    const matchCat = category === 'all' || m.category === category
-    const matchSearch = m.name.toLowerCase().includes(search.toLowerCase())
-    return matchCat && matchSearch && m.available
-  })
+  const filtered = menu
+    .filter(m => {
+      const matchCat = category === 'all' || m.category === category
+      const matchSearch = m.name.toLowerCase().includes(search.toLowerCase())
+      return matchCat && matchSearch && m.available
+    })
+    .sort((a, b) => b.price - a.price) // qimmatlar tepada, arzonlar pastda
 
   const addToCart = (item) => {
     setCart(prev => {
@@ -87,17 +91,64 @@ export default function CashierPage() {
   const discount = cardInfo?.discount || 0
   const finalTotal = Math.max(0, cartTotal - discount)
 
-  const scanCard = async () => {
-    if (!cardCode.trim()) return
+  const scanCard = async (codeOverride) => {
+    const code = ((codeOverride ?? cardCode) || '').trim()
+    if (!code) return
     try {
-      const res = await agentsAPI.scanCard({ card_code: cardCode.trim(), order_total: cartTotal })
+      const res = await agentsAPI.scanCard({ card_code: code, order_total: cartTotal })
       setCardInfo(res.data)
+      setCardCode(code)
       toast.success(`Karta: ${res.data.agent_name} — chegirma ${res.data.discount.toLocaleString()} so'm`)
     } catch (e) {
       toast.error(e.response?.data?.error || "Karta topilmadi")
       setCardInfo(null)
     }
   }
+  scanCardRef.current = scanCard
+
+  useEffect(() => {
+    if (!scannerOpen) return
+    let scanner
+    let handled = false
+    let cancelled = false
+
+    const timer = setTimeout(() => {
+      try {
+        scanner = new Html5QrcodeScanner(
+          'qr-scanner-target',
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            rememberLastUsedCamera: true,
+            showTorchButtonIfSupported: true,
+            videoConstraints: { facingMode: { ideal: 'environment' } },
+            aspectRatio: 1.0,
+          },
+          /* verbose */ false,
+        )
+        scanner.render(
+          (decoded) => {
+            if (handled || cancelled) return
+            handled = true
+            try { scanner.clear() } catch {}
+            setScannerOpen(false)
+            scanCardRef.current?.(decoded)
+          },
+          () => {}, // ignore per-frame failures
+        )
+      } catch (e) {
+        toast.error("Skanerni ochib bo'lmadi — pastdagi «Rasm yuklab skanerlash» ni ishlating")
+      }
+    }, 80)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+      if (scanner) {
+        try { scanner.clear() } catch {}
+      }
+    }
+  }, [scannerOpen])
 
   const submitOrder = async () => {
     if (cart.length === 0) { toast.error("Savat bo'sh"); return }
@@ -124,11 +175,12 @@ export default function CashierPage() {
 
   return (
     <div className="cashier-page">
-      {/* Animated background blobs */}
-      <div className="cashier-bg">
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        <div className="blob blob-3" />
+      {/* Cosmic animated background */}
+      <div className="background-container">
+        <img className="moon" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png" alt="" />
+        <div className="stars" />
+        <div className="twinkling" />
+        <div className="clouds" />
       </div>
 
       <header className="cashier-header">
@@ -183,7 +235,11 @@ export default function CashierPage() {
               {filtered.map(item => {
                 const inCart = cart.find(c => c.id === item.id)
                 return (
-                  <div key={item.id} className={`menu-card glass-card ${inCart ? 'in-cart' : ''}`} onClick={() => addToCart(item)}>
+                  <div
+                    key={item.id}
+                    className={`menu-card glass-card ${inCart ? 'in-cart' : ''}`}
+                    onClick={() => addToCart(item)}
+                  >
                     <div className="menu-card-body">
                       <h3>{item.name}</h3>
                       <p>{item.description}</p>
@@ -244,7 +300,10 @@ export default function CashierPage() {
                     onChange={e => setCardCode(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && scanCard()}
                   />
-                  <button className="btn btn-secondary" onClick={scanCard}>
+                  <button className="btn btn-secondary" onClick={() => scanCard()} title="Tekshirish">
+                    <CheckCircle size={16} />
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => setScannerOpen(true)} title="Kamera bilan skanerlash">
                     <QrCode size={16} />
                   </button>
                 </div>
@@ -292,27 +351,10 @@ export default function CashierPage() {
                 <div key={order.id} className={`order-card glass-card status-${order.status}`}>
                   <div className="order-card-header">
                     <span className="order-number">#{order.order_code}</span>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {order.order_type === 'delivery' && (
-                        <span className="badge badge-blue" style={{ background: '#1d4ed8', color: '#fff' }}>
-                          🚚 Yetkazish
-                        </span>
-                      )}
-                      <span className={`badge ${statusColors[order.status]}`}>{statusLabels[order.status]}</span>
-                    </div>
+                    <span className={`badge ${statusColors[order.status]}`}>{statusLabels[order.status]}</span>
                   </div>
                   <div className="order-card-body">
                     <span className="order-total">{order.final_price?.toLocaleString()} so'm</span>
-                    {order.customer_name && (
-                      <p className="order-note" style={{ color: '#3b82f6', marginBottom: 4 }}>
-                        👤 {order.customer_name} {order.customer_phone ? `· ${order.customer_phone}` : ''}
-                      </p>
-                    )}
-                    {order.delivery_address && (
-                      <p className="order-note" style={{ color: '#059669' }}>
-                        📍 {order.delivery_address}
-                      </p>
-                    )}
                     {order.card_code && <span className="order-card-code"><QrCode size={12} /> {order.card_code}</span>}
                     {order.note && <p className="order-note">{order.note}</p>}
                   </div>
@@ -342,6 +384,90 @@ export default function CashierPage() {
               <div className="summary-row bold"><span>To'lov:</span><span>{lastOrder.final_price?.toLocaleString()} so'm</span></div>
             </div>
             <button className="checkout-btn" onClick={() => setLastOrder(null)}>Tushunarli</button>
+          </div>
+        </div>
+      )}
+
+      {scannerOpen && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.92)',
+            zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={e => e.target === e.currentTarget && setScannerOpen(false)}
+        >
+          <div style={{
+            background: '#1a1a1a', borderRadius: 14, padding: 18, maxWidth: 480, width: '100%',
+            color: 'white', maxHeight: '95vh', overflowY: 'auto',
+            border: '1px solid rgba(255,107,53,0.4)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#FF6B35' }}>
+                <Camera size={22} />
+                <h2 style={{ margin: 0, fontSize: 17 }}>QR kodni skanerlash</h2>
+              </div>
+              <button
+                onClick={() => setScannerOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 6 }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* FILE UPLOAD — birinchi va asosiy yo'l (har doim ishlaydi) */}
+            <label style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              padding: '16px', borderRadius: 10, background: 'linear-gradient(135deg, #FF6B35, #E85A24)',
+              color: 'white', cursor: 'pointer', marginBottom: 16,
+              fontSize: 15, fontWeight: 700,
+              boxShadow: '0 4px 12px rgba(255,107,53,0.4)',
+            }}>
+              <Camera size={20} />
+              <span>📷 Rasm yuklash yoki surat olish</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (!file) return
+                  try {
+                    const tmp = new Html5Qrcode('qr-reader-file')
+                    const decoded = await tmp.scanFile(file, false)
+                    try { tmp.clear() } catch {}
+                    setScannerOpen(false)
+                    scanCardRef.current?.(decoded)
+                  } catch (err) {
+                    toast.error("Rasmda QR topilmadi — yaqinroq surat oling")
+                  }
+                }}
+              />
+            </label>
+            <div id="qr-reader-file" style={{ display: 'none' }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.15)' }} />
+              <span>yoki</span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.15)' }} />
+            </div>
+
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginBottom: 10 }}>
+              Live skaner (kamera orqali)
+            </div>
+
+            {/* Camera viewport — html5-qrcode'ning o'z UI komponenti */}
+            <div id="qr-scanner-target" style={{
+              width: '100%', minHeight: 80, background: '#0a0a0a',
+              borderRadius: 10, border: '1px solid rgba(255,107,53,0.3)',
+              padding: 4, color: 'white',
+            }} />
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 6 }}>
+              «Request Camera Permissions» tugmasini bosib kamera so'rovini bering
+            </div>
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ type MenuItem struct {
 	Name          string    `json:"name"`
 	Description   string    `json:"description"`
 	Price         float64   `json:"price"`
+	CostPrice     float64   `json:"cost_price"`
 	Category      string    `json:"category"`
 	ImageURL      string    `json:"image_url"`
 	Available     bool      `json:"available"`
@@ -30,31 +31,26 @@ type MenuItemDetail struct {
 	CreatedAt     time.Time          `json:"created_at"`
 }
 
-type Customer struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	LastName  string    `json:"last_name"`
-	Phone     string    `json:"phone"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
 type Order struct {
-	ID              int         `json:"id"`
-	OrderCode       string      `json:"order_code"`
-	TotalPrice      float64     `json:"total_price"`
-	DiscountAmount  float64     `json:"discount_amount"`
-	FinalPrice      float64     `json:"final_price"`
-	Status          string      `json:"status"`
-	CardCode        string      `json:"card_code"`
-	Note            string      `json:"note"`
-	OrderType       string      `json:"order_type"`
-	DeliveryAddress string      `json:"delivery_address"`
-	CustomerName    string      `json:"customer_name"`
-	CustomerPhone   string      `json:"customer_phone"`
-	CustomerID      int         `json:"customer_id"`
-	Items           []OrderItem `json:"items,omitempty"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
+	ID                int         `json:"id"`
+	OrderCode         string      `json:"order_code"`
+	TotalPrice        float64     `json:"total_price"`
+	DiscountAmount    float64     `json:"discount_amount"`
+	FinalPrice        float64     `json:"final_price"`
+	Status            string      `json:"status"`
+	CardCode          string      `json:"card_code"`
+	Note              string      `json:"note"`
+	CustomerFirstName string      `json:"customer_first_name"`
+	CustomerLastName  string      `json:"customer_last_name"`
+	CustomerPhone     string      `json:"customer_phone"`
+	DeliveryType      string      `json:"delivery_type"`
+	DeliveryAddress   string      `json:"delivery_address"`
+	DeliveryLat       *float64    `json:"delivery_lat,omitempty"`
+	DeliveryLng       *float64    `json:"delivery_lng,omitempty"`
+	CustomerID        *int        `json:"customer_id,omitempty"`
+	Items             []OrderItem `json:"items,omitempty"`
+	CreatedAt         time.Time   `json:"created_at"`
+	UpdatedAt         time.Time   `json:"updated_at"`
 }
 
 type OrderItem struct {
@@ -101,6 +97,17 @@ type CardTransaction struct {
 	AgentID         int       `json:"agent_id"`
 	DiscountApplied float64   `json:"discount_applied"`
 	CreatedAt       time.Time `json:"created_at"`
+}
+
+type Review struct {
+	ID           int       `json:"id"`
+	OrderID      int       `json:"order_id"`
+	OrderCode    string    `json:"order_code"`
+	CustomerID   int       `json:"customer_id"`
+	CustomerName string    `json:"customer_name"`
+	Rating       int       `json:"rating"`
+	Comment      string    `json:"comment"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type AgentBonus struct {
@@ -205,6 +212,48 @@ type RecipeItemDetail struct {
 	Cost           float64 `json:"cost"`
 }
 
+type PromoDiscount struct {
+	ID             int        `json:"id"`
+	Code           string     `json:"code"`
+	DiscountAmount float64    `json:"discount_amount"`
+	DiscountType   string     `json:"discount_type"` // 'amount' | 'percent'
+	IsActive       bool       `json:"is_active"`
+	UsageLimit     int        `json:"usage_limit"`
+	UseCount       int        `json:"use_count"`
+	ValidUntil     *time.Time `json:"valid_until,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+}
+
+type Customer struct {
+	ID        int       `json:"id"`
+	Phone     string    `json:"phone"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type CustomerAddress struct {
+	ID         int       `json:"id"`
+	CustomerID int       `json:"customer_id"`
+	Label      string    `json:"label"`
+	Address    string    `json:"address"`
+	Lat        *float64  `json:"lat,omitempty"`
+	Lng        *float64  `json:"lng,omitempty"`
+	IsDefault  bool      `json:"is_default"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+type VipCard struct {
+	ID        int       `json:"id"`
+	Code      string    `json:"code"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	IsActive  bool      `json:"is_active"`
+	UseCount  int       `json:"use_count"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type InventoryLog struct {
 	ID             int       `json:"id"`
 	IngredientID   int       `json:"ingredient_id"`
@@ -215,4 +264,18 @@ type InventoryLog struct {
 	Action         string    `json:"action"`
 	Notes          string    `json:"notes"`
 	CreatedAt      time.Time `json:"created_at"`
+}
+
+// Courier — delivery rider account. PIN-based login (no SMS).
+type Courier struct {
+	ID         int        `json:"id"`
+	Phone      string     `json:"phone"`
+	FirstName  string     `json:"first_name"`
+	LastName   string     `json:"last_name"`
+	PIN        string     `json:"pin,omitempty"` // never sent back except to admin
+	IsActive   bool       `json:"is_active"`
+	CurrentLat *float64   `json:"current_lat,omitempty"`
+	CurrentLng *float64   `json:"current_lng,omitempty"`
+	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
 }

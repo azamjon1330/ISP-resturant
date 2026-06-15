@@ -6,17 +6,38 @@ const api = axios.create({
 })
 
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('eco_taomlar_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  const url = config.url || ''
+  const isCustomerRoute = url.startsWith('/customer/') || url === '/orders'
+  // Courier routes that require auth (everything except /courier/login and /courier/courier-of/...)
+  const isCourierRoute = url.startsWith('/courier/') && url !== '/courier/login' && !url.startsWith('/courier/courier-of/')
+  if (isCourierRoute) {
+    const t = localStorage.getItem('eco_courier_token')
+    if (t) config.headers.Authorization = `Bearer ${t}`
+  } else if (isCustomerRoute) {
+    const ct = localStorage.getItem('eco_customer_token')
+    if (ct) config.headers.Authorization = `Bearer ${ct}`
+  } else {
+    const token = localStorage.getItem('eco_taomlar_token')
+    if (token) config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 
 api.interceptors.response.use(
   res => res,
   err => {
+    const url = err.config?.url || ''
+    const isCustomer = url.startsWith('/customer/')
+    const isCourier = url.startsWith('/courier/') && url !== '/courier/login'
     if (err.response?.status === 401) {
-      localStorage.removeItem('eco_taomlar_token')
-      window.location.href = '/admin'
+      if (isCourier) {
+        localStorage.removeItem('eco_courier_token')
+      } else if (isCustomer) {
+        localStorage.removeItem('eco_customer_token')
+      } else if (!url.startsWith('/orders') && !url.startsWith('/menu')) {
+        localStorage.removeItem('eco_taomlar_token')
+        window.location.href = '/admin'
+      }
     }
     return Promise.reject(err)
   }
@@ -69,13 +90,53 @@ export const inventoryAPI = {
   getLogs: () => api.get('/admin/inventory/logs'),
 }
 
+export const promoAPI = {
+  getAll: () => api.get('/admin/promo'),
+  create: (data) => api.post('/admin/promo', data),
+  update: (id, data) => api.put(`/admin/promo/${id}`, data),
+  delete: (id) => api.delete(`/admin/promo/${id}`),
+  check: (code, order_total) => api.post('/promo/check', { code, order_total }),
+}
+
+export const customerAPI = {
+  register: (data) => api.post('/customer/register', data),
+  login: (data) => api.post('/customer/login', data),
+  me: () => api.get('/customer/me'),
+  updateMe: (data) => api.put('/customer/me', data),
+  orders: () => api.get('/customer/orders'),
+  addresses: () => api.get('/customer/addresses'),
+  addAddress: (data) => api.post('/customer/addresses', data),
+  deleteAddress: (id) => api.delete(`/customer/addresses/${id}`),
+  cancelOrder: (code, reason) => api.post(`/customer/orders/${code}/cancel`, { reason }),
+}
+
+export const vipAPI = {
+  getAll: () => api.get('/admin/vip'),
+  create: (data) => api.post('/admin/vip', data),
+  update: (id, data) => api.put(`/admin/vip/${id}`, data),
+  delete: (id) => api.delete(`/admin/vip/${id}`),
+}
+
 export const authAPI = {
   login: (username, password) => api.post('/auth/login', { username, password }),
 }
 
-export const customerAPI = {
-  register: (data) => api.post('/auth/customer/register', data),
-  login: (data) => api.post('/auth/customer/login', data),
+export const courierAPI = {
+  login: (data) => api.post('/courier/login', data),
+  me: () => api.get('/courier/me'),
+  available: () => api.get('/courier/orders/available'),
+  mine: () => api.get('/courier/orders/mine'),
+  accept: (id) => api.post(`/courier/orders/${id}/accept`),
+  complete: (id) => api.post(`/courier/orders/${id}/complete`),
+  updateLocation: (lat, lng) => api.post('/courier/location', { lat, lng }),
+  publicForOrder: (code) => api.get(`/courier/courier-of/${code}`),
+}
+
+export const couriersAPI = {
+  getAll: () => api.get('/admin/couriers'),
+  create: (data) => api.post('/admin/couriers', data),
+  update: (id, data) => api.put(`/admin/couriers/${id}`, data),
+  delete: (id) => api.delete(`/admin/couriers/${id}`),
 }
 
 export default api

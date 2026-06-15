@@ -8,6 +8,7 @@ CREATE TABLE menu_items (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10,2) NOT NULL,
+    cost_price DECIMAL(10,2) DEFAULT 0,
     category VARCHAR(100) DEFAULT 'Основные блюда',
     image_url TEXT,
     available BOOLEAN DEFAULT true,
@@ -24,6 +25,13 @@ CREATE TABLE orders (
     status VARCHAR(20) DEFAULT 'pending',
     card_code VARCHAR(20),
     note TEXT,
+    customer_first_name VARCHAR(100),
+    customer_last_name  VARCHAR(100),
+    customer_phone      VARCHAR(30),
+    delivery_type       VARCHAR(20) DEFAULT 'pickup',
+    delivery_address    TEXT,
+    delivery_lat        DOUBLE PRECISION,
+    delivery_lng        DOUBLE PRECISION,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -137,3 +145,73 @@ INSERT INTO menu_items (name, description, price, category) VALUES
 ('Kompot', 'Quritilgan mevalardan tayyorlangan uy kompoti', 6000, 'Ichimliklar'),
 ('Mastava', 'Go''sht va sabzavotlar bilan guruch sho''rvasi', 26000, 'Sho''rvalar'),
 ('Beshbarmaq', 'Uy lapmasi va piyoz bilan go''sht', 38000, 'Asosiy taomlar');
+
+-- Customer accounts
+CREATE TABLE IF NOT EXISTS customers (
+    id          SERIAL PRIMARY KEY,
+    phone       VARCHAR(30) UNIQUE NOT NULL,
+    first_name  VARCHAR(100) NOT NULL,
+    last_name   VARCHAR(100) DEFAULT '',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS customer_addresses (
+    id          SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
+    label       VARCHAR(100) DEFAULT 'Manzil',
+    address     TEXT NOT NULL,
+    lat         DOUBLE PRECISION,
+    lng         DOUBLE PRECISION,
+    is_default  BOOLEAN DEFAULT false,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id);
+
+-- Promo QR discount
+CREATE TABLE IF NOT EXISTS promo_discount (
+    id              SERIAL PRIMARY KEY,
+    code            VARCHAR(40) UNIQUE NOT NULL,
+    discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    discount_type   VARCHAR(10) DEFAULT 'amount',
+    is_active       BOOLEAN DEFAULT true,
+    usage_limit     INT DEFAULT 0,
+    use_count       INT DEFAULT 0,
+    valid_until     TIMESTAMP NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO promo_discount (code, discount_amount, discount_type, is_active)
+VALUES ('PROMO-MAIN', 15000, 'amount', true)
+ON CONFLICT (code) DO NOTHING;
+
+-- VIP cards (per-person free meal QR)
+CREATE TABLE IF NOT EXISTS vip_cards (
+    id          SERIAL PRIMARY KEY,
+    code        VARCHAR(40) UNIQUE NOT NULL,
+    first_name  VARCHAR(100) NOT NULL,
+    last_name   VARCHAR(100) DEFAULT '',
+    is_active   BOOLEAN DEFAULT true,
+    use_count   INT DEFAULT 0,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Couriers (delivery riders)
+CREATE TABLE IF NOT EXISTS couriers (
+  id           SERIAL PRIMARY KEY,
+  phone        VARCHAR(20) UNIQUE NOT NULL,
+  first_name   VARCHAR(100) NOT NULL,
+  last_name    VARCHAR(100),
+  pin          VARCHAR(20) NOT NULL,
+  is_active    BOOLEAN     DEFAULT TRUE,
+  current_lat  DOUBLE PRECISION,
+  current_lng  DOUBLE PRECISION,
+  last_seen_at TIMESTAMP,
+  created_at   TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+  updated_at   TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier_id INTEGER NULL REFERENCES couriers(id) ON DELETE SET NULL;
+

@@ -16,14 +16,16 @@ import (
 )
 
 type CreateOrderRequest struct {
-	Items           []OrderItemReq `json:"items" binding:"required"`
-	CardCode        string         `json:"card_code"`
-	Note            string         `json:"note"`
-	OrderType       string         `json:"order_type"`
-	DeliveryAddress string         `json:"delivery_address"`
-	CustomerName    string         `json:"customer_name"`
-	CustomerPhone   string         `json:"customer_phone"`
-	CustomerID      int            `json:"customer_id"`
+	Items             []OrderItemReq `json:"items" binding:"required"`
+	CardCode          string         `json:"card_code"`
+	Note              string         `json:"note"`
+	CustomerFirstName string         `json:"customer_first_name"`
+	CustomerLastName  string         `json:"customer_last_name"`
+	CustomerPhone     string         `json:"customer_phone"`
+	DeliveryType      string         `json:"delivery_type"` // 'delivery' | 'pickup'
+	DeliveryAddress   string         `json:"delivery_address"`
+	DeliveryLat       *float64       `json:"delivery_lat"`
+	DeliveryLng       *float64       `json:"delivery_lng"`
 }
 
 type OrderItemReq struct {
@@ -41,6 +43,28 @@ func CreateOrder(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
+	}
+
+	// If the caller is a signed-in customer (token resolved by ResolveCustomerOptional),
+	// attach the customer's id and prefer the stored phone/name when fields are blank.
+	var customerID int
+	if v, ok := c.Get("customer_id"); ok {
+		if cid, ok2 := v.(int); ok2 && cid > 0 {
+			customerID = cid
+			var first, last, phone string
+			database.DB.QueryRow(
+				`SELECT first_name, COALESCE(last_name,''), phone FROM customers WHERE id=$1`, cid,
+			).Scan(&first, &last, &phone)
+			if req.CustomerFirstName == "" {
+				req.CustomerFirstName = first
+			}
+			if req.CustomerLastName == "" {
+				req.CustomerLastName = last
+			}
+			if req.CustomerPhone == "" {
+				req.CustomerPhone = phone
+			}
+		}
 	}
 
 	tx, err := database.DB.Begin()
@@ -113,11 +137,6 @@ func CreateOrder(c *gin.Context) {
 		}
 	}
 
-	orderType := req.OrderType
-	if orderType == "" {
-		orderType = "dine_in"
-	}
-
 	if len(shortages) > 0 {
 		// Сохраняем заказ со статусом "rejected" (Отказ); склад не уменьшаем.
 		var rejectedCode string
@@ -131,11 +150,23 @@ func CreateOrder(c *gin.Context) {
 		}
 
 		var rejectedID int
+		dtype := req.DeliveryType
+		if dtype == "" {
+			dtype = "pickup"
+		}
+		var custIDArg interface{}
+		if customerID > 0 {
+			custIDArg = customerID
+		}
 		insErr := tx.QueryRow(
-			`INSERT INTO orders (order_code, total_price, discount_amount, final_price, status, card_code, note, order_type, delivery_address, customer_name, customer_phone, customer_id)
-			 VALUES ($1,$2,0,$2,'rejected',$3,$4,$5,$6,$7,$8,NULLIF($9,0)) RETURNING id`,
+			`INSERT INTO orders
+			   (order_code, total_price, discount_amount, final_price, status, card_code, note,
+			    customer_first_name, customer_last_name, customer_phone,
+			    delivery_type, delivery_address, delivery_lat, delivery_lng, customer_id)
+			 VALUES ($1,$2,0,$2,'rejected',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
 			rejectedCode, totalPrice, req.CardCode, req.Note,
-			orderType, req.DeliveryAddress, req.CustomerName, req.CustomerPhone, req.CustomerID,
+			req.CustomerFirstName, req.CustomerLastName, req.CustomerPhone,
+			dtype, req.DeliveryAddress, req.DeliveryLat, req.DeliveryLng, custIDArg,
 		).Scan(&rejectedID)
 		if insErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": insErr.Error()})
@@ -193,11 +224,23 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	var orderID int
+	dtype := req.DeliveryType
+	if dtype == "" {
+		dtype = "pickup"
+	}
+	var custIDArg interface{}
+	if customerID > 0 {
+		custIDArg = customerID
+	}
 	err = tx.QueryRow(
-		`INSERT INTO orders (order_code, total_price, discount_amount, final_price, status, card_code, note, order_type, delivery_address, customer_name, customer_phone, customer_id)
-		 VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,NULLIF($11,0)) RETURNING id`,
+		`INSERT INTO orders
+		   (order_code, total_price, discount_amount, final_price, status, card_code, note,
+		    customer_first_name, customer_last_name, customer_phone,
+		    delivery_type, delivery_address, delivery_lat, delivery_lng, customer_id)
+		 VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
 		orderCode, totalPrice, discountAmount, finalPrice, req.CardCode, req.Note,
-		orderType, req.DeliveryAddress, req.CustomerName, req.CustomerPhone, req.CustomerID,
+		req.CustomerFirstName, req.CustomerLastName, req.CustomerPhone,
+		dtype, req.DeliveryAddress, req.DeliveryLat, req.DeliveryLng, custIDArg,
 	).Scan(&orderID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -232,21 +275,16 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	order := models.Order{
-		ID:              orderID,
-		OrderCode:       orderCode,
-		TotalPrice:      totalPrice,
-		DiscountAmount:  discountAmount,
-		FinalPrice:      finalPrice,
-		Status:          "pending",
-		CardCode:        req.CardCode,
-		Note:            req.Note,
-		OrderType:       orderType,
-		DeliveryAddress: req.DeliveryAddress,
-		CustomerName:    req.CustomerName,
-		CustomerPhone:   req.CustomerPhone,
-		CustomerID:      req.CustomerID,
-		Items:           orderItems,
-		CreatedAt:       time.Now(),
+		ID:             orderID,
+		OrderCode:      orderCode,
+		TotalPrice:     totalPrice,
+		DiscountAmount: discountAmount,
+		FinalPrice:     finalPrice,
+		Status:         "pending",
+		CardCode:       req.CardCode,
+		Note:           req.Note,
+		Items:          orderItems,
+		CreatedAt:      time.Now(),
 	}
 
 	BroadcastMessage("new_order", order)
@@ -263,7 +301,69 @@ func applyCardDiscount(tx *sql.Tx, cardCode string, totalPrice float64) (float64
 		 FROM referral_cards rc WHERE rc.card_code=$1`, cardCode,
 	).Scan(&cardID, &agentID, &cardType, &useCount, &isActive)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("card not found")
+		// Try VIP card (full order = free)
+		var vipID int
+		var vipActive bool
+		vipErr := tx.QueryRow(
+			`SELECT id, is_active FROM vip_cards WHERE code=$1`, cardCode,
+		).Scan(&vipID, &vipActive)
+		if vipErr == nil {
+			if !vipActive {
+				return 0, 0, 0, fmt.Errorf("VIP karta deaktivlashtirilgan")
+			}
+			// Increment use count (no limit on VIP)
+			tx.Exec(`UPDATE vip_cards SET use_count = use_count + 1 WHERE id=$1`, vipID)
+			return totalPrice, 0, 0, nil // discount = totalPrice → final 0
+		}
+
+		// Try promo discount code (separate global QR managed in admin) — case-insensitive
+		var promoID int
+		var promoDiscount float64
+		var promoType string
+		var promoActive bool
+		var promoLimit, promoUseCount int
+		var promoValidUntil *time.Time
+		promoErr := tx.QueryRow(
+			`SELECT id, discount_amount, COALESCE(discount_type,'amount'), is_active,
+			        COALESCE(usage_limit,0), COALESCE(use_count,0), valid_until
+			 FROM promo_discount WHERE UPPER(code)=UPPER($1)`, cardCode,
+		).Scan(&promoID, &promoDiscount, &promoType, &promoActive, &promoLimit, &promoUseCount, &promoValidUntil)
+		if promoErr != nil {
+			return 0, 0, 0, fmt.Errorf("card not found")
+		}
+		if !promoActive {
+			return 0, 0, 0, fmt.Errorf("Promo deaktivlashtirilgan")
+		}
+		if promoValidUntil != nil && time.Now().After(*promoValidUntil) {
+			return 0, 0, 0, fmt.Errorf("Promo muddati tugagan")
+		}
+		if promoLimit > 0 && promoUseCount >= promoLimit {
+			return 0, 0, 0, fmt.Errorf("Promo muddati tugagan")
+		}
+		// Atomic increment with limit + validity guard
+		res, errInc := tx.Exec(
+			`UPDATE promo_discount SET use_count = use_count + 1
+			 WHERE id=$1 AND is_active=true
+			 AND (usage_limit = 0 OR use_count < usage_limit)
+			 AND (valid_until IS NULL OR valid_until > CURRENT_TIMESTAMP)`,
+			promoID,
+		)
+		if errInc != nil {
+			return 0, 0, 0, fmt.Errorf("promo update failed")
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return 0, 0, 0, fmt.Errorf("Promo muddati tugagan")
+		}
+		var discount float64
+		if promoType == "percent" {
+			discount = totalPrice * promoDiscount / 100.0
+		} else {
+			discount = promoDiscount
+		}
+		if discount > totalPrice {
+			discount = totalPrice
+		}
+		return discount, 0, 0, nil
 	}
 	if !isActive {
 		return 0, 0, 0, fmt.Errorf("card is inactive")
@@ -341,8 +441,9 @@ func GetOrders(c *gin.Context) {
 
 	orderQuery := `SELECT id, order_code, total_price, discount_amount, final_price, status,
 	               COALESCE(card_code,''), COALESCE(note,''),
-	               COALESCE(order_type,'dine_in'), COALESCE(delivery_address,''),
-	               COALESCE(customer_name,''), COALESCE(customer_phone,''), COALESCE(customer_id,0),
+	               COALESCE(customer_first_name,''), COALESCE(customer_last_name,''),
+	               COALESCE(customer_phone,''), COALESCE(delivery_type,'pickup'),
+	               COALESCE(delivery_address,''), delivery_lat, delivery_lng,
 	               created_at, updated_at
 	               FROM orders` + whereClause + ` ORDER BY created_at DESC LIMIT 200`
 
@@ -359,7 +460,8 @@ func GetOrders(c *gin.Context) {
 		var o models.Order
 		rows.Scan(&o.ID, &o.OrderCode, &o.TotalPrice, &o.DiscountAmount, &o.FinalPrice,
 			&o.Status, &o.CardCode, &o.Note,
-			&o.OrderType, &o.DeliveryAddress, &o.CustomerName, &o.CustomerPhone, &o.CustomerID,
+			&o.CustomerFirstName, &o.CustomerLastName, &o.CustomerPhone,
+			&o.DeliveryType, &o.DeliveryAddress, &o.DeliveryLat, &o.DeliveryLng,
 			&o.CreatedAt, &o.UpdatedAt)
 		o.Items = []models.OrderItem{}
 		orderMap[o.ID] = len(orders)
@@ -396,13 +498,15 @@ func GetOrderByCode(c *gin.Context) {
 	err := database.DB.QueryRow(
 		`SELECT id, order_code, total_price, discount_amount, final_price, status,
 		 COALESCE(card_code,''), COALESCE(note,''),
-		 COALESCE(order_type,'dine_in'), COALESCE(delivery_address,''),
-		 COALESCE(customer_name,''), COALESCE(customer_phone,''), COALESCE(customer_id,0),
+		 COALESCE(customer_first_name,''), COALESCE(customer_last_name,''),
+		 COALESCE(customer_phone,''), COALESCE(delivery_type,'pickup'),
+		 COALESCE(delivery_address,''), delivery_lat, delivery_lng,
 		 created_at, updated_at
 		 FROM orders WHERE order_code=$1`, code,
 	).Scan(&o.ID, &o.OrderCode, &o.TotalPrice, &o.DiscountAmount, &o.FinalPrice,
 		&o.Status, &o.CardCode, &o.Note,
-		&o.OrderType, &o.DeliveryAddress, &o.CustomerName, &o.CustomerPhone, &o.CustomerID,
+		&o.CustomerFirstName, &o.CustomerLastName, &o.CustomerPhone,
+		&o.DeliveryType, &o.DeliveryAddress, &o.DeliveryLat, &o.DeliveryLng,
 		&o.CreatedAt, &o.UpdatedAt)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
@@ -431,7 +535,7 @@ func UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	validStatuses := map[string]bool{"pending": true, "cooking": true, "ready": true, "served": true}
+	validStatuses := map[string]bool{"pending": true, "cooking": true, "ready": true, "on_way": true, "served": true, "rejected": true}
 	if !validStatuses[body.Status] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status"})
 		return
@@ -449,7 +553,25 @@ func UpdateOrderStatus(c *gin.Context) {
 	}
 
 	var order models.Order
-	database.DB.QueryRow(`SELECT id, order_code, status FROM orders WHERE id=$1`, id).Scan(&order.ID, &order.OrderCode, &order.Status)
+	database.DB.QueryRow(
+		`SELECT id, order_code, total_price, discount_amount, final_price, status,
+		        COALESCE(card_code,''), COALESCE(note,''),
+		        COALESCE(customer_first_name,''), COALESCE(customer_last_name,''),
+		        COALESCE(customer_phone,''), COALESCE(delivery_type,'pickup'),
+		        COALESCE(delivery_address,''), delivery_lat, delivery_lng,
+		        customer_id, created_at, updated_at
+		 FROM orders WHERE id=$1`, id,
+	).Scan(&order.ID, &order.OrderCode, &order.TotalPrice, &order.DiscountAmount, &order.FinalPrice,
+		&order.Status, &order.CardCode, &order.Note,
+		&order.CustomerFirstName, &order.CustomerLastName, &order.CustomerPhone,
+		&order.DeliveryType, &order.DeliveryAddress, &order.DeliveryLat, &order.DeliveryLng,
+		&order.CustomerID, &order.CreatedAt, &order.UpdatedAt)
 	BroadcastMessage("order_status_changed", order)
+	if body.Status == "served" {
+		BroadcastMessage("order_delivered", order)
+	}
+	if body.Status == "ready" && order.DeliveryType == "delivery" {
+		BroadcastMessage("new_ready_order", order)
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "Status updated", "order": order})
 }

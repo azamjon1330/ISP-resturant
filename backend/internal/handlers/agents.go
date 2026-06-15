@@ -221,6 +221,81 @@ func ScanCard(c *gin.Context) {
 	).Scan(&cardID, &agentID, &cardType, &useCount, &isActive)
 
 	if err != nil {
+		// Try as VIP card (all items free for that person)
+		var vipFirst, vipLast string
+		var vipActive bool
+		vipErr := database.DB.QueryRow(
+			`SELECT first_name, COALESCE(last_name,''), is_active
+			 FROM vip_cards WHERE code=$1`, body.CardCode,
+		).Scan(&vipFirst, &vipLast, &vipActive)
+		if vipErr == nil {
+			if !vipActive {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "VIP karta deaktivlashtirilgan"})
+				return
+			}
+			fullName := strings.TrimSpace(vipFirst + " " + vipLast)
+			c.JSON(http.StatusOK, gin.H{
+				"card_id":     0,
+				"agent_id":    0,
+				"agent_name":  "VIP: " + fullName,
+				"card_type":   "vip",
+				"use_count":   0,
+				"discount":    body.OrderTotal, // tekin
+				"bonus_ready": false,
+				"valid":       true,
+			})
+			return
+		}
+
+		// Try as promo QR/typed code (case-insensitive on the code)
+		var promoDiscount float64
+		var promoType string
+		var promoActive bool
+		var promoLimit, promoUseCount int
+		var promoValidUntil *time.Time
+		promoErr := database.DB.QueryRow(
+			`SELECT discount_amount, COALESCE(discount_type,'amount'), is_active,
+			        COALESCE(usage_limit,0), COALESCE(use_count,0), valid_until
+			 FROM promo_discount WHERE UPPER(code)=UPPER($1)`,
+			body.CardCode,
+		).Scan(&promoDiscount, &promoType, &promoActive, &promoLimit, &promoUseCount, &promoValidUntil)
+		if promoErr == nil {
+			if !promoActive {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Promo deaktivlashtirilgan"})
+				return
+			}
+			if promoValidUntil != nil && time.Now().After(*promoValidUntil) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Promo muddati tugagan"})
+				return
+			}
+			if promoLimit > 0 && promoUseCount >= promoLimit {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Promo muddati tugagan"})
+				return
+			}
+			var discount float64
+			if promoType == "percent" {
+				discount = body.OrderTotal * promoDiscount / 100.0
+			} else {
+				discount = promoDiscount
+			}
+			if discount > body.OrderTotal && body.OrderTotal > 0 {
+				discount = body.OrderTotal
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"card_id":       0,
+				"agent_id":      0,
+				"agent_name":    "Promo chegirma",
+				"card_type":     "promo",
+				"discount_type": promoType,
+				"use_count":     promoUseCount,
+				"usage_limit":   promoLimit,
+				"discount":      discount,
+				"bonus_ready":   false,
+				"valid":         true,
+			})
+			return
+		}
+
 		// Try as 7-digit agent personal code — use the agent's gold card
 		var goldCardCode string
 		err2 := database.DB.QueryRow(

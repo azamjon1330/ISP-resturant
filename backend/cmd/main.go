@@ -32,16 +32,52 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/auth/login", handlers.Login)
-		api.POST("/auth/customer/register", handlers.CustomerRegister)
-		api.POST("/auth/customer/login", handlers.CustomerLogin)
 		api.GET("/menu", handlers.GetMenu)
 		api.GET("/orders/:code", handlers.GetOrderByCode)
-		api.POST("/orders", handlers.CreateOrder)
+		api.POST("/orders", middleware.ResolveCustomerOptional(), handlers.CreateOrder)
 		api.GET("/orders", handlers.GetOrders)
 		api.PATCH("/orders/:id/status", handlers.UpdateOrderStatus)
 		api.POST("/cards/scan", handlers.ScanCard)
 		api.GET("/agents/code/:code", handlers.GetAgentByCode)
 		api.GET("/agents/code/:code/history", handlers.GetAgentHistory)
+
+		// Customer auth (no SMS — phone-based registration)
+		api.POST("/customer/register", handlers.CustomerRegisterOrLogin)
+		api.POST("/customer/login", handlers.CustomerLogin)
+
+		// Public promo preview — used by the shop to show discount before checkout
+		api.POST("/promo/check", handlers.CheckPromoCode)
+	}
+
+	// Customer-authenticated routes
+	customer := r.Group("/api/customer")
+	customer.Use(middleware.CustomerAuth())
+	{
+		customer.GET("/me", handlers.CustomerMe)
+		customer.PUT("/me", handlers.CustomerUpdateMe)
+		customer.GET("/orders", handlers.CustomerOrders)
+		customer.GET("/addresses", handlers.CustomerAddresses)
+		customer.POST("/addresses", handlers.CustomerAddAddress)
+		customer.DELETE("/addresses/:id", handlers.CustomerDeleteAddress)
+		customer.POST("/orders/:code/cancel", handlers.CustomerCancelOrder)
+		customer.POST("/orders/:code/review", handlers.CreateReview)
+	}
+
+	// Public reviews (for landing page)
+	api.GET("/reviews", handlers.GetReviews)
+
+	// Courier (delivery rider) routes
+	api.POST("/courier/login", handlers.CourierLogin)
+	api.GET("/courier/courier-of/:code", handlers.PublicCourierForOrder)
+	courier := r.Group("/api/courier")
+	courier.Use(middleware.CourierAuth())
+	{
+		courier.GET("/me", handlers.CourierMe)
+		courier.GET("/orders/available", handlers.CourierAvailableOrders)
+		courier.GET("/orders/mine", handlers.CourierMyOrders)
+		courier.POST("/orders/:id/accept", handlers.CourierAcceptOrder)
+		courier.POST("/orders/:id/complete", handlers.CourierCompleteOrder)
+		courier.POST("/location", handlers.CourierUpdateLocation)
 	}
 
 	// Admin routes (protected)
@@ -86,6 +122,24 @@ func main() {
 		admin.PUT("/agents/:id", handlers.UpdateAgent)
 		admin.GET("/agents/:id/bonuses", handlers.GetAgentBonuses)
 		admin.DELETE("/agents/:id", handlers.DeleteAgent)
+
+		// Promo QR discount (multiple codes, optional expiry)
+		admin.GET("/promo", handlers.GetPromoDiscount)
+		admin.POST("/promo", handlers.CreatePromoDiscount)
+		admin.PUT("/promo/:id", handlers.UpdatePromoDiscount)
+		admin.DELETE("/promo/:id", handlers.DeletePromoDiscount)
+
+		// VIP cards
+		admin.GET("/vip", handlers.GetVipCards)
+		admin.POST("/vip", handlers.CreateVipCard)
+		admin.PUT("/vip/:id", handlers.UpdateVipCard)
+		admin.DELETE("/vip/:id", handlers.DeleteVipCard)
+
+		// Couriers
+		admin.GET("/couriers", handlers.AdminListCouriers)
+		admin.POST("/couriers", handlers.AdminCreateCourier)
+		admin.PUT("/couriers/:id", handlers.AdminUpdateCourier)
+		admin.DELETE("/couriers/:id", handlers.AdminDeleteCourier)
 	}
 
 	port := os.Getenv("PORT")

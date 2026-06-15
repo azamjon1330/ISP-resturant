@@ -5,6 +5,7 @@ import LandingPage from './pages/Landing/LandingPage'
 import HomePage from './pages/Home/HomePage'
 import CashierPage from './pages/Cashier/CashierPage'
 import KitchenPage from './pages/Kitchen/KitchenPage'
+import ShopPage from './pages/Shop/ShopPage'
 import AdminLogin from './pages/Admin/AdminLogin'
 import AdminLayout from './pages/Admin/AdminLayout'
 import AdminDashboard from './pages/Admin/AdminDashboard'
@@ -13,7 +14,11 @@ import AdminMenu from './pages/Admin/AdminMenu'
 import AdminMenuDetail from './pages/Admin/AdminMenuDetail'
 import AdminInventory from './pages/Admin/AdminInventory'
 import AdminAgents from './pages/Admin/AdminAgents'
+import AdminPromo from './pages/Admin/AdminPromo'
+import AdminVip from './pages/Admin/AdminVip'
 import AdminAnalytics from './pages/Admin/AdminAnalytics'
+import AdminCouriers from './pages/Admin/AdminCouriers'
+import CourierPage from './pages/Courier/CourierPage'
 
 export default function App() {
   return (
@@ -28,6 +33,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/staff" element={<HomePage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/courier" element={<CourierPage />} />
         <Route path="/cashier" element={<CashierPage />} />
         <Route path="/kitchen" element={<KitchenPage />} />
         <Route path="/admin" element={<AdminLogin />} />
@@ -38,6 +45,9 @@ export default function App() {
           <Route path="menu/:id" element={<AdminMenuDetail />} />
           <Route path="inventory" element={<AdminInventory />} />
           <Route path="agents" element={<AdminAgents />} />
+          <Route path="promo" element={<AdminPromo />} />
+          <Route path="vip" element={<AdminVip />} />
+          <Route path="couriers" element={<AdminCouriers />} />
           <Route path="analytics" element={<AdminAnalytics />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

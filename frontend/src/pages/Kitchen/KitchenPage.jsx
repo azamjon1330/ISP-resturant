@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ordersAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { ChefHat, Bell, Home, RefreshCw, CheckCircle, Clock } from 'lucide-react'
+import { ChefHat, Bell, Home, RefreshCw, CheckCircle, Clock, MapPin, Phone, Truck, Store, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import './KitchenPage.css'
 
@@ -24,35 +24,101 @@ export default function KitchenPage() {
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(null)
   const wsRef = useRef(null)
-  const timerRef = useRef(null)
+  const reconnectRef = useRef(null)
+  const pollRef = useRef(null)
+  const tickRef = useRef(null)
+  const seenIdsRef = useRef(new Set())
   const [, forceUpdate] = useState(0)
 
   useEffect(() => {
-    load()
+    initialLoad()
     connectWS()
-    timerRef.current = setInterval(() => forceUpdate(n => n + 1), 30000)
+    // Fast polling fallback — runs every 500 ms (real-time feel).
+    // If WS already delivered the order, the de-dupe by ID prevents double sound/toast.
+    pollRef.current = setInterval(() => pollOrders(), 500)
+    // Refresh the elapsed-time labels every 30s
+    tickRef.current = setInterval(() => forceUpdate(n => n + 1), 30000)
     return () => {
       wsRef.current?.close()
-      clearInterval(timerRef.current)
+      clearInterval(pollRef.current)
+      clearInterval(tickRef.current)
+      if (reconnectRef.current) clearTimeout(reconnectRef.current)
     }
   }, [])
 
-  const connectWS = () => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`)
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data)
-      if (msg.type === 'new_order') {
-        setOrders(prev => [msg.payload, ...prev])
-        playSound()
-        toast(`Yangi buyurtma! #${msg.payload.order_code}`, { icon: '🔔', duration: 6000 })
-      }
-      if (msg.type === 'order_status_changed') {
-        setOrders(prev => prev.filter(o => o.id !== msg.payload.id))
-      }
-    }
-    wsRef.current = ws
+  const handleNewOrder = (order) => {
+    if (!order || !order.id) return
+    if (seenIdsRef.current.has(order.id)) return
+    seenIdsRef.current.add(order.id)
+    setOrders(prev => {
+      if (prev.some(o => o.id === order.id)) return prev
+      return [order, ...prev]
+    })
+    playSound()
+    toast(`Yangi buyurtma! #${order.order_code}`, { icon: '🔔', duration: 6000 })
   }
+
+  const connectWS = () => {
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(`${protocol}//${window.location.host}/ws`)
+      ws.onmessage = (e) => {
+        let msg
+        try { msg = JSON.parse(e.data) } catch { return }
+        if (msg.type === 'new_order') {
+          handleNewOrder(msg.payload)
+        }
+        if (msg.type === 'order_status_changed') {
+          setOrders(prev => prev.filter(o => o.id !== msg.payload.id))
+        }
+      }
+      ws.onclose = () => {
+        // Auto-reconnect in 2s — tunnel/Cloudflare may drop idle sockets
+        if (reconnectRef.current) clearTimeout(reconnectRef.current)
+        reconnectRef.current = setTimeout(connectWS, 2000)
+      }
+      ws.onerror = () => {
+        try { ws.close() } catch {}
+      }
+      wsRef.current = ws
+    } catch {
+      // If WS construction failed, retry shortly
+      reconnectRef.current = setTimeout(connectWS, 2000)
+    }
+  }
+
+  // Polling fallback — catches orders even if WS is broken
+  const pollOrders = async () => {
+    try {
+      const res = await ordersAPI.getAll()
+      // Kitchen handles both freshly-accepted and currently-cooking orders
+      const active = (res.data || []).filter(o => o.status === 'pending' || o.status === 'cooking')
+      // Seed seenIds with the current order set so we don't beep for everything on first run
+      if (seenIdsRef.current.size === 0) {
+        active.forEach(o => seenIdsRef.current.add(o.id))
+        setOrders(active)
+        return
+      }
+      // Detect orders we haven't seen yet (new pending only — already-cooking ones don't beep)
+      const fresh = active.filter(o => o.status === 'pending' && !seenIdsRef.current.has(o.id))
+      fresh.forEach(o => handleNewOrder(o))
+      // Drop orders that are no longer pending/cooking (e.g. marked ready by another client)
+      setOrders(prev => prev.filter(o => active.some(p => p.id === o.id)))
+    } catch {}
+  }
+
+  // Auto-promote the topmost pending order to "cooking" once the chef sees it
+  // (i.e. it's #1 in their queue). This makes the customer's "Tayyorlanmoqda" go active.
+  useEffect(() => {
+    if (orders.length === 0) return
+    const top = orders[orders.length - 1] // oldest = topmost in the queue
+    if (top && top.status === 'pending') {
+      ordersAPI.updateStatus(top.id, 'cooking').then(() => {
+        setOrders(prev => prev.map(o => o.id === top.id ? { ...o, status: 'cooking' } : o))
+      }).catch(() => {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders.length])
 
   const playSound = () => {
     try {
@@ -70,19 +136,22 @@ export default function KitchenPage() {
     } catch {}
   }
 
-  const load = async () => {
+  const initialLoad = async () => {
     setLoading(true)
     try {
       const res = await ordersAPI.getAll()
-      setOrders(res.data.filter(o => o.status === 'pending'))
+      const active = (res.data || []).filter(o => o.status === 'pending' || o.status === 'cooking')
+      active.forEach(o => seenIdsRef.current.add(o.id))
+      setOrders(active)
     } catch { toast.error('Yuklanmadi') }
     finally { setLoading(false) }
   }
 
+  // "Tayyor" — mark the order as ready (kitchen is done). Courier handles the rest.
   const markDone = async (order) => {
     setCompleting(order.id)
     try {
-      await ordersAPI.updateStatus(order.id, 'served')
+      await ordersAPI.updateStatus(order.id, 'ready')
       setOrders(prev => prev.filter(o => o.id !== order.id))
       toast.success(`Buyurtma #${order.order_code} tayyor!`, { icon: '✅', duration: 4000 })
     } catch { toast.error('Xatolik yuz berdi') }
@@ -97,10 +166,11 @@ export default function KitchenPage() {
 
   return (
     <div className="kitchen-page">
-      <div className="kitchen-bg">
-        <div className="k-blob k-blob-1" />
-        <div className="k-blob k-blob-2" />
-        <div className="k-blob k-blob-3" />
+      <div className="background-container">
+        <img className="moon" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png" alt="" />
+        <div className="stars" />
+        <div className="twinkling" />
+        <div className="clouds" />
       </div>
       <header className="kitchen-header">
         <div className="kh-left">
@@ -118,7 +188,7 @@ export default function KitchenPage() {
             <span className="kh-badge-empty">Buyurtma yo'q</span>
           )}
         </div>
-        <button className="kh-refresh" onClick={load}>
+        <button className="kh-refresh" onClick={() => pollOrders()}>
           <RefreshCw size={16} /> Yangilash
         </button>
       </header>
@@ -141,6 +211,34 @@ export default function KitchenPage() {
                     {fmtTime(order.created_at)} · {fmtElapsed(order.created_at)}
                   </span>
                 </div>
+
+                {(order.customer_first_name || order.customer_phone) && (
+                  <div className="korder-customer">
+                    {order.customer_first_name && (
+                      <div><User size={12} /> {order.customer_first_name} {order.customer_last_name || ''}</div>
+                    )}
+                    {order.customer_phone && (
+                      <a href={`tel:${order.customer_phone}`}><Phone size={12} /> {order.customer_phone}</a>
+                    )}
+                    {order.delivery_type === 'delivery' ? (
+                      <div className="korder-delivery">
+                        <Truck size={12} />
+                        <span>{order.delivery_address || 'Manzil yo\'q'}</span>
+                        {order.delivery_lat && order.delivery_lng && (
+                          <a
+                            href={`https://yandex.uz/maps/?ll=${order.delivery_lng},${order.delivery_lat}&z=17&pt=${order.delivery_lng},${order.delivery_lat}`}
+                            target="_blank" rel="noreferrer"
+                            className="korder-map-link"
+                          >
+                            <MapPin size={12} /> Xaritada
+                          </a>
+                        )}
+                      </div>
+                    ) : order.customer_phone ? (
+                      <div className="korder-delivery"><Store size={12} /> Olib ketadi</div>
+                    ) : null}
+                  </div>
+                )}
 
                 {order.items?.length > 0 && (
                   <ul className="korder-items">
