@@ -298,7 +298,7 @@ export default function CourierPage() {
 
   /* ─ Login ─ */
   const doLogin = useCallback(async () => {
-    if (authPhone.length < 9 || authPin.length < 4) {
+    if (authPhone.length < 9 || authPin.length < 1) {
       toast.error("Telefon va PIN to'ldiring")
       return
     }
@@ -602,8 +602,8 @@ export default function CourierPage() {
                 type={showPin ? 'text' : 'password'}
                 placeholder="• • • •"
                 value={authPin}
-                maxLength={6}
-                onChange={(e) => setAPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={10}
+                onChange={(e) => setAPin(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 onKeyDown={(e) => e.key === 'Enter' && doLogin()}
               />
               <button

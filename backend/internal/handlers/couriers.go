@@ -17,6 +17,23 @@ import (
 
 // ───────── helpers ─────────
 
+// normalizeCourierPhone strips the Uzbekistan country code (+998 / 998)
+// and returns a canonical 9-digit local number so that "+998901234567",
+// "998901234567", and "901234567" all resolve to the same DB row.
+func normalizeCourierPhone(p string) string {
+	r := normalizePhone(p) // strip spaces, dashes, parentheses
+	if strings.HasPrefix(r, "+998") {
+		return r[4:]
+	}
+	if strings.HasPrefix(r, "998") && len(r) >= 12 {
+		return r[3:]
+	}
+	if strings.HasPrefix(r, "0") && len(r) == 10 {
+		return r[1:]
+	}
+	return r
+}
+
 func makeCourierToken(courierID int) string {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
@@ -43,14 +60,15 @@ func CourierLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Telefon va PIN kerak"})
 		return
 	}
-	phone := normalizePhone(body.Phone)
+	phone := normalizeCourierPhone(body.Phone)
 
 	var co models.Courier
 	var dbPin string
+	// Match both "901234567" and "+998901234567" in the DB (covers old records stored with prefix)
 	err := database.DB.QueryRow(
 		`SELECT id, phone, first_name, COALESCE(last_name,''), pin, is_active,
 		        current_lat, current_lng, last_seen_at, created_at
-		 FROM couriers WHERE phone=$1`, phone,
+		 FROM couriers WHERE phone=$1 OR phone='+998'||$1`, phone,
 	).Scan(&co.ID, &co.Phone, &co.FirstName, &co.LastName, &dbPin, &co.IsActive,
 		&co.CurrentLat, &co.CurrentLng, &co.LastSeenAt, &co.CreatedAt)
 	if err != nil {
@@ -356,7 +374,7 @@ func AdminCreateCourier(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Telefon, ism va PIN kerak"})
 		return
 	}
-	phone := normalizePhone(body.Phone)
+	phone := normalizeCourierPhone(body.Phone)
 	active := true
 	if body.IsActive != nil {
 		active = *body.IsActive
@@ -399,7 +417,7 @@ func AdminUpdateCourier(c *gin.Context) {
 	if body.Phone != "" {
 		pos++
 		q += ", phone=$" + strconv.Itoa(pos)
-		args = append(args, normalizePhone(body.Phone))
+		args = append(args, normalizeCourierPhone(body.Phone))
 	}
 	if body.PIN != "" {
 		pos++
