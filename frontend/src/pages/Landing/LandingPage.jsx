@@ -25,7 +25,7 @@ const reviewsAPI = {
 /* ─── Translations ────────────────────────────────────────────────────────────── */
 const LANG = {
   uz: {
-    nav_menu: 'Menyu', nav_about: 'Haqimizda', nav_contact: 'Aloqa',
+    nav_menu: 'Menyu', nav_about: 'Haqimizda', nav_contact: 'Aloqa', nav_reviews: 'Sharhlar',
     auth_btn: "Kirish / Ro'yxat", orders_btn: 'Buyurtmalarim', logout: 'Chiqish',
     slides: [
       { eye: "O'ZBEK MILLIY TAOMI",  title: "Yoqimli",        accent: "O'zbek Oshi", sub: "Qo'zichoq go'shti, ziravorlar va yangi guruchdan tayyorlangan an'anaviy plov. Har bir qoshiq — milliy meros." },
@@ -46,7 +46,7 @@ const LANG = {
     how1_ttl: 'Tanlang', how1_sub: "Menyudan sevimli taomingizni savatga qo'shing",
     how2_ttl: 'Buyurtma bering', how2_sub: "Manzil va to'lov usulini kiriting, tasdiqlang",
     how3_ttl: 'Oling', how3_sub: "45 daqiqada issiq holda eshigingizga yetkazamiz",
-    rv_eye: 'MIJOZLAR FIKRI', rv_title: "Ular bizni yaxshi ko'rishadi",
+    rv_eye: 'MIJOZLAR SHARHLARI', rv_title: "Mehmonlarimiz nima deyishadi",
     rv_cta_ttl: 'Buyurtmangizdan mamnunmisiz?', rv_cta_sub: "Fikringizni qoldiring — boshqalarga yordam bo'ladi",
     rv_btn: 'Fikr qoldirish', rv_login_hint: 'Fikr qoldirish uchun avval kiring',
     rv_empty: "Hali fikrlar yo'q. Birinchi bo'lib fikr qoldiring!",
@@ -97,7 +97,7 @@ const LANG = {
     off3_sub: "Sodiqlik dasturimizga qo'shiling",
   },
   ru: {
-    nav_menu: 'Меню', nav_about: 'О нас', nav_contact: 'Контакты',
+    nav_menu: 'Меню', nav_about: 'О нас', nav_contact: 'Контакты', nav_reviews: 'Отзывы',
     auth_btn: 'Войти / Регистрация', orders_btn: 'Мои заказы', logout: 'Выйти',
     slides: [
       { eye: 'УЗБЕКСКАЯ КУХНЯ',   title: 'Настоящий',       accent: 'Узбекский Плов', sub: 'Традиционный плов из баранины, приправ и свежего риса. Каждая ложка — частица национального наследия.' },
@@ -118,7 +118,7 @@ const LANG = {
     how1_ttl: 'Выберите', how1_sub: 'Добавьте любимые блюда из меню в корзину',
     how2_ttl: 'Оформите', how2_sub: 'Введите адрес и подтвердите заказ',
     how3_ttl: 'Получите', how3_sub: 'Доставим горячим к вашей двери за 45 минут',
-    rv_eye: 'ОТЗЫВЫ', rv_title: 'Они нас любят',
+    rv_eye: 'ОТЗЫВЫ ГОСТЕЙ', rv_title: 'Что говорят наши гости',
     rv_cta_ttl: 'Довольны заказом?', rv_cta_sub: 'Оставьте отзыв — помогите другим',
     rv_btn: 'Оставить отзыв', rv_login_hint: 'Войдите, чтобы оставить отзыв',
     rv_empty: 'Пока отзывов нет. Будьте первым!',
@@ -522,7 +522,7 @@ export default function LandingPage() {
         customer_first_name: customer?.first_name || '',
         customer_last_name:  customer?.last_name  || '',
         customer_phone:      customer?.phone       || '',
-        promo_code:          promoRes ? promoVal : '',
+        card_code:           promoRes ? promoVal : '',
       }
       const res = await ordersAPI.create(payload)
       if (!res.data?.id) throw new Error()
@@ -584,7 +584,7 @@ export default function LandingPage() {
           <nav className={`lp-nav${mobileMenuOpen ? ' lp-nav--open' : ''}`}>
             <a href="#menu" onClick={e => { e.preventDefault(); scrollToMenu(); setMobileMenu(false) }}>{T.nav_menu}</a>
             <a href="#how" onClick={e => { e.preventDefault(); document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenu(false) }}>{T.nav_about}</a>
-            <a href="#reviews" onClick={e => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenu(false) }}>{T.nav_contact}</a>
+            <a href="#reviews" onClick={e => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenu(false) }}>{T.nav_reviews}</a>
           </nav>
 
           <div className="lp-header-right">
@@ -801,24 +801,131 @@ export default function LandingPage() {
             <h2 className="lp-sec-title">{T.how_title}</h2>
           </div>
           <div className="lp-how-grid">
-            {[
-              { n: '01', img: '/images/manti.jpg',  ico: <Search size={22} />,         t: T.how1_ttl, s: T.how1_sub },
-              { n: '02', img: '/images/plov.jpg',   ico: <ClipboardCheck size={22} />, t: T.how2_ttl, s: T.how2_sub },
-              { n: '03', img: '/images/lagman.jpg', ico: <Truck size={22} />,          t: T.how3_ttl, s: T.how3_sub },
-            ].map((h, i) => (
-              <div key={i} className="lp-how-card lp-reveal" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="lp-how-img-wrap">
-                  <img src={h.img} alt={h.t} className="lp-how-img" />
-                  <div className="lp-how-img-overlay" />
-                  <span className="lp-how-n">{h.n}</span>
-                </div>
-                <div className="lp-how-body">
-                  <div className="lp-how-ico">{h.ico}</div>
-                  <p className="lp-how-ttl">{h.t}</p>
-                  <p className="lp-how-sub">{h.s}</p>
-                </div>
+            {/* Step 1 – Browse menu & add to cart */}
+            <div className="lp-how-card lp-reveal">
+              <div className="lp-how-img-wrap lp-how-bg1">
+                <svg viewBox="0 0 280 180" className="lp-how-svg" xmlns="http://www.w3.org/2000/svg">
+                  {/* Phone */}
+                  <rect x="88" y="14" width="78" height="140" rx="14" fill="#1a1a35" stroke="rgba(255,107,53,0.6)" strokeWidth="2"/>
+                  <rect x="94" y="26" width="66" height="110" rx="6" fill="#0f0f28"/>
+                  <circle cx="127" cy="20" r="3" fill="rgba(255,107,53,0.5)"/>
+                  {/* Menu card 1 */}
+                  <rect x="98" y="32" width="58" height="30" rx="6" fill="#2a2a50"/>
+                  <rect x="98" y="32" width="22" height="30" rx="6" fill="rgba(255,107,53,0.25)"/>
+                  <circle cx="109" cy="47" r="7" fill="#FF6B35" opacity="0.8"/>
+                  <rect x="124" y="38" width="28" height="4" rx="2" fill="rgba(255,255,255,0.5)"/>
+                  <rect x="124" y="46" width="18" height="3" rx="1.5" fill="rgba(255,255,255,0.25)"/>
+                  <rect x="124" y="53" width="22" height="3" rx="1.5" fill="rgba(255,107,53,0.6)"/>
+                  {/* Menu card 2 */}
+                  <rect x="98" y="67" width="58" height="30" rx="6" fill="#2a2a50"/>
+                  <rect x="98" y="67" width="22" height="30" rx="6" fill="rgba(245,158,11,0.2)"/>
+                  <circle cx="109" cy="82" r="7" fill="#f59e0b" opacity="0.8"/>
+                  <rect x="124" y="73" width="28" height="4" rx="2" fill="rgba(255,255,255,0.5)"/>
+                  <rect x="124" y="81" width="18" height="3" rx="1.5" fill="rgba(255,255,255,0.25)"/>
+                  <rect x="124" y="88" width="22" height="3" rx="1.5" fill="rgba(245,158,11,0.6)"/>
+                  {/* Add to cart button */}
+                  <rect x="98" y="105" width="58" height="26" rx="8" fill="#FF6B35"/>
+                  <text x="127" y="122" textAnchor="middle" fill="white" fontSize="11" fontWeight="700">+ Cart</text>
+                  {/* Cart badge floating */}
+                  <circle cx="170" cy="30" r="16" fill="#FF6B35"/>
+                  <text x="170" y="35" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">2</text>
+                  <path d="M162 24 L165 36 M165 36 L178 36" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                  {/* Sparkles */}
+                  <circle cx="65" cy="50" r="4" fill="rgba(255,107,53,0.35)"/>
+                  <circle cx="200" cy="110" r="5" fill="rgba(255,107,53,0.25)"/>
+                  <circle cx="72" cy="120" r="3" fill="rgba(245,158,11,0.3)"/>
+                </svg>
+                <span className="lp-how-n">01</span>
               </div>
-            ))}
+              <div className="lp-how-body">
+                <div className="lp-how-ico"><Search size={20} /></div>
+                <p className="lp-how-ttl">{T.how1_ttl}</p>
+                <p className="lp-how-sub">{T.how1_sub}</p>
+              </div>
+            </div>
+
+            {/* Step 2 – Enter address & confirm */}
+            <div className="lp-how-card lp-reveal" style={{ transitionDelay: '100ms' }}>
+              <div className="lp-how-img-wrap lp-how-bg2">
+                <svg viewBox="0 0 280 180" className="lp-how-svg" xmlns="http://www.w3.org/2000/svg">
+                  {/* Form card */}
+                  <rect x="50" y="20" width="150" height="130" rx="12" fill="#1a1a35" stroke="rgba(59,130,246,0.5)" strokeWidth="1.5"/>
+                  {/* Header bar */}
+                  <rect x="50" y="20" width="150" height="28" rx="12" fill="rgba(59,130,246,0.2)"/>
+                  <rect x="50" y="36" width="150" height="12" fill="rgba(59,130,246,0.2)"/>
+                  <text x="125" y="38" textAnchor="middle" fill="rgba(255,255,255,0.8)" fontSize="10" fontWeight="600">Manzil / Адрес</text>
+                  {/* Fields */}
+                  <rect x="62" y="56" width="126" height="16" rx="5" fill="#2a2a50"/>
+                  <text x="70" y="68" fill="rgba(255,255,255,0.4)" fontSize="8">Ko'cha, uy...</text>
+                  <rect x="62" y="78" width="126" height="16" rx="5" fill="#2a2a50"/>
+                  <text x="70" y="90" fill="rgba(255,255,255,0.4)" fontSize="8">Telefon raqami</text>
+                  {/* Map mini */}
+                  <rect x="62" y="100" width="88" height="36" rx="5" fill="#2a2a50"/>
+                  <rect x="62" y="100" width="88" height="36" rx="5" fill="rgba(16,185,129,0.08)"/>
+                  <path d="M80 118 Q95 106 106 118 Q95 130 80 118Z" fill="rgba(16,185,129,0.2)" stroke="rgba(16,185,129,0.5)" strokeWidth="1"/>
+                  <circle cx="95" cy="118" r="4" fill="#10b981"/>
+                  <line x1="95" y1="110" x2="95" y2="114" stroke="#10b981" strokeWidth="2"/>
+                  {/* Confirm button */}
+                  <rect x="155" y="100" width="33" height="36" rx="5" fill="#3b82f6"/>
+                  <text x="171.5" y="122" textAnchor="middle" fill="white" fontSize="8" fontWeight="700">OK ✓</text>
+                  {/* Pin icon */}
+                  <circle cx="220" cy="55" r="20" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.3)" strokeWidth="1"/>
+                  <path d="M220 44 C215 44 211 48 211 53 C211 60 220 68 220 68 C220 68 229 60 229 53 C229 48 225 44 220 44Z" fill="#3b82f6"/>
+                  <circle cx="220" cy="53" r="3" fill="white"/>
+                  {/* Dots */}
+                  <circle cx="42" cy="70" r="5" fill="rgba(59,130,246,0.3)"/>
+                  <circle cx="245" cy="130" r="4" fill="rgba(59,130,246,0.2)"/>
+                </svg>
+                <span className="lp-how-n">02</span>
+              </div>
+              <div className="lp-how-body">
+                <div className="lp-how-ico"><ClipboardCheck size={20} /></div>
+                <p className="lp-how-ttl">{T.how2_ttl}</p>
+                <p className="lp-how-sub">{T.how2_sub}</p>
+              </div>
+            </div>
+
+            {/* Step 3 – Courier delivery */}
+            <div className="lp-how-card lp-reveal" style={{ transitionDelay: '200ms' }}>
+              <div className="lp-how-img-wrap lp-how-bg3">
+                <svg viewBox="0 0 280 180" className="lp-how-svg" xmlns="http://www.w3.org/2000/svg">
+                  {/* Door / house */}
+                  <rect x="165" y="40" width="70" height="110" rx="4" fill="#1a1a35" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5"/>
+                  <rect x="178" y="65" width="44" height="85" rx="3" fill="#10b981" opacity="0.15"/>
+                  <rect x="178" y="65" width="44" height="85" rx="3" stroke="rgba(16,185,129,0.5)" strokeWidth="1" fill="none"/>
+                  <circle cx="186" cy="108" r="3" fill="rgba(16,185,129,0.7)"/>
+                  {/* Roof triangle */}
+                  <polygon points="160,42 200,16 240,42" fill="#1e1e40" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5"/>
+                  {/* Courier figure */}
+                  <circle cx="108" cy="62" r="14" fill="#FF6B35" opacity="0.9"/>
+                  <text x="108" y="67" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">:)</text>
+                  {/* Body */}
+                  <rect x="96" y="78" width="24" height="36" rx="8" fill="#2a2a50" stroke="rgba(255,107,53,0.5)" strokeWidth="1.5"/>
+                  {/* Delivery bag */}
+                  <rect x="122" y="82" width="34" height="30" rx="7" fill="#FF6B35"/>
+                  <rect x="122" y="82" width="34" height="30" rx="7" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+                  <path d="M130 82 Q139 74 148 82" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  <text x="139" y="101" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">🍱</text>
+                  {/* Legs */}
+                  <rect x="99" y="112" width="8" height="26" rx="4" fill="#2a2a50"/>
+                  <rect x="111" y="112" width="8" height="26" rx="4" fill="#2a2a50"/>
+                  {/* Motion lines */}
+                  <line x1="55" y1="100" x2="75" y2="100" stroke="rgba(16,185,129,0.4)" strokeWidth="2" strokeDasharray="4 3"/>
+                  <line x1="50" y1="108" x2="72" y2="108" stroke="rgba(16,185,129,0.3)" strokeWidth="1.5" strokeDasharray="4 3"/>
+                  <line x1="55" y1="116" x2="70" y2="116" stroke="rgba(16,185,129,0.2)" strokeWidth="1" strokeDasharray="4 3"/>
+                  {/* Stars */}
+                  <text x="42" y="62" fill="rgba(245,158,11,0.8)" fontSize="14">★</text>
+                  <text x="33" y="78" fill="rgba(245,158,11,0.5)" fontSize="10">★</text>
+                  <text x="48" y="48" fill="rgba(245,158,11,0.4)" fontSize="9">★</text>
+                </svg>
+                <span className="lp-how-n">03</span>
+              </div>
+              <div className="lp-how-body">
+                <div className="lp-how-ico"><Truck size={20} /></div>
+                <p className="lp-how-ttl">{T.how3_ttl}</p>
+                <p className="lp-how-sub">{T.how3_sub}</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -831,6 +938,17 @@ export default function LandingPage() {
               <p className="lp-sec-eye">{T.rv_eye}</p>
               <h2 className="lp-sec-title">{T.rv_title}</h2>
             </div>
+            {reviews.length > 0 && (
+              <div className="lp-rv-summary">
+                <span className="lp-rv-avg">{(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)}</span>
+                <div>
+                  <div className="lp-rv-stars" style={{ gap: 2 }}>
+                    {[1,2,3,4,5].map(s => <Star key={s} size={14} fill={s <= Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length) ? '#D4A853' : 'none'} color={s <= Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length) ? '#D4A853' : 'var(--text3)'} />)}
+                  </div>
+                  <p className="lp-rv-count">{reviews.length} {lang === 'uz' ? 'ta sharh' : 'отзывов'}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {reviews.length === 0 ? (
@@ -839,19 +957,24 @@ export default function LandingPage() {
             <div className="lp-rv-grid">
               {reviews.map((rv, i) => (
                 <div key={rv.id} className="lp-rv-card lp-reveal" style={{ transitionDelay: `${(i % 3) * 80}ms` }}>
-                  <div className="lp-rv-stars">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} size={14}
-                        fill={s <= rv.rating ? '#D4A853' : 'none'}
-                        color={s <= rv.rating ? '#D4A853' : 'var(--text3)'}
-                      />
-                    ))}
+                  <div className="lp-rv-card-top">
+                    <div className="lp-rv-stars">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} size={16}
+                          fill={s <= rv.rating ? '#D4A853' : 'none'}
+                          color={s <= rv.rating ? '#D4A853' : 'var(--text3)'}
+                        />
+                      ))}
+                    </div>
+                    <span className="lp-rv-verified">
+                      <CheckCircle size={12} /> {lang === 'uz' ? 'Tasdiqlangan' : 'Подтверждён'}
+                    </span>
                   </div>
                   <p className="lp-rv-comment">{rv.comment || '—'}</p>
                   <div className="lp-rv-author">
                     <div className="lp-rv-av">{initials(rv.customer_name)}</div>
                     <div>
-                      <p className="lp-rv-name">{rv.customer_name}</p>
+                      <p className="lp-rv-name">{rv.customer_name || (lang === 'uz' ? 'Mijoz' : 'Клиент')}</p>
                       <p className="lp-rv-date">{fmtDate(rv.created_at)}</p>
                     </div>
                   </div>
@@ -898,7 +1021,7 @@ export default function LandingPage() {
               <div className="lp-footer-links">
                 <a href="#menu" onClick={e => { e.preventDefault(); scrollToMenu() }}>{T.nav_menu}</a>
                 <a href="#how">{T.nav_about}</a>
-                <a href="#reviews">{T.nav_contact}</a>
+                <a href="#reviews">{T.nav_reviews}</a>
                 <a href="/staff">{T.staff}</a>
               </div>
             </div>
