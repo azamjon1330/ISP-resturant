@@ -305,6 +305,38 @@ a { color: inherit; text-decoration: none; }
 .lp-drop-lang {
   padding: 10px 14px;
   display: flex; gap: 6px;
+  justify-content: center;
+}
+
+/* Theme (day/night) row inside profile dropdown */
+.lp-drop-theme {
+  padding: 10px 14px;
+  display: flex; gap: 6px;
+}
+.lp-drop-theme button {
+  flex: 1;
+  padding: 7px 0 !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.6) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  transition: all var(--dur) !important;
+}
+.lp-drop-theme button.active {
+  background: var(--orange) !important;
+  border-color: var(--orange) !important;
+  color: #fff !important;
+}
+.lp-drop-theme button:hover:not(.active) {
+  background: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
 }
 .lp-drop-lang button {
   flex: 1;
@@ -381,17 +413,12 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   gap: 60px;
-  position: relative;
-  z-index: 1;
 }
 
 /* Left side */
 .lp-hero-left {
   flex: 1;
   min-width: 0;
-  max-width: 50%;
-  position: relative;
-  z-index: 1;
 }
 
 .lp-hero-tag {
@@ -483,35 +510,28 @@ a { color: inherit; text-decoration: none; }
 }
 .lp-hero-stat svg { color: var(--orange); }
 
-/* Right side — absolutely fills the hero from top to bottom */
+/* Right side */
 .lp-hero-right {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 58%;
-  z-index: 0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding-bottom: 40px;
-  padding-right: 36px;
-  animation: fadeIn 1s 0.2s var(--ease-out) both;
+  align-items: center;
+  gap: 20px;
+  animation: slideInRight 0.9s 0.15s var(--ease-out) both;
 }
 
 .lp-hero-img-ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
+  position: relative;
+  width: clamp(320px, 42vw, 520px);
+  height: clamp(320px, 42vw, 520px);
+  border-radius: 50%;
   overflow: hidden;
-  /* Strong left fade — edge completely invisible, smooth blend into text */
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.03) 10%, rgba(0,0,0,0.22) 24%, rgba(0,0,0,0.65) 42%, #000 60%);
-  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.03) 10%, rgba(0,0,0,0.22) 24%, rgba(0,0,0,0.65) 42%, #000 60%);
-  animation: fadeIn 1.2s var(--ease-out) both;
-  box-shadow: none;
+  border: 5px solid rgba(255,107,53,0.35);
+  box-shadow:
+    0 0 0 12px rgba(255,107,53,0.08),
+    0 0 0 26px rgba(255,107,53,0.04),
+    0 32px 80px rgba(0,0,0,0.55);
+  animation: float 6s ease-in-out infinite;
 }
 .lp-hero-img {
   position: absolute;
@@ -524,8 +544,6 @@ a { color: inherit; text-decoration: none; }
 .lp-hero-img.active { opacity: 1; }
 
 .lp-hero-dots {
-  position: relative;
-  z-index: 2;
   display: flex;
   gap: 8px;
 }
@@ -1582,35 +1600,10 @@ a { color: inherit; text-decoration: none; }
 
   .lp-hero { padding: 100px 0 60px; min-height: auto; }
   .lp-hero-inner { flex-direction: column-reverse; text-align: center; gap: 40px; }
-  .lp-hero-left {
-    display: flex; flex-direction: column; align-items: center;
-    max-width: none;
-  }
+  .lp-hero-left { display: flex; flex-direction: column; align-items: center; }
   .lp-hero-sub { text-align: center; }
   .lp-hero-stats { justify-content: center; }
-  /* Mobile: restore to normal flow, bottom fade */
-  .lp-hero-right {
-    position: static;
-    width: auto;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    animation: fadeUp 0.8s 0.2s var(--ease-out) both;
-  }
-  .lp-hero-img-ring {
-    position: relative;
-    inset: auto;
-    width: clamp(240px, 72vw, 400px);
-    height: clamp(240px, 72vw, 400px);
-    border-radius: 20px;
-    /* Mobile: bottom edge fades — blends smoothly into text below */
-    -webkit-mask-image: linear-gradient(to bottom, #000 48%, rgba(0,0,0,0.5) 72%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 48%, rgba(0,0,0,0.5) 72%, transparent 100%);
-    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
-  }
-  .lp-hero-dots { position: static; }
+  .lp-hero-img-ring { width: clamp(220px, 60vw, 360px); height: clamp(220px, 60vw, 360px); }
 
   .lp-how-grid { grid-template-columns: 1fr; gap: 14px; }
   .lp-offers-grid { grid-template-columns: 1fr; }

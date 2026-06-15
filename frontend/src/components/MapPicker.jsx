@@ -1,46 +1,38 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { GoogleMap, Marker, useJsApiLoader, Autocomplete, DirectionsRenderer } from '@react-google-maps/api'
+import { useEffect, useRef, useState, useCallback } from 'react'
 
-const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
-const LIBS = ['places']
+const DEFAULT = { lat: 41.2995, lng: 69.2401 }
 
-const darkMapStyle = [
-  { elementType: 'geometry',           stylers: [{ color: '#1a1a2e' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1a2e' }] },
-  { elementType: 'labels.text.fill',   stylers: [{ color: '#aaaaaa' }] },
-  { featureType: 'road',               elementType: 'geometry',       stylers: [{ color: '#2d2d55' }] },
-  { featureType: 'road',               elementType: 'geometry.stroke', stylers: [{ color: '#1a1a40' }] },
-  { featureType: 'road',               elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
-  { featureType: 'water',              stylers: [{ color: '#0a0a2a' }] },
-  { featureType: 'poi',                stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit',            stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative',     elementType: 'geometry', stylers: [{ color: '#2d2d55' }] },
-  { featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{ color: '#9da5b3' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#c9c9c9' }] },
-]
-
-const orangeMarker = (label) => ({
-  path: 'M12 0C5.37 0 0 5.37 0 12C0 21 12 33 12 33C12 33 24 21 24 12C24 5.37 18.63 0 12 0Z',
-  fillColor: '#FF6B35',
-  fillOpacity: 1,
-  strokeColor: '#fff',
-  strokeWeight: 2,
-  scale: 1.5,
-  anchor: { x: 12, y: 33 },
-  labelOrigin: { x: 12, y: 12 },
-})
-
-const pickupMarker = {
-  path: 'M12 0C5.37 0 0 5.37 0 12C0 21 12 33 12 33C12 33 24 21 24 12C24 5.37 18.63 0 12 0Z',
-  fillColor: '#1c1c2e',
-  fillOpacity: 1,
-  strokeColor: '#FF6B35',
-  strokeWeight: 2.5,
-  scale: 1.6,
-  anchor: { x: 12, y: 33 },
+async function photonSearch(query) {
+  const res = await fetch(
+    `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=default`
+  )
+  const data = await res.json()
+  return data.features.map(f => {
+    const p = f.properties
+    const label = [
+      p.name,
+      p.street ? `${p.street}${p.housenumber ? ' ' + p.housenumber : ''}` : null,
+      p.city || p.town || p.village,
+    ].filter(Boolean).join(', ')
+    return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], label }
+  })
 }
 
-const container = { width: '100%', height: '100%' }
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}&lang=ru`)
+    const data = await res.json()
+    const p = data.features[0]?.properties
+    if (!p) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    return [
+      p.name,
+      p.street && p.housenumber ? `${p.street} ${p.housenumber}` : p.street,
+      p.city || p.town,
+    ].filter(Boolean).join(', ')
+  } catch {
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+  }
+}
 
 export default function MapPicker({
   lat, lng,
@@ -49,128 +41,246 @@ export default function MapPicker({
   isPickup = false,
   zoom = 14,
   showSearch = false,
-  routeFrom = null, // { lat, lng } – draw route from here to marker
 }) {
-  const defaultCenter = { lat: 41.2995, lng: 69.2401 }
-  const center = lat && lng ? { lat, lng } : defaultCenter
+  const mapElRef    = useRef(null)
+  const mapRef      = useRef(null)
+  const markerRef   = useRef(null)
+  const LRef        = useRef(null)
+  const [searchQ,   setSearchQ]   = useState('')
+  const [suggests,  setSuggests]  = useState([])
+  const [searching, setSearching] = useState(false)
+  const [gpsLoad,   setGpsLoad]   = useState(false)
 
-  const [markerPos, setMarkerPos] = useState(center)
-  const [directions, setDirections] = useState(null)
-  const mapRef = useRef(null)
-  const acRef  = useRef(null)
+  const orangeIcon = useCallback((L) => L.divIcon({
+    html: `<div style="
+      width:28px;height:28px;
+      background:#FF6B35;
+      border:3px solid #fff;
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      box-shadow:0 4px 14px rgba(255,107,53,0.55);
+    "></div>`,
+    iconSize: [28, 28], iconAnchor: [14, 28],
+    popupAnchor: [0, -28], className: '',
+  }), [])
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: MAPS_KEY,
-    libraries: LIBS,
-    id: 'google-map-script',
-  })
+  const pickupIcon = useCallback((L) => L.divIcon({
+    html: `<div style="
+      width:28px;height:28px;
+      background:#1c1c2e;
+      border:3px solid #FF6B35;
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      box-shadow:0 4px 14px rgba(255,107,53,0.4);
+    "></div>`,
+    iconSize: [28, 28], iconAnchor: [14, 28],
+    popupAnchor: [0, -28], className: '',
+  }), [])
 
-  // Draw route when routeFrom changes
   useEffect(() => {
-    if (!isLoaded || !routeFrom || !lat || !lng) return
-    const svc = new window.google.maps.DirectionsService()
-    svc.route({
-      origin:      new window.google.maps.LatLng(routeFrom.lat, routeFrom.lng),
-      destination: new window.google.maps.LatLng(lat, lng),
-      travelMode:  window.google.maps.TravelMode.DRIVING,
-    }, (result, status) => {
-      if (status === 'OK') setDirections(result)
-    })
-  }, [isLoaded, routeFrom, lat, lng])
+    let active = true
 
-  const onMapClick = useCallback((e) => {
-    if (readonly) return
-    const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() }
-    setMarkerPos(pos)
-    onChange?.(pos)
-    // Reverse geocode to get address
-    if (window.google) {
-      const geocoder = new window.google.maps.Geocoder()
-      geocoder.geocode({ location: pos }, (res, status) => {
-        if (status === 'OK' && res[0]) {
-          onChange?.({ ...pos, address: res[0].formatted_address })
-        }
+    ;(async () => {
+      const L = (await import('leaflet')).default
+      await import('leaflet/dist/leaflet.css')
+
+      // Fix Vite/Webpack icon paths
+      delete L.Icon.Default.prototype._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       })
+
+      if (!active || !mapElRef.current || mapRef.current) return
+      LRef.current = L
+
+      const center = lat && lng ? [lat, lng] : [DEFAULT.lat, DEFAULT.lng]
+      const map = L.map(mapElRef.current, { zoomControl: true }).setView(center, zoom)
+      mapRef.current = map
+
+      // Google Maps hybrid tiles (satellite + labels) — no API key needed
+      L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        subdomains: ['0', '1', '2', '3'],
+        maxZoom: 21,
+        attribution: '© Google Maps',
+      }).addTo(map)
+
+      const icon = isPickup ? pickupIcon(L) : orangeIcon(L)
+
+      if (lat && lng) {
+        const m = L.marker([lat, lng], { icon, draggable: !readonly }).addTo(map)
+        markerRef.current = m
+        if (!readonly) {
+          m.on('dragend', async () => {
+            const p = m.getLatLng()
+            const address = await reverseGeocode(p.lat, p.lng)
+            onChange?.({ lat: p.lat, lng: p.lng, address })
+          })
+        }
+      }
+
+      if (!readonly) {
+        map.on('click', async (e) => {
+          const { lat: clat, lng: clng } = e.latlng
+          if (markerRef.current) {
+            markerRef.current.setLatLng([clat, clng])
+          } else {
+            const m = L.marker([clat, clng], { icon: orangeIcon(L), draggable: true }).addTo(map)
+            markerRef.current = m
+            m.on('dragend', async () => {
+              const p = m.getLatLng()
+              const address = await reverseGeocode(p.lat, p.lng)
+              onChange?.({ lat: p.lat, lng: p.lng, address })
+            })
+          }
+          const address = await reverseGeocode(clat, clng)
+          onChange?.({ lat: clat, lng: clng, address })
+        })
+      }
+    })()
+
+    return () => {
+      active = false
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+        markerRef.current = null
+      }
     }
-  }, [readonly, onChange])
+  }, []) // run once on mount
 
-  const onPlaceSelected = useCallback(() => {
-    const place = acRef.current?.getPlace()
-    if (!place?.geometry) return
-    const pos = {
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng(),
-      address: place.formatted_address,
+  // Sync marker when lat/lng prop changes from parent
+  useEffect(() => {
+    if (!mapRef.current || !lat || !lng || !LRef.current) return
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lng])
+      mapRef.current.panTo([lat, lng])
     }
-    setMarkerPos({ lat: pos.lat, lng: pos.lng })
-    onChange?.(pos)
-    mapRef.current?.panTo({ lat: pos.lat, lng: pos.lng })
-  }, [onChange])
+  }, [lat, lng])
 
-  if (loadError) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'#f87171', fontSize:13, padding:12, textAlign:'center' }}>
-      Ошибка загрузки карты. Проверьте API ключ.
-    </div>
-  )
-  if (!isLoaded) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'#666', fontSize:13 }}>
-      Загрузка карты...
-    </div>
-  )
+  const doSearch = async (e) => {
+    e.preventDefault()
+    if (!searchQ.trim()) return
+    setSearching(true)
+    setSuggests([])
+    try { setSuggests(await photonSearch(searchQ)) } catch {}
+    setSearching(false)
+  }
 
-  const pos = lat && lng ? { lat, lng } : markerPos
+  const pickSuggestion = (s) => {
+    setSuggests([])
+    setSearchQ(s.label)
+    onChange?.({ lat: s.lat, lng: s.lng, address: s.label })
+    mapRef.current?.setView([s.lat, s.lng], 16)
+    // Move / create marker
+    if (mapRef.current && LRef.current) {
+      const L = LRef.current
+      if (markerRef.current) {
+        markerRef.current.setLatLng([s.lat, s.lng])
+      } else {
+        const m = L.marker([s.lat, s.lng], { icon: orangeIcon(L), draggable: true }).addTo(mapRef.current)
+        markerRef.current = m
+        m.on('dragend', async () => {
+          const p = m.getLatLng()
+          const address = await reverseGeocode(p.lat, p.lng)
+          onChange?.({ lat: p.lat, lng: p.lng, address })
+        })
+      }
+    }
+  }
+
+  const handleGPS = () => {
+    if (!navigator.geolocation) return
+    setGpsLoad(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: la, longitude: lo } = pos.coords
+        const address = await reverseGeocode(la, lo)
+        onChange?.({ lat: la, lng: lo, address })
+        setSearchQ(address)
+        mapRef.current?.setView([la, lo], 16)
+        if (mapRef.current && LRef.current) {
+          const L = LRef.current
+          if (markerRef.current) {
+            markerRef.current.setLatLng([la, lo])
+          } else {
+            const m = L.marker([la, lo], { icon: orangeIcon(L), draggable: true }).addTo(mapRef.current)
+            markerRef.current = m
+            m.on('dragend', async () => {
+              const p = m.getLatLng()
+              const adr = await reverseGeocode(p.lat, p.lng)
+              onChange?.({ lat: p.lat, lng: p.lng, address: adr })
+            })
+          }
+        }
+        setGpsLoad(false)
+      },
+      () => setGpsLoad(false),
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {showSearch && !readonly && (
-        <Autocomplete
-          onLoad={ac => { acRef.current = ac }}
-          onPlaceChanged={onPlaceSelected}
-        >
-          <input
-            type="text"
-            placeholder="Поиск адреса..."
-            style={{
-              position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
-              zIndex: 10, width: '80%', maxWidth: 340,
-              height: 38, padding: '0 14px',
-              borderRadius: 8, border: '1px solid rgba(255,107,53,0.4)',
-              background: '#1e1e35', color: '#f0f0f0',
-              fontSize: 13, outline: 'none',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-            }}
-          />
-        </Autocomplete>
-      )}
-      <GoogleMap
-        mapContainerStyle={container}
-        center={pos}
-        zoom={zoom}
-        options={{
-          styles: darkMapStyle,
-          disableDefaultUI: true,
-          zoomControl: true,
-          clickableIcons: false,
-          fullscreenControl: false,
-        }}
-        onClick={onMapClick}
-        onLoad={map => { mapRef.current = map }}
-      >
-        {directions
-          ? <DirectionsRenderer directions={directions} options={{ suppressMarkers: false, polylineOptions: { strokeColor: '#FF6B35', strokeWeight: 4 } }} />
-          : <Marker
-              position={pos}
-              icon={isPickup ? pickupMarker : orangeMarker()}
-              draggable={!readonly}
-              onDragEnd={e => {
-                if (readonly) return
-                const p = { lat: e.latLng.lat(), lng: e.latLng.lng() }
-                setMarkerPos(p)
-                onChange?.(p)
+        <div style={{ padding: '8px 8px 4px', background: '#16162a', borderBottom: '1px solid rgba(255,107,53,0.2)', flexShrink: 0 }}>
+          <form onSubmit={doSearch} style={{ display: 'flex', gap: 6 }}>
+            <input
+              value={searchQ}
+              onChange={e => { setSearchQ(e.target.value); setSuggests([]) }}
+              placeholder="Manzilni qidiring..."
+              style={{
+                flex: 1, height: 36, padding: '0 12px',
+                borderRadius: 8, border: '1px solid rgba(255,107,53,0.35)',
+                background: '#0f0f1a', color: '#f0f0f0',
+                fontSize: 13, outline: 'none',
               }}
             />
-        }
-      </GoogleMap>
+            <button type="submit" style={{
+              height: 36, padding: '0 14px', borderRadius: 8, border: 'none',
+              background: '#FF6B35', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            }}>
+              {searching ? '...' : '🔍'}
+            </button>
+            <button type="button" onClick={handleGPS} title="GPS" style={{
+              height: 36, width: 36, borderRadius: 8,
+              border: '1px solid rgba(255,107,53,0.35)',
+              background: '#0f0f1a', color: '#FF6B35',
+              fontSize: 18, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {gpsLoad ? '⌛' : '📍'}
+            </button>
+          </form>
+
+          {suggests.length > 0 && (
+            <div style={{
+              position: 'absolute', top: 56, left: 8, right: 8, zIndex: 9999,
+              background: '#1e1e35', border: '1px solid rgba(255,107,53,0.3)',
+              borderRadius: 8, overflow: 'hidden',
+              boxShadow: '0 8px 28px rgba(0,0,0,0.5)',
+            }}>
+              {suggests.map((s, i) => (
+                <div
+                  key={i}
+                  onClick={() => pickSuggestion(s)}
+                  style={{
+                    padding: '10px 14px', fontSize: 13, color: '#f0f0f0', cursor: 'pointer',
+                    borderBottom: i < suggests.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,107,53,0.14)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  📍 {s.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div ref={mapElRef} style={{ flex: 1, minHeight: 0 }} />
     </div>
   )
 }

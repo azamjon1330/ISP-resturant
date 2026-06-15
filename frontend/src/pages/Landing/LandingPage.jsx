@@ -623,10 +623,12 @@ export default function LandingPage() {
           </nav>
 
           <div className="lp-header-right">
-            {/* Dark mode toggle */}
-            <button className="lp-icon-btn" onClick={() => setDarkMode(d => !d)} title="Toggle theme">
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
+            {/* Dark mode toggle — shown only when NOT logged in */}
+            {!customer && (
+              <button className="lp-icon-btn" onClick={() => setDarkMode(d => !d)} title="Toggle theme">
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            )}
 
             {/* Cart */}
             <button className="lp-icon-btn lp-cart-btn" onClick={() => setCO(true)}>
@@ -647,6 +649,16 @@ export default function LandingPage() {
                     <button onClick={() => { setDrop(false); openOrders() }}>
                       <ClipboardList size={15} /> {T.orders_btn}
                     </button>
+                    <div className="lp-drop-sep" />
+                    {/* Theme switcher — Day / Night */}
+                    <div className="lp-drop-theme">
+                      <button className={!darkMode ? 'active' : ''} onClick={() => setDarkMode(false)}>
+                        <Sun size={12} /> {lang === 'uz' ? 'Kun' : 'День'}
+                      </button>
+                      <button className={darkMode ? 'active' : ''} onClick={() => setDarkMode(true)}>
+                        <Moon size={12} /> {lang === 'uz' ? 'Tun' : 'Ночь'}
+                      </button>
+                    </div>
                     <div className="lp-drop-sep" />
                     {/* Language inside profile */}
                     <div className="lp-drop-lang">
