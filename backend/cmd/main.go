@@ -60,7 +60,11 @@ func main() {
 		customer.POST("/addresses", handlers.CustomerAddAddress)
 		customer.DELETE("/addresses/:id", handlers.CustomerDeleteAddress)
 		customer.POST("/orders/:code/cancel", handlers.CustomerCancelOrder)
+		customer.POST("/orders/:code/review", handlers.CreateReview)
 	}
+
+	// Public reviews (for landing page)
+	api.GET("/reviews", handlers.GetReviews)
 
 	// Courier (delivery rider) routes
 	api.POST("/courier/login", handlers.CourierLogin)

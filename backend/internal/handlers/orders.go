@@ -559,15 +559,17 @@ func UpdateOrderStatus(c *gin.Context) {
 		        COALESCE(customer_first_name,''), COALESCE(customer_last_name,''),
 		        COALESCE(customer_phone,''), COALESCE(delivery_type,'pickup'),
 		        COALESCE(delivery_address,''), delivery_lat, delivery_lng,
-		        created_at, updated_at
+		        customer_id, created_at, updated_at
 		 FROM orders WHERE id=$1`, id,
 	).Scan(&order.ID, &order.OrderCode, &order.TotalPrice, &order.DiscountAmount, &order.FinalPrice,
 		&order.Status, &order.CardCode, &order.Note,
 		&order.CustomerFirstName, &order.CustomerLastName, &order.CustomerPhone,
 		&order.DeliveryType, &order.DeliveryAddress, &order.DeliveryLat, &order.DeliveryLng,
-		&order.CreatedAt, &order.UpdatedAt)
+		&order.CustomerID, &order.CreatedAt, &order.UpdatedAt)
 	BroadcastMessage("order_status_changed", order)
-	// When an order becomes "ready" AND it's a delivery, alert couriers about a new pickup
+	if body.Status == "served" {
+		BroadcastMessage("order_delivered", order)
+	}
 	if body.Status == "ready" && order.DeliveryType == "delivery" {
 		BroadcastMessage("new_ready_order", order)
 	}

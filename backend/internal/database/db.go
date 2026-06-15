@@ -80,6 +80,19 @@ func runMigrations() {
 			UNIQUE(menu_item_id, ingredient_id)
 		)`,
 
+		// Customer reviews for completed orders
+		`CREATE TABLE IF NOT EXISTS reviews (
+			id            SERIAL PRIMARY KEY,
+			order_id      INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+			order_code    VARCHAR(20),
+			customer_id   INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+			customer_name VARCHAR(150),
+			rating        SMALLINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+			comment       TEXT,
+			created_at    TIMESTAMPTZ DEFAULT NOW()
+		)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS reviews_order_id_unique ON reviews(order_id)`,
+
 		// Inventory movement log
 		`CREATE TABLE IF NOT EXISTS inventory_logs (
 			id               SERIAL PRIMARY KEY,

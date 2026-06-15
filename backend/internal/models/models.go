@@ -47,6 +47,7 @@ type Order struct {
 	DeliveryAddress   string      `json:"delivery_address"`
 	DeliveryLat       *float64    `json:"delivery_lat,omitempty"`
 	DeliveryLng       *float64    `json:"delivery_lng,omitempty"`
+	CustomerID        *int        `json:"customer_id,omitempty"`
 	Items             []OrderItem `json:"items,omitempty"`
 	CreatedAt         time.Time   `json:"created_at"`
 	UpdatedAt         time.Time   `json:"updated_at"`
@@ -96,6 +97,17 @@ type CardTransaction struct {
 	AgentID         int       `json:"agent_id"`
 	DiscountApplied float64   `json:"discount_applied"`
 	CreatedAt       time.Time `json:"created_at"`
+}
+
+type Review struct {
+	ID           int       `json:"id"`
+	OrderID      int       `json:"order_id"`
+	OrderCode    string    `json:"order_code"`
+	CustomerID   int       `json:"customer_id"`
+	CustomerName string    `json:"customer_name"`
+	Rating       int       `json:"rating"`
+	Comment      string    `json:"comment"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type AgentBonus struct {
