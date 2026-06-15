@@ -3,22 +3,23 @@
 
 /* ─── CSS Variables / Theming ────────────────────────────────────────────────── */
 :root, [data-theme="light"] {
-  --bg:        #ffffff;
-  --bg2:       #f8f9fa;
+  --bg:        #fafaf7;
+  --bg2:       #f2ede6;
   --card:      #ffffff;
-  --card2:     #f1f3f5;
-  --text:      #1a1a1a;
-  --text2:     #555555;
-  --text3:     #999999;
-  --border:    rgba(0,0,0,0.08);
-  --border2:   rgba(0,0,0,0.14);
+  --card2:     #ece8e0;
+  --text:      #1c1810;
+  --text2:     #5c5248;
+  --text3:     #9a9088;
+  --border:    rgba(100,70,30,0.09);
+  --border2:   rgba(100,70,30,0.16);
   --orange:    #FF6B35;
   --orange2:   #e85a24;
   --orange-dim: rgba(255,107,53,0.10);
   --orange-glow: rgba(255,107,53,0.28);
   --header:    #1c1c2e;
-  --shadow:    0 4px 24px rgba(0,0,0,0.08);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.14);
+  --hero-bg:   linear-gradient(150deg, #1d1530 0%, #252245 40%, #1a2a4a 100%);
+  --shadow:    0 4px 24px rgba(80,50,20,0.09);
+  --shadow-lg: 0 16px 48px rgba(80,50,20,0.16);
   --font:      'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-d:    'Cormorant Garamond', Georgia, serif;
   --r:         12px;
@@ -30,19 +31,20 @@
 }
 
 [data-theme="dark"] {
-  --bg:        #0f0f1a;
-  --bg2:       #1a1a2e;
-  --card:      #1e1e35;
-  --card2:     #16162a;
-  --text:      #f0f0f0;
-  --text2:     #aaaaaa;
-  --text3:     #666666;
-  --border:    rgba(255,255,255,0.08);
-  --border2:   rgba(255,255,255,0.14);
+  --bg:        #141210;
+  --bg2:       #1e1b16;
+  --card:      #232018;
+  --card2:     #191710;
+  --text:      #f0ebe2;
+  --text2:     #a89e8c;
+  --text3:     #6a6258;
+  --border:    rgba(255,230,180,0.08);
+  --border2:   rgba(255,230,180,0.15);
   --orange-dim: rgba(255,107,53,0.15);
   --orange-glow: rgba(255,107,53,0.32);
-  --shadow:    0 4px 24px rgba(0,0,0,0.40);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.60);
+  --hero-bg:   linear-gradient(150deg, #07080e 0%, #0c0b1c 40%, #080c15 100%);
+  --shadow:    0 4px 24px rgba(0,0,0,0.45);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.65);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────────────────── */
@@ -355,13 +357,14 @@ a { color: inherit; text-decoration: none; }
    HERO SECTION
 ═══════════════════════════════════════════════════════════════════════════════ */
 .lp-hero {
-  background: #1a1a2e;
+  background: var(--hero-bg);
   padding: 120px 0 80px;
   min-height: 100vh;
   display: flex;
   align-items: center;
   position: relative;
   overflow: hidden;
+  transition: background 0.4s var(--ease);
 }
 .lp-hero::before {
   content: '';
@@ -482,21 +485,20 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  animation: fadeUp 0.8s 0.2s var(--ease-out) both;
+  animation: slideInRight 0.9s 0.15s var(--ease-out) both;
 }
 
 .lp-hero-img-ring {
   position: relative;
-  width: clamp(280px, 38vw, 480px);
-  height: clamp(280px, 38vw, 480px);
-  border-radius: 50%;
+  width: clamp(280px, 42vw, 520px);
+  height: clamp(320px, 48vw, 600px);
+  border-radius: 28px;
   overflow: hidden;
-  border: 5px solid rgba(255,107,53,0.3);
-  box-shadow:
-    0 0 0 10px rgba(255,107,53,0.08),
-    0 0 0 20px rgba(255,107,53,0.04),
-    0 32px 80px rgba(0,0,0,0.5);
+  /* Desktop: left edge fades to transparent — blends text with image */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.65) 40%, #000 60%);
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.65) 40%, #000 60%);
   animation: float 6s ease-in-out infinite;
+  box-shadow: 24px 0 80px rgba(0,0,0,0.35);
 }
 .lp-hero-img {
   position: absolute;
@@ -1010,7 +1012,7 @@ a { color: inherit; text-decoration: none; }
   animation: slideInRight 0.32s var(--ease-out) both;
   box-shadow: -8px 0 40px rgba(0,0,0,0.2);
 }
-.lp-cart-drawer  { width: min(420px, 96vw); }
+.lp-cart-drawer  { width: min(460px, 96vw); }
 .lp-orders-drawer { width: min(480px, 96vw); }
 
 .lp-drawer-hd {
@@ -1447,6 +1449,64 @@ a { color: inherit; text-decoration: none; }
 .lp-rv-actions { display: flex; gap: 10px; margin-top: 8px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   CART DRAWER TABS
+═══════════════════════════════════════════════════════════════════════════════ */
+.lp-cart-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.lp-cart-tabs button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 38px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: transparent;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: color var(--dur), border-color var(--dur), background var(--dur);
+  position: relative;
+  bottom: -1px;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+.lp-cart-tabs button:hover {
+  color: var(--text2);
+  background: var(--orange-dim);
+}
+.lp-cart-tabs button.active {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+  background: transparent;
+}
+.lp-ctab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 100px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+.lp-cart-tabs button:not(.active) .lp-ctab-badge {
+  background: var(--text3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    TOASTS
 ═══════════════════════════════════════════════════════════════════════════════ */
 .lp-toasts {
@@ -1510,7 +1570,15 @@ a { color: inherit; text-decoration: none; }
   .lp-hero-left { display: flex; flex-direction: column; align-items: center; }
   .lp-hero-sub { text-align: center; }
   .lp-hero-stats { justify-content: center; }
-  .lp-hero-img-ring { width: clamp(220px, 60vw, 360px); height: clamp(220px, 60vw, 360px); }
+  .lp-hero-img-ring {
+    width: clamp(240px, 72vw, 400px);
+    height: clamp(240px, 72vw, 400px);
+    border-radius: 20px;
+    /* Mobile: bottom edge fades — blends smoothly into text below */
+    -webkit-mask-image: linear-gradient(to bottom, #000 48%, rgba(0,0,0,0.5) 72%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 48%, rgba(0,0,0,0.5) 72%, transparent 100%);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  }
 
   .lp-how-grid { grid-template-columns: 1fr; gap: 14px; }
   .lp-offers-grid { grid-template-columns: 1fr; }

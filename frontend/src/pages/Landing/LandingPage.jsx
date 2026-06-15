@@ -56,6 +56,7 @@ const LANG = {
     staff: 'Xodimlar paneli', privacy: 'Maxfiylik', terms: 'Shartlar',
     cart_ttl: 'Savat', cart_empty: "Savat bo'sh", cart_empty_hint: "Menyudan taom qo'shing",
     cart_total: 'Jami', cart_btn: 'Buyurtma berish',
+    tab_cart: 'Savat', tab_orders: 'Buyurtmalarim', tab_history: 'Tarix',
     auth_ttl: 'Xush kelibsiz', tab_reg: "Ro'yxat", tab_login: 'Kirish',
     fname_lbl: 'Ism *', fname_ph: 'Ismingiz',
     lname_lbl: 'Familiya', lname_ph: 'Familiyangiz (ixtiyoriy)',
@@ -128,6 +129,7 @@ const LANG = {
     staff: 'Панель сотрудников', privacy: 'Конфиденциальность', terms: 'Условия',
     cart_ttl: 'Корзина', cart_empty: 'Корзина пуста', cart_empty_hint: 'Добавьте блюда из меню',
     cart_total: 'Итого', cart_btn: 'Оформить заказ',
+    tab_cart: 'Корзина', tab_orders: 'Мои заказы', tab_history: 'История',
     auth_ttl: 'Добро пожаловать', tab_reg: 'Регистрация', tab_login: 'Войти',
     fname_lbl: 'Имя *', fname_ph: 'Ваше имя',
     lname_lbl: 'Фамилия', lname_ph: 'Ваша фамилия (необязательно)',
@@ -223,8 +225,11 @@ export default function LandingPage() {
   const [cat, setCat]         = useState('all')
 
   // ── Cart
-  const [cart, setCart]       = useState([])
+  const [cart, setCart]       = useState(() => {
+    try { return JSON.parse(localStorage.getItem('eco_lp_cart') || '[]') } catch { return [] }
+  })
   const [cartOpen, setCO]     = useState(false)
+  const [cartTab, setCartTab] = useState('cart')
 
   // ── Auth
   const [authOpen, setAO]     = useState(false)
@@ -279,7 +284,13 @@ export default function LandingPage() {
   // ─── Dark mode effect ────────────────────────────────────────────────────────
   useEffect(() => {
     localStorage.setItem('eco_dark', darkMode)
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
   }, [darkMode])
+
+  // ─── Cart persistence ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('eco_lp_cart', JSON.stringify(cart))
+  }, [cart])
 
   // ─── Toast system ────────────────────────────────────────────────────────────
   const showToast = useCallback((msg, type = 'info') => {
@@ -326,6 +337,9 @@ export default function LandingPage() {
 
   // ─── Initial load ─────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Sync theme to html element on mount
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
+
     // Auth restore
     const raw = localStorage.getItem('eco_customer_data')
     if (raw) try { setCust(JSON.parse(raw)) } catch {}
@@ -479,14 +493,17 @@ export default function LandingPage() {
   }
 
   // ─── My orders ───────────────────────────────────────────────────────────────
-  const openOrders = async () => {
-    setOO(true)
-    if (!customer) return
-    try {
-      const res = await customerAPI.orders()
-      setMO(res.data || [])
-    } catch {}
+  const openOrders = (tab = 'orders') => {
+    setCartTab(tab)
+    setCO(true)
   }
+
+  // Load orders when cart opens and customer is logged in
+  useEffect(() => {
+    if (cartOpen && customer) {
+      customerAPI.orders().then(res => setMO(res.data || [])).catch(() => {})
+    }
+  }, [cartOpen, customer])
 
   const cancelOrder = async code => {
     try {
@@ -543,7 +560,9 @@ export default function LandingPage() {
       const res = await ordersAPI.create(payload)
       if (!res.data?.id) throw new Error()
       setLastOC(res.data.order_code || '')
-      setCkD(true); setCart([])
+      setCkD(true)
+      setCart([])
+      localStorage.removeItem('eco_lp_cart')
       showToast(T.ok_order, 'success')
       // refresh orders list
       const o = await customerAPI.orders()
@@ -1067,7 +1086,7 @@ export default function LandingPage() {
 
       {/* ════════════════ PANELS ═══════════════════════════════════════════════ */}
 
-      {/* ─── CART DRAWER ─────────────────────────────────────────────────────── */}
+      {/* ─── CART DRAWER (combined: cart + orders + history) ──────────────────── */}
       {cartOpen && (
         <>
           <div className="lp-overlay" onClick={() => setCO(false)} />
@@ -1076,36 +1095,63 @@ export default function LandingPage() {
               <h3><ShoppingCart size={18} /> {T.cart_ttl}</h3>
               <button className="lp-close-btn" onClick={() => setCO(false)}><X size={16} /></button>
             </div>
-            <div className="lp-drawer-body">
-              {cart.length === 0 ? (
-                <div className="lp-empty-state">
-                  <div className="lp-empty-icon"><ShoppingCart size={48} strokeWidth={1} /></div>
-                  <p>{T.cart_empty}</p>
-                  <p className="lp-empty-hint">{T.cart_empty_hint}</p>
-                </div>
-              ) : (
-                <div className="lp-cart-items">
-                  {cart.map(item => (
-                    <div key={item.id} className="lp-cart-item">
-                      {item.image_url
-                        ? <img src={item.image_url} alt={item.name} className="lp-cart-item-img" />
-                        : <div className="lp-cart-item-img lp-cart-item-img--empty"><Utensils size={22} /></div>
-                      }
-                      <div className="lp-cart-item-info">
-                        <p className="lp-cart-item-name">{item.name}</p>
-                        <p className="lp-cart-item-price">{fmt(item.price)}</p>
-                      </div>
-                      <div className="lp-qty-ctrl">
-                        <button onClick={() => updateQty(item.id, -1)}><Minus size={13} /></button>
-                        <span>{item.quantity}</span>
-                        <button onClick={() => updateQty(item.id, +1)}><Plus size={13} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
+            {/* Tabs */}
+            <div className="lp-cart-tabs">
+              <button className={cartTab === 'cart' ? 'active' : ''} onClick={() => setCartTab('cart')}>
+                <ShoppingCart size={13} /> {T.tab_cart}
+                {cartCount > 0 && <span className="lp-ctab-badge">{cartCount}</span>}
+              </button>
+              {customer && (
+                <button className={cartTab === 'orders' ? 'active' : ''} onClick={() => setCartTab('orders')}>
+                  <Clock size={13} /> {T.tab_orders}
+                  {myOrders.filter(o => ['pending','cooking','ready','on_way'].includes(o.status)).length > 0 && (
+                    <span className="lp-ctab-badge">
+                      {myOrders.filter(o => ['pending','cooking','ready','on_way'].includes(o.status)).length}
+                    </span>
+                  )}
+                </button>
+              )}
+              {customer && (
+                <button className={cartTab === 'history' ? 'active' : ''} onClick={() => setCartTab('history')}>
+                  <ClipboardList size={13} /> {T.tab_history}
+                </button>
               )}
             </div>
-            {cart.length > 0 && (
+
+            {/* ── Tab: Cart ── */}
+            {cartTab === 'cart' && (
+              <div className="lp-drawer-body">
+                {cart.length === 0 ? (
+                  <div className="lp-empty-state">
+                    <div className="lp-empty-icon"><ShoppingCart size={48} strokeWidth={1} /></div>
+                    <p>{T.cart_empty}</p>
+                    <p className="lp-empty-hint">{T.cart_empty_hint}</p>
+                  </div>
+                ) : (
+                  <div className="lp-cart-items">
+                    {cart.map(item => (
+                      <div key={item.id} className="lp-cart-item">
+                        {item.image_url
+                          ? <img src={item.image_url} alt={item.name} className="lp-cart-item-img" />
+                          : <div className="lp-cart-item-img lp-cart-item-img--empty"><Utensils size={22} /></div>
+                        }
+                        <div className="lp-cart-item-info">
+                          <p className="lp-cart-item-name">{item.name}</p>
+                          <p className="lp-cart-item-price">{fmt(item.price)}</p>
+                        </div>
+                        <div className="lp-qty-ctrl">
+                          <button onClick={() => updateQty(item.id, -1)}><Minus size={13} /></button>
+                          <span>{item.quantity}</span>
+                          <button onClick={() => updateQty(item.id, +1)}><Plus size={13} /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {cartTab === 'cart' && cart.length > 0 && (
               <div className="lp-drawer-ft">
                 <div className="lp-cart-total-row">
                   <span>{T.cart_total}</span>
@@ -1116,6 +1162,105 @@ export default function LandingPage() {
                 </button>
               </div>
             )}
+
+            {/* ── Tab: Active Orders ── */}
+            {cartTab === 'orders' && (() => {
+              const activeOrders = myOrders.filter(o => ['pending','cooking','ready','on_way'].includes(o.status))
+              return (
+                <div className="lp-drawer-body">
+                  {activeOrders.length === 0 ? (
+                    <div className="lp-empty-state">
+                      <div className="lp-empty-icon"><ClipboardList size={48} strokeWidth={1} /></div>
+                      <p>{T.orders_empty}</p>
+                      <p className="lp-empty-hint">{T.orders_empty_hint}</p>
+                    </div>
+                  ) : activeOrders.map(order => {
+                    const stepIdx = STATUS_STEPS.indexOf(order.status)
+                    const canCancel = order.status === 'pending'
+                    return (
+                      <div key={order.id} className={`lp-ocard${flashId === order.id ? ' lp-ocard--flash' : ''}`}>
+                        <div className="lp-ocard-top">
+                          <span className="lp-ocard-code">#{order.order_code}</span>
+                          <span className={`lp-ocard-st lp-ocard-st--${order.status}`}>
+                            {T[STATUS_KEY[order.status]] || order.status}
+                          </span>
+                        </div>
+                        <div className="lp-ocard-items">
+                          {(order.items || []).map((it, j) => (
+                            <span key={j}>{it.item_name || it.name || `#${it.menu_item_id}`}{it.quantity > 1 ? ` ×${it.quantity}` : ''}{j < (order.items.length - 1) ? ', ' : ''}</span>
+                          ))}
+                        </div>
+                        <div className="lp-sbar">
+                          <div className="lp-sbar-steps">
+                            {STATUS_STEPS.map((step, si) => (
+                              <div key={step} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                                <div className={`lp-sstep${si === stepIdx ? ' lp-sstep--active' : ''}${si < stepIdx ? ' lp-sstep--done' : ''}`}>
+                                  <div className="lp-sstep-dot" />
+                                  <span className="lp-sstep-lbl">{T[STATUS_KEY[step]]}</span>
+                                </div>
+                                {si < STATUS_STEPS.length - 1 && (
+                                  <div className={`lp-sconn${si < stepIdx ? ' lp-sconn--done' : ''}`} />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="lp-ocard-foot">
+                          <span className="lp-ocard-total">{fmt(order.final_price || order.total_price || 0)}</span>
+                          {canCancel && (
+                            <button className="lp-ocard-cancel" onClick={() => cancelOrder(order.order_code)}>
+                              <X size={12} /> {T.cancel_btn}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+
+            {/* ── Tab: Order History ── */}
+            {cartTab === 'history' && (() => {
+              const historyOrders = myOrders.filter(o => ['served','rejected','cancelled'].includes(o.status))
+              return (
+                <div className="lp-drawer-body">
+                  {historyOrders.length === 0 ? (
+                    <div className="lp-empty-state">
+                      <div className="lp-empty-icon"><ClipboardList size={48} strokeWidth={1} /></div>
+                      <p>{T.orders_empty}</p>
+                      <p className="lp-empty-hint">{T.orders_empty_hint}</p>
+                    </div>
+                  ) : historyOrders.map(order => {
+                    const isCancelled = order.status === 'rejected' || order.status === 'cancelled'
+                    const canReview = order.status === 'served' && !reviewedCodes.has(order.order_code)
+                    return (
+                      <div key={order.id} className="lp-ocard">
+                        <div className="lp-ocard-top">
+                          <span className="lp-ocard-code">#{order.order_code}</span>
+                          <span className={`lp-ocard-st lp-ocard-st--${order.status}`}>
+                            {T[STATUS_KEY[order.status]] || order.status}
+                          </span>
+                        </div>
+                        <div className="lp-ocard-items">
+                          {(order.items || []).map((it, j) => (
+                            <span key={j}>{it.item_name || it.name || `#${it.menu_item_id}`}{it.quantity > 1 ? ` ×${it.quantity}` : ''}{j < (order.items.length - 1) ? ', ' : ''}</span>
+                          ))}
+                        </div>
+                        <div className="lp-ocard-foot">
+                          <span className="lp-ocard-total">{fmt(order.final_price || order.total_price || 0)}</span>
+                          {canReview && (
+                            <button className="lp-ocard-review" onClick={() => { setRvOrd(order); setRvO(true) }}>
+                              <Star size={12} /> {T.rv_btn}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </aside>
         </>
       )}
@@ -1207,7 +1352,7 @@ export default function LandingPage() {
                   </p>
                   <p className="lp-co-ok-sub">{T.co_ok_sub}</p>
                   <button className="lp-btn-primary lp-btn-full lp-btn-mt"
-                    onClick={() => { setCkO(false); openOrders() }}>
+                    onClick={() => { setCkO(false); openOrders('orders') }}>
                     <ClipboardList size={16} /> {T.orders_btn}
                   </button>
                 </div>
@@ -1309,77 +1454,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* ─── MY ORDERS PANEL ──────────────────────────────────────────────────── */}
-      {ordersOpen && (
-        <>
-          <div className="lp-overlay" onClick={() => setOO(false)} />
-          <aside className="lp-orders-drawer">
-            <div className="lp-drawer-hd">
-              <h3><ClipboardList size={18} /> {T.orders_ttl}</h3>
-              <button className="lp-close-btn" onClick={() => setOO(false)}><X size={16} /></button>
-            </div>
-            <div className="lp-drawer-body">
-              {myOrders.length === 0 ? (
-                <div className="lp-empty-state">
-                  <div className="lp-empty-icon"><ClipboardList size={48} strokeWidth={1} /></div>
-                  <p>{T.orders_empty}</p>
-                  <p className="lp-empty-hint">{T.orders_empty_hint}</p>
-                </div>
-              ) : myOrders.map(order => {
-                const stepIdx = STATUS_STEPS.indexOf(order.status)
-                const isCancelled = order.status === 'rejected' || order.status === 'cancelled'
-                const canCancel   = order.status === 'pending'
-                const canReview   = order.status === 'served' && !reviewedCodes.has(order.order_code)
-                return (
-                  <div key={order.id} className={`lp-ocard${flashId === order.id ? ' lp-ocard--flash' : ''}`}>
-                    <div className="lp-ocard-top">
-                      <span className="lp-ocard-code">#{order.order_code}</span>
-                      <span className={`lp-ocard-st lp-ocard-st--${order.status}`}>
-                        {T[STATUS_KEY[order.status]] || order.status}
-                      </span>
-                    </div>
-                    <div className="lp-ocard-items">
-                      {(order.items || []).map((it, j) => (
-                        <span key={j}>{it.item_name || it.name || `#${it.menu_item_id}`}{it.quantity > 1 ? ` ×${it.quantity}` : ''}{j < (order.items.length - 1) ? ', ' : ''}</span>
-                      ))}
-                    </div>
-                    {!isCancelled && (
-                      <div className="lp-sbar">
-                        <div className="lp-sbar-steps">
-                          {STATUS_STEPS.map((step, si) => (
-                            <div key={step} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                              <div className={`lp-sstep${si === stepIdx ? ' lp-sstep--active' : ''}${si < stepIdx ? ' lp-sstep--done' : ''}`}>
-                                <div className="lp-sstep-dot" />
-                                <span className="lp-sstep-lbl">{T[STATUS_KEY[step]]}</span>
-                              </div>
-                              {si < STATUS_STEPS.length - 1 && (
-                                <div className={`lp-sconn${si < stepIdx ? ' lp-sconn--done' : ''}`} />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="lp-ocard-foot">
-                      <span className="lp-ocard-total">{fmt(order.final_price || order.total_price || 0)}</span>
-                      {canCancel && (
-                        <button className="lp-ocard-cancel" onClick={() => cancelOrder(order.order_code)}>
-                          <X size={12} /> {T.cancel_btn}
-                        </button>
-                      )}
-                      {canReview && (
-                        <button className="lp-ocard-review" onClick={() => { setRvOrd(order); setRvO(true) }}>
-                          <Star size={12} /> {T.rv_btn}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </aside>
-        </>
-      )}
+      {/* MY ORDERS PANEL — merged into cart drawer tabs above */}
 
       {/* ─── REVIEW MODAL ─────────────────────────────────────────────────────── */}
       {reviewOpen && (
