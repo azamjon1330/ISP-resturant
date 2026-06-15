@@ -4,7 +4,8 @@ import {
   ShoppingCart, X, Plus, Minus, ChevronLeft, ChevronRight,
   User, LogOut, ClipboardList, Star, Truck, Package,
   Search, ClipboardCheck, Rocket, MapPin, Phone, Utensils,
-  CheckCircle, Loader, ChevronDown, Send,
+  CheckCircle, Loader, ChevronDown, Send, Moon, Sun, Menu,
+  Clock,
 } from 'lucide-react'
 import './LandingPage.css'
 
@@ -33,22 +34,26 @@ const LANG = {
       { eye: "TANDIRDA PISHIRILGAN", title: "Qaynoq va Yangi", accent: "Samsa",       sub: "Tandir issiqligida oltin rangga pishirilgan, go'sht yoki sabzavot to'ldirmalari bilan samsa." },
       { eye: "QO'LDA TAYYORLANGAN",  title: "Uy Ta'midi",      accent: "Lagman",      sub: "Yangi qo'lda yoylgan xamir, go'sht va rang-barang sabzavotlar bilan tayyorlangan issiq lagman." },
     ],
+    hero_tag: '🔥 ISSIQ VA YANGI',
+    hero_title: "O'zbek Milliy Taomlarining Eng Sara Ta'mi",
+    hero_sub: "Har kuni yangi tayyorlangan, milliy retseptlar asosida taomlar. Tez yetkazish va mazali ta'm kafolatlangan.",
     order_now: 'Hozir buyurtma bering', view_menu: "Menyuni ko'rish",
     menu_eye: 'BIZNING MENYU', menu_title: 'Sevimli Taomlaringiz', menu_sub: 'Har kuni yangi tayyorlangan, milliy retseptlar asosida',
     cat_all: 'Barchasi',
-    add: 'Qo\'shish', in_cart: 'Savatda',
+    cat_title: "Kategoriyalarni Ko'ring",
+    add: "Qo'shish", in_cart: 'Savatda',
     how_eye: 'QANDAY ISHLAYDI', how_title: 'Uchta oddiy qadam',
-    how1_ttl: 'Tanlang', how1_sub: 'Menyudan sevimli taomingizni savatga qo\'shing',
-    how2_ttl: 'Buyurtma bering', how2_sub: 'Manzil va to\'lov usulini kiriting, tasdiqlang',
+    how1_ttl: 'Tanlang', how1_sub: "Menyudan sevimli taomingizni savatga qo'shing",
+    how2_ttl: 'Buyurtma bering', how2_sub: "Manzil va to'lov usulini kiriting, tasdiqlang",
     how3_ttl: 'Oling', how3_sub: "45 daqiqada issiq holda eshigingizga yetkazamiz",
-    rv_eye: 'MIJOZLAR FIKRI', rv_title: 'Ular bizni yaxshi ko\'rishadi',
-    rv_cta_ttl: 'Buyurtmangizdan mamnunmisiz?', rv_cta_sub: 'Fikringizni qoldiring — boshqalarga yordam bo\'ladi',
+    rv_eye: 'MIJOZLAR FIKRI', rv_title: "Ular bizni yaxshi ko'rishadi",
+    rv_cta_ttl: 'Buyurtmangizdan mamnunmisiz?', rv_cta_sub: "Fikringizni qoldiring — boshqalarga yordam bo'ladi",
     rv_btn: 'Fikr qoldirish', rv_login_hint: 'Fikr qoldirish uchun avval kiring',
-    rv_empty: 'Hali fikrlar yo\'q. Birinchi bo\'lib fikr qoldiring!',
+    rv_empty: "Hali fikrlar yo'q. Birinchi bo'lib fikr qoldiring!",
     footer_desc: "O'zbek milliy oshxonasining eng sara ta'mi. Har kuni yangi, har kuni mazali.",
     footer_pages: 'Sahifalar', footer_contact: 'Aloqa',
     staff: 'Xodimlar paneli', privacy: 'Maxfiylik', terms: 'Shartlar',
-    cart_ttl: 'Savat', cart_empty: 'Savat bo\'sh', cart_empty_hint: 'Menyudan taom qo\'shing',
+    cart_ttl: 'Savat', cart_empty: "Savat bo'sh", cart_empty_hint: "Menyudan taom qo'shing",
     cart_total: 'Jami', cart_btn: 'Buyurtma berish',
     auth_ttl: 'Xush kelibsiz', tab_reg: "Ro'yxat", tab_login: 'Kirish',
     fname_lbl: 'Ism *', fname_ph: 'Ismingiz',
@@ -60,27 +65,36 @@ const LANG = {
     login_note: "Telefon raqami va parolingizni kiriting.",
     co_ttl: 'Buyurtmani rasmiylashtirish',
     delivery: 'Yetkazish', pickup: 'Olib ketish',
-    addr_lbl: 'Yetkazish manzili *', addr_ph: 'Ko\'cha, uy, xonadon...',
+    addr_lbl: 'Yetkazish manzili *', addr_ph: "Ko'cha, uy, xonadon...",
     note_lbl: 'Izoh', note_ph: 'Oshpazga xabar (ixtiyoriy)',
-    promo_ph: 'Promokod', promo_btn: 'Qo\'llash',
+    promo_ph: 'Promokod', promo_btn: "Qo'llash",
     total: 'Jami', discount: 'Chegirma',
     place_order: 'Buyurtma berish', placing: 'Yuborilmoqda...',
-    co_ok_ttl: 'Buyurtma qabul qilindi!', co_ok_sub: 'Buyurtmangiz tayyorlanmoqda. Holati "Buyurtmalarim"da ko\'rinadi.',
-    orders_ttl: 'Mening buyurtmalarim', orders_empty: 'Hali buyurtma yo\'q',
+    co_ok_ttl: 'Buyurtma qabul qilindi!', co_ok_sub: "Buyurtmangiz tayyorlanmoqda. Holati \"Buyurtmalarim\"da ko'rinadi.",
+    del_time_delivery: '~30-45 daqiqada yetkaziladi',
+    del_time_pickup:   '~15-20 daqiqada tayyor bo\'ladi',
+    del_est: 'Taxminiy vaqt',
+    orders_ttl: 'Mening buyurtmalarim', orders_empty: "Hali buyurtma yo'q",
     orders_empty_hint: 'Birinchi buyurtmangizni qiling!',
     st_pending: 'Qabul qilindi', st_cooking: 'Tayyorlanmoqda', st_ready: 'Tayyor',
-    st_on_way: 'Yo\'lda', st_served: 'Yetkazildi', st_rejected: 'Bekor qilindi', st_cancelled: 'Bekor qilindi',
+    st_on_way: "Yo'lda", st_served: 'Yetkazildi', st_rejected: 'Bekor qilindi', st_cancelled: 'Bekor qilindi',
     cancel_btn: 'Bekor qilish',
     rv_modal_ttl: 'Fikr qoldiring', rv_modal_sub: 'Buyurtmangiz yetkazildi. Qanday bo\'ldi?',
     rv_comment_lbl: 'Izoh (ixtiyoriy)', rv_comment_ph: 'Taom haqida fikringiz...',
     rv_submit: 'Yuborish', rv_skip: 'Keyinroq',
     rv_thanks: 'Fikringiz uchun rahmat!',
-    err_fill: 'Maydonlarni to\'ldiring', err_phone: 'Telefon raqamini kiriting',
+    err_fill: "Maydonlarni to'ldiring", err_phone: 'Telefon raqamini kiriting',
     err_addr: 'Yetkazish manzilini kiriting',
     ok_order: 'Buyurtma qabul qilindi!',
     ok_cancelled: 'Buyurtma bekor qilindi',
     err_cancel: 'Bekor qilishda xatolik',
     delivered_notif: 'Buyurtmangiz yetkazildi!',
+    off1_ttl: "Birinchi buyurtmaga 20% chegirma",
+    off1_sub: "FIRST20 promokodini ishlating",
+    off2_ttl: "50 000 so'mdan bepul yetkazish",
+    off2_sub: "Minimum buyurtma miqdori 50 000 so'm",
+    off3_ttl: "Har 5 ta buyurtmaga bonus",
+    off3_sub: "Sodiqlik dasturimizga qo'shiling",
   },
   ru: {
     nav_menu: 'Меню', nav_about: 'О нас', nav_contact: 'Контакты',
@@ -92,9 +106,13 @@ const LANG = {
       { eye: 'ИЗ ТАНДИРА',        title: 'Горячее и Свежее', accent: 'Самса',         sub: 'Самса, запечённая в тандире до золотистой корочки, с мясом или овощами.' },
       { eye: 'РУЧНАЯ РАБОТА',     title: 'Домашний вкус',   accent: 'Лагман',         sub: 'Лапша ручного приготовления с мясом и овощами. Горячий и ароматный.' },
     ],
+    hero_tag: '🔥 ГОРЯЧЕЕ И СВЕЖЕЕ',
+    hero_title: 'Лучшие Блюда Узбекской Национальной Кухни',
+    hero_sub: 'Каждый день свежее, по национальным рецептам. Быстрая доставка и гарантированный вкус.',
     order_now: 'Заказать сейчас', view_menu: 'Смотреть меню',
     menu_eye: 'НАШЕ МЕНЮ', menu_title: 'Ваши любимые блюда', menu_sub: 'Каждый день свежее, по национальным рецептам',
     cat_all: 'Все',
+    cat_title: 'Изучите Наши Категории',
     add: 'Добавить', in_cart: 'В корзине',
     how_eye: 'КАК ЭТО РАБОТАЕТ', how_title: 'Три простых шага',
     how1_ttl: 'Выберите', how1_sub: 'Добавьте любимые блюда из меню в корзину',
@@ -125,6 +143,9 @@ const LANG = {
     total: 'Итого', discount: 'Скидка',
     place_order: 'Оформить заказ', placing: 'Отправка...',
     co_ok_ttl: 'Заказ принят!', co_ok_sub: 'Ваш заказ готовится. Статус виден в «Мои заказы».',
+    del_time_delivery: '~30-45 минут до доставки',
+    del_time_pickup:   '~15-20 минут до готовности',
+    del_est: 'Примерное время',
     orders_ttl: 'Мои заказы', orders_empty: 'Заказов пока нет',
     orders_empty_hint: 'Сделайте первый заказ!',
     st_pending: 'Принят', st_cooking: 'Готовится', st_ready: 'Готов',
@@ -140,24 +161,41 @@ const LANG = {
     ok_cancelled: 'Заказ отменён',
     err_cancel: 'Ошибка при отмене',
     delivered_notif: 'Ваш заказ доставлен!',
+    off1_ttl: 'Скидка 20% на первый заказ',
+    off1_sub: 'Используйте промокод FIRST20',
+    off2_ttl: 'Бесплатная доставка от 50 000 сум',
+    off2_sub: 'Минимальная сумма заказа 50 000 сум',
+    off3_ttl: 'Бонус за каждые 5 заказов',
+    off3_sub: 'Присоединяйтесь к программе лояльности',
   },
 }
 
 /* ─── Slide images ───────────────────────────────────────────────────────────── */
 const SLIDES_IMG = [
-  '/images/plov.jpg',    // Plov
-  '/images/manti.jpg',   // Manti
-  '/images/shorva.jpg',  // Shorva
-  '/images/samsa.jpg',   // Samsa
-  '/images/lagman.jpg',  // Lagman
+  '/images/plov.jpg',
+  '/images/manti.jpg',
+  '/images/shorva.jpg',
+  '/images/samsa.jpg',
+  '/images/lagman.jpg',
 ]
+
+/* ─── Category image & color config ─────────────────────────────────────────── */
+const CAT_CFG = {
+  "Asosiy taomlar": { img: '/images/plov.jpg',   color: '#FF6B35' },
+  "Sho'rvalar":     { img: '/images/shorva.jpg',  color: '#f59e0b' },
+  "Mantí":          { img: '/images/manti.jpg',   color: '#8b5cf6' },
+  "Samsalar":       { img: '/images/samsa.jpg',   color: '#e85a24' },
+  "Lagmon":         { img: '/images/lagman.jpg',  color: '#10b981' },
+}
+const catImg   = name => CAT_CFG[name]?.img   || null
+const catColor = name => CAT_CFG[name]?.color || '#FF6B35'
 
 /* ─── Status config ──────────────────────────────────────────────────────────── */
 const STATUS_STEPS = ['pending', 'cooking', 'ready', 'on_way', 'served']
 const STATUS_KEY   = { pending: 'st_pending', cooking: 'st_cooking', ready: 'st_ready', on_way: 'st_on_way', served: 'st_served', rejected: 'st_rejected', cancelled: 'st_cancelled' }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────────── */
-const fmt = n => Math.round(n).toLocaleString('uz-UZ') + ' so\'m'
+const fmt = n => Math.round(n).toLocaleString('uz-UZ') + " so'm"
 const fmtDate = iso => new Date(iso).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short', year: 'numeric' })
 const initials = name => (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
@@ -170,6 +208,9 @@ export default function LandingPage() {
   // ── Core
   const [lang, setLang] = useState(() => localStorage.getItem('eco_lang') || 'uz')
   const T = LANG[lang]
+
+  // ── Dark mode
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('eco_dark') === 'true')
 
   // ── Hero
   const [slide, setSlide] = useState(0)
@@ -203,9 +244,10 @@ export default function LandingPage() {
   const [addrVal, setAddr]     = useState('')
   const [noteVal, setNote]     = useState('')
   const [promoVal, setPromo]   = useState('')
-  const [promoRes, setPromoR]  = useState(null) // { discount, discount_type, message }
+  const [promoRes, setPromoR]  = useState(null)
   const [promoErr, setPromoE]  = useState('')
   const [promoChecking, setPCk] = useState(false)
+  const [lastOrderCode, setLastOC] = useState('')
 
   // ── Reviews
   const [reviews, setRvs]      = useState([])
@@ -219,12 +261,20 @@ export default function LandingPage() {
   // ── Header scroll
   const [scrolled, setScrolled] = useState(false)
 
+  // ── Mobile menu
+  const [mobileMenuOpen, setMobileMenu] = useState(false)
+
   // ── Toast queue
   const [toasts, setToasts]    = useState([])
 
   // ── WS
   const wsRef       = useRef(null)
   const reconnRef   = useRef(null)
+
+  // ─── Dark mode effect ────────────────────────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('eco_dark', darkMode)
+  }, [darkMode])
 
   // ─── Toast system ────────────────────────────────────────────────────────────
   const showToast = useCallback((msg, type = 'info') => {
@@ -387,6 +437,11 @@ export default function LandingPage() {
       setCust(customer)
       setAO(false)
       showToast(`Xush kelibsiz, ${customer?.first_name || ''}!`, 'success')
+      // Auto-open checkout if cart has items
+      if (cart.length > 0) {
+        setCkD(false); setPromoR(null); setPromoE(''); setPromoVal('')
+        setCkO(true)
+      }
     } catch { setAuthErr('Serverda xatolik') }
     finally { setAuthL(false) }
   }
@@ -432,7 +487,7 @@ export default function LandingPage() {
         body: JSON.stringify({ code: promoVal, order_total: cartTotal }),
       })
       const d = await res.json()
-      if (!res.ok) { setPromoE(d.error || 'Noto\'g\'ri promokod'); return }
+      if (!res.ok) { setPromoE(d.error || "Noto'g'ri promokod"); return }
       setPromoR(d)
     } catch { setPromoE('Xatolik') }
     finally { setPCk(false) }
@@ -440,8 +495,7 @@ export default function LandingPage() {
 
   const finalTotal = () => {
     if (!promoRes) return cartTotal
-    if (promoRes.discount_type === 'percent') return cartTotal * (1 - promoRes.discount / 100)
-    return Math.max(0, cartTotal - promoRes.discount)
+    return promoRes.final_price || Math.max(0, cartTotal - (promoRes.discount_value || 0))
   }
 
   const placeOrder = async () => {
@@ -460,6 +514,7 @@ export default function LandingPage() {
       }
       const res = await ordersAPI.create(payload)
       if (!res.data?.id) throw new Error()
+      setLastOC(res.data.order_code || '')
       setCkD(true); setCart([])
       showToast(T.ok_order, 'success')
       // refresh orders list
@@ -477,9 +532,8 @@ export default function LandingPage() {
     setRvS(false)
     if (res.ok) {
       showToast(T.rv_thanks, 'success')
-      setReviewedCodes(prev => new Set([...prev, reviewOrder.order_code]))
-      setRvO(false); setRvRating(0); setRvC('')
-      // Prepend to local reviews list
+      setRC(prev => new Set([...prev, reviewOrder.order_code]))
+      setRvO(false); setRvR(0); setRvC('')
       setRvs(prev => [res.data, ...prev])
     } else {
       showToast(res.data?.error || 'Xatolik', 'error')
@@ -493,121 +547,178 @@ export default function LandingPage() {
   // ─── Scroll helpers ───────────────────────────────────────────────────────────
   const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })
 
+  // ─── Offers ───────────────────────────────────────────────────────────────────
+  const OFFERS = [
+    { emoji: '🎁', title: T.off1_ttl, sub: T.off1_sub, color: 'linear-gradient(135deg, #FF6B35, #e85a24)' },
+    { emoji: '🚚', title: T.off2_ttl, sub: T.off2_sub, color: 'linear-gradient(135deg, #10b981, #059669)' },
+    { emoji: '⭐', title: T.off3_ttl, sub: T.off3_sub, color: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+  ]
+
   /* ═══════════════════════════════════════════════════════════════════════════
      RENDER
   ═══════════════════════════════════════════════════════════════════════════ */
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
+    <div className="lp-root" data-theme={darkMode ? 'dark' : 'light'}>
 
       {/* ─── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className={`lp-header${scrolled ? ' lp-header--scrolled' : ''}`}>
-        <a className="lp-header__logo" href="/">
-          <div className="lp-header__logo-icon"><Utensils size={18} color="#fff" /></div>
-          <span className="lp-header__logo-name">ECO <em>Taomlar</em></span>
-        </a>
+      <header className="lp-header">
+        <div className="lp-header-inner">
+          <a className="lp-logo" href="/">
+            <div className="lp-logo-icon"><Utensils size={18} color="#fff" /></div>
+            <span className="lp-logo-name">ECO <em>Taomlar</em></span>
+          </a>
 
-        <nav className="lp-header__nav">
-          <a href="#menu"    onClick={e => { e.preventDefault(); scrollToMenu() }}>{T.nav_menu}</a>
-          <a href="#how"     onClick={e => { e.preventDefault(); document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' }) }}>{T.nav_about}</a>
-          <a href="#reviews" onClick={e => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }) }}>{T.nav_contact}</a>
-        </nav>
+          <nav className={`lp-nav${mobileMenuOpen ? ' lp-nav--open' : ''}`}>
+            <a href="#menu" onClick={e => { e.preventDefault(); scrollToMenu(); setMobileMenu(false) }}>{T.nav_menu}</a>
+            <a href="#how" onClick={e => { e.preventDefault(); document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenu(false) }}>{T.nav_about}</a>
+            <a href="#reviews" onClick={e => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenu(false) }}>{T.nav_contact}</a>
+          </nav>
 
-        <div className="lp-header__right">
-          <div className="lp-lang">
-            <button className={lang === 'uz' ? 'active' : ''} onClick={() => changeLang('uz')}>UZ</button>
-            <button className={lang === 'ru' ? 'active' : ''} onClick={() => changeLang('ru')}>RU</button>
-          </div>
-
-          <button className="lp-hcart" onClick={() => setCO(true)}>
-            <ShoppingCart size={18} />
-            {cartCount > 0 && <span className="lp-hcart-badge">{cartCount}</span>}
-          </button>
-
-          {customer ? (
-            <div className="lp-hprofile">
-              <button className="lp-hprofile-btn" onClick={() => setDrop(d => !d)}>
-                <span className="lp-hprofile-av">{initials(customer.first_name)}</span>
-                {customer.first_name}
-                <ChevronDown size={14} style={{ opacity: 0.5 }} />
-              </button>
-              {dropOpen && (
-                <div className="lp-hdrop">
-                  <button onClick={() => { setDrop(false); openOrders() }}>
-                    <ClipboardList size={15} /> {T.orders_btn}
-                  </button>
-                  <div className="lp-hdrop-sep" />
-                  <button className="red" onClick={logout}>
-                    <LogOut size={15} /> {T.logout}
-                  </button>
-                </div>
-              )}
+          <div className="lp-header-right">
+            {/* Lang switcher */}
+            <div className="lp-lang">
+              <button className={lang === 'uz' ? 'active' : ''} onClick={() => changeLang('uz')}>UZ</button>
+              <button className={lang === 'ru' ? 'active' : ''} onClick={() => changeLang('ru')}>RU</button>
             </div>
-          ) : (
-            <button className="lp-hauth" onClick={() => openAuth('register')}>
-              <User size={14} /> {T.auth_btn}
+
+            {/* Dark mode toggle */}
+            <button className="lp-icon-btn" onClick={() => setDarkMode(d => !d)} title="Toggle theme">
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-          )}
+
+            {/* Cart */}
+            <button className="lp-icon-btn lp-cart-btn" onClick={() => setCO(true)}>
+              <ShoppingCart size={18} />
+              {cartCount > 0 && <span className="lp-cart-badge">{cartCount}</span>}
+            </button>
+
+            {/* Auth / Profile */}
+            {customer ? (
+              <div className="lp-profile">
+                <button className="lp-profile-btn" onClick={() => setDrop(d => !d)}>
+                  <span className="lp-profile-av">{initials(customer.first_name)}</span>
+                  <span className="lp-profile-name">{customer.first_name}</span>
+                  <ChevronDown size={14} style={{ opacity: 0.6 }} />
+                </button>
+                {dropOpen && (
+                  <div className="lp-drop">
+                    <button onClick={() => { setDrop(false); openOrders() }}>
+                      <ClipboardList size={15} /> {T.orders_btn}
+                    </button>
+                    <div className="lp-drop-sep" />
+                    <button className="danger" onClick={logout}>
+                      <LogOut size={15} /> {T.logout}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button className="lp-auth-btn" onClick={() => openAuth('register')}>
+                <User size={14} /> {T.auth_btn}
+              </button>
+            )}
+
+            {/* Hamburger */}
+            <button className="lp-hamburger" onClick={() => setMobileMenu(m => !m)}>
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* ─── HERO ──────────────────────────────────────────────────────────── */}
       <section className="lp-hero">
-        <div className="lp-hero__slides">
-          {SLIDES_IMG.map((src, i) => (
-            <div key={i} className={`lp-hero__slide${i === slide ? ' is-active' : ''}`}>
-              <img src={src} alt="" className="lp-hero__img" loading={i === 0 ? 'eager' : 'lazy'} />
-              <div className="lp-hero__overlay" />
+        <div className="lp-hero-inner container">
+          {/* Left: text content */}
+          <div className="lp-hero-left">
+            <span className="lp-hero-tag">{T.hero_tag}</span>
+            <h1 className="lp-hero-title">{T.hero_title}</h1>
+            <p className="lp-hero-sub">{T.hero_sub}</p>
+            <div className="lp-hero-btns">
+              <button className="lp-btn-primary" onClick={() => { setCO(true) }}>
+                <ShoppingCart size={16} /> {T.order_now}
+              </button>
+              <button className="lp-btn-outline" onClick={scrollToMenu}>{T.view_menu}</button>
             </div>
-          ))}
-          <div className="lp-hero__grad" />
-        </div>
-
-        <div className="lp-hero__content">
-          <div className="lp-hero__text" key={slide}>
-            <p className="lp-hero__eyebrow">{T.slides[slide].eye}</p>
-            <h1 className="lp-hero__title">
-              {T.slides[slide].title}<br />
-              <em>{T.slides[slide].accent}</em>
-            </h1>
-            <p className="lp-hero__sub">{T.slides[slide].sub}</p>
+            <div className="lp-hero-stats">
+              <div className="lp-hero-stat">
+                <Clock size={17} />
+                <span>30-45 min</span>
+              </div>
+              <div className="lp-hero-stat">
+                <Truck size={17} />
+                <span>Yetkazish</span>
+              </div>
+              <div className="lp-hero-stat">
+                <Star size={17} />
+                <span>5.0 reyting</span>
+              </div>
+            </div>
           </div>
 
-          <div className="lp-hero__btns">
-            <button className="lp-btn lp-btn--primary" onClick={scrollToMenu}>
-              <ShoppingCart size={16} /> {T.order_now}
-            </button>
-            <button className="lp-btn lp-btn--ghost" onClick={scrollToMenu}>{T.view_menu}</button>
-          </div>
-
-          <div className="lp-hero__nav">
-            <button className="lp-hero__arrow" onClick={() => goSlide(slide - 1)}>
-              <ChevronLeft size={20} />
-            </button>
-            <div className="lp-hero__dots">
-              {[0,1,2,3,4].map(i => (
-                <button key={i} className={`lp-hero__dot${i === slide ? ' is-active' : ''}`} onClick={() => goSlide(i)} />
+          {/* Right: rotating food image */}
+          <div className="lp-hero-right">
+            <div className="lp-hero-img-ring">
+              {SLIDES_IMG.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt="ECO Taomlar"
+                  className={`lp-hero-img${i === slide ? ' active' : ''}`}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                />
               ))}
             </div>
-            <button className="lp-hero__arrow" onClick={() => goSlide(slide + 1)}>
-              <ChevronRight size={20} />
-            </button>
+            <div className="lp-hero-dots">
+              {SLIDES_IMG.map((_, i) => (
+                <button key={i} className={`lp-dot${i === slide ? ' active' : ''}`} onClick={() => goSlide(i)} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── MENU ────────────────────────────────────────────────────────────── */}
-      <div id="menu">
-        <div className="lp-section">
-          <div className="lp-section__head lp-reveal">
-            <p className="lp-section__eye">{T.menu_eye}</p>
-            <h2 className="lp-section__title">{T.menu_title}</h2>
-            <p className="lp-section__sub">{T.menu_sub}</p>
+      {/* ─── CATEGORIES ──────────────────────────────────────────────────────── */}
+      <section className="lp-categories">
+        <div className="container">
+          <div className="lp-sec-head lp-reveal">
+            <h2 className="lp-sec-title">{T.cat_title}</h2>
+          </div>
+          <div className="lp-cat-scroll lp-reveal">
+            {cats.filter(c => c !== 'all').map(c => (
+              <button
+                key={c}
+                className={`lp-cat-circle${cat === c ? ' active' : ''}`}
+                onClick={() => { setCat(c); scrollToMenu() }}
+              >
+                <div className="lp-cat-circle-img" style={{ borderColor: catColor(c) }}>
+                  {catImg(c)
+                    ? <img src={catImg(c)} alt={c} />
+                    : <div className="lp-cat-circle-fallback" style={{ background: catColor(c) }}>
+                        <Utensils size={28} color="rgba(255,255,255,0.85)" />
+                      </div>
+                  }
+                </div>
+                <span className="lp-cat-label">{c}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── POPULAR DISHES / MENU ─────────────────────────────────────────── */}
+      <section id="menu" className="lp-menu-section">
+        <div className="container">
+          <div className="lp-sec-head lp-reveal">
+            <p className="lp-sec-eye">{T.menu_eye}</p>
+            <h2 className="lp-sec-title">{T.menu_title}</h2>
+            <p className="lp-sec-sub">{T.menu_sub}</p>
           </div>
 
-          {/* Category filter */}
-          <div className="lp-cats lp-reveal">
+          {/* Category filter pills */}
+          <div className="lp-filter-pills lp-reveal">
             {cats.map(c => (
-              <button key={c} className={`lp-cats__btn${cat === c ? ' active' : ''}`} onClick={() => setCat(c)}>
+              <button key={c} className={`lp-pill${cat === c ? ' active' : ''}`} onClick={() => setCat(c)}>
                 {c === 'all' ? T.cat_all : c}
               </button>
             ))}
@@ -615,38 +726,43 @@ export default function LandingPage() {
 
           {/* Grid */}
           {menuLoading ? (
-            <div className="lp-grid">
+            <div className="lp-menu-grid">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="lp-skel" style={{ height: 300 }} />
+                <div key={i} className="lp-skel" style={{ height: 340 }} />
               ))}
             </div>
           ) : (
-            <div className="lp-grid">
+            <div className="lp-menu-grid">
               {filteredMenu.map((item, i) => {
+                const inCart = cart.some(c => c.id === item.id)
                 const qty = cart.find(c => c.id === item.id)?.quantity || 0
                 return (
-                  <div key={item.id} className="lp-mcard lp-reveal" style={{ transitionDelay: `${(i % 4) * 60}ms` }}>
-                    <div className="lp-mcard__imgw">
+                  <div key={item.id} className="lp-menu-card lp-reveal" style={{ transitionDelay: `${(i % 4) * 60}ms` }}>
+                    <div className="lp-mc-img">
                       {item.image_url
-                        ? <img src={item.image_url} alt={item.name} className="lp-mcard__img" loading="lazy" />
-                        : <div className="lp-mcard__no-img"><Utensils size={36} color="var(--text3)" /></div>
+                        ? <img src={item.image_url} alt={item.name} loading="lazy" />
+                        : <div className="lp-mc-placeholder" style={{ background: catColor(item.category) }}>
+                            <Utensils size={40} color="rgba(255,255,255,0.7)" />
+                          </div>
                       }
-                      {qty > 0 && <div className="lp-mcard__badge">×{qty}</div>}
+                      {item.category && <span className="lp-mc-cat">{item.category}</span>}
+                      {qty > 0 && <span className="lp-mc-qty-badge">×{qty}</span>}
                     </div>
-                    <div className="lp-mcard__body">
-                      {item.category && <p className="lp-mcard__cat">{item.category}</p>}
-                      <p className="lp-mcard__name">{item.name}</p>
-                      {item.description && <p className="lp-mcard__desc">{item.description}</p>}
-                      <div className="lp-mcard__foot">
-                        <span className="lp-mcard__price">{fmt(item.price)}</span>
+                    <div className="lp-mc-body">
+                      <div className="lp-mc-stars">
+                        {[1,2,3,4,5].map(s => (
+                          <Star key={s} size={12} fill="#FF6B35" color="#FF6B35" />
+                        ))}
+                      </div>
+                      <h3 className="lp-mc-name">{item.name}</h3>
+                      {item.description && <p className="lp-mc-desc">{item.description}</p>}
+                      <div className="lp-mc-footer">
+                        <span className="lp-mc-price">{fmt(item.price)}</span>
                         <button
-                          className={`lp-mcard__add${qty > 0 ? ' in-cart' : ''}`}
+                          className={`lp-mc-add${inCart ? ' active' : ''}`}
                           onClick={() => addToCart(item)}
                         >
-                          {qty > 0
-                            ? <><CheckCircle size={14} /> {T.in_cart}</>
-                            : <><Plus size={14} /> {T.add}</>
-                          }
+                          {inCart ? <CheckCircle size={16} /> : <Plus size={16} />}
                         </button>
                       </div>
                     </div>
@@ -656,20 +772,35 @@ export default function LandingPage() {
             </div>
           )}
         </div>
-      </div>
+      </section>
+
+      {/* ─── OFFERS ──────────────────────────────────────────────────────────── */}
+      <section className="lp-offers">
+        <div className="container">
+          <div className="lp-offers-grid">
+            {OFFERS.map((o, i) => (
+              <div key={i} className="lp-offer-card lp-reveal" style={{ background: o.color, transitionDelay: `${i * 80}ms` }}>
+                <div className="lp-offer-emoji">{o.emoji}</div>
+                <h3 className="lp-offer-title">{o.title}</h3>
+                <p className="lp-offer-sub">{o.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ─── HOW IT WORKS ─────────────────────────────────────────────────────── */}
-      <div id="how" style={{ background: 'var(--surface)' }}>
-        <div className="lp-section">
-          <div className="lp-section__head lp-reveal">
-            <p className="lp-section__eye">{T.how_eye}</p>
-            <h2 className="lp-section__title">{T.how_title}</h2>
+      <section id="how" className="lp-how-section">
+        <div className="container">
+          <div className="lp-sec-head lp-reveal">
+            <p className="lp-sec-eye">{T.how_eye}</p>
+            <h2 className="lp-sec-title">{T.how_title}</h2>
           </div>
-          <div className="lp-how">
+          <div className="lp-how-grid">
             {[
-              { n: '01', ico: <Search size={22} color="var(--orange)" />,       t: T.how1_ttl, s: T.how1_sub },
-              { n: '02', ico: <ClipboardCheck size={22} color="var(--orange)" />, t: T.how2_ttl, s: T.how2_sub },
-              { n: '03', ico: <Truck size={22} color="var(--orange)" />,         t: T.how3_ttl, s: T.how3_sub },
+              { n: '01', ico: <Search size={22} />,         t: T.how1_ttl, s: T.how1_sub },
+              { n: '02', ico: <ClipboardCheck size={22} />, t: T.how2_ttl, s: T.how2_sub },
+              { n: '03', ico: <Truck size={22} />,          t: T.how3_ttl, s: T.how3_sub },
             ].map((h, i) => (
               <div key={i} className="lp-how-card lp-reveal" style={{ transitionDelay: `${i * 100}ms` }}>
                 <div className="lp-how-n">{h.n}</div>
@@ -680,20 +811,20 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ─── REVIEWS ──────────────────────────────────────────────────────────── */}
-      <div id="reviews">
-        <div className="lp-section">
-          <div className="lp-section__head lp-reveal" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+      <section id="reviews" className="lp-reviews-section">
+        <div className="container">
+          <div className="lp-sec-head lp-reveal" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
             <div>
-              <p className="lp-section__eye">{T.rv_eye}</p>
-              <h2 className="lp-section__title">{T.rv_title}</h2>
+              <p className="lp-sec-eye">{T.rv_eye}</p>
+              <h2 className="lp-sec-title">{T.rv_title}</h2>
             </div>
           </div>
 
           {reviews.length === 0 ? (
-            <p className="lp-reveal" style={{ color: 'var(--text2)', textAlign: 'center', padding: '40px 0' }}>{T.rv_empty}</p>
+            <p className="lp-reveal lp-empty-msg">{T.rv_empty}</p>
           ) : (
             <div className="lp-rv-grid">
               {reviews.map((rv, i) => (
@@ -719,59 +850,69 @@ export default function LandingPage() {
             </div>
           )}
 
-          {/* CTA */}
           <div className="lp-rv-cta lp-reveal">
             <div className="lp-rv-cta-txt">
               <strong>{T.rv_cta_ttl}</strong>
               <span>{T.rv_cta_sub}</span>
             </div>
             {customer ? (
-              <button className="lp-btn lp-btn--primary lp-btn--sm" onClick={() => { setRvOrd(null); setRvO(true) }}>
+              <button className="lp-btn-primary lp-btn-sm" onClick={() => { setRvOrd(null); setRvO(true) }}>
                 <Star size={14} /> {T.rv_btn}
               </button>
             ) : (
-              <button className="lp-btn lp-btn--ghost lp-btn--sm" onClick={() => openAuth('register')}>
+              <button className="lp-btn-outline lp-btn-sm" onClick={() => openAuth('register')}>
                 {T.rv_login_hint}
               </button>
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ─── FOOTER ──────────────────────────────────────────────────────────── */}
       <footer className="lp-footer">
-        <div className="lp-footer__inner">
-          <div>
-            <div className="lp-footer__logo">
-              <div className="lp-footer__logo-icon"><Utensils size={18} color="#fff" /></div>
-              <span className="lp-footer__logo-name">ECO <em>Taomlar</em></span>
+        <div className="container">
+          <div className="lp-footer-grid">
+            <div>
+              <div className="lp-footer-logo">
+                <div className="lp-logo-icon"><Utensils size={18} color="#fff" /></div>
+                <span className="lp-logo-name">ECO <em>Taomlar</em></span>
+              </div>
+              <p className="lp-footer-desc">{T.footer_desc}</p>
+              <div className="lp-footer-contact-row">
+                <span><Phone size={14} /> +998 90 123 45 67</span>
+                <span><MapPin size={14} /> Toshkent, O'zbekiston</span>
+              </div>
             </div>
-            <p className="lp-footer__desc">{T.footer_desc}</p>
-          </div>
-          <div>
-            <p className="lp-footer__col-head">{T.footer_pages}</p>
-            <div className="lp-footer__links">
-              <a href="#menu" onClick={e => { e.preventDefault(); scrollToMenu() }}>{T.nav_menu}</a>
-              <a href="#how">{T.nav_about}</a>
-              <a href="#reviews">{T.nav_contact}</a>
-              <a href="/staff">{T.staff}</a>
+            <div>
+              <p className="lp-footer-col-head">{T.footer_pages}</p>
+              <div className="lp-footer-links">
+                <a href="#menu" onClick={e => { e.preventDefault(); scrollToMenu() }}>{T.nav_menu}</a>
+                <a href="#how">{T.nav_about}</a>
+                <a href="#reviews">{T.nav_contact}</a>
+                <a href="/staff">{T.staff}</a>
+              </div>
+            </div>
+            <div>
+              <p className="lp-footer-col-head">{T.footer_contact}</p>
+              <div className="lp-footer-links">
+                <a href="tel:+998901234567">+998 90 123 45 67</a>
+                <a href="mailto:info@ecotaomlar.uz">info@ecotaomlar.uz</a>
+                <button onClick={() => openAuth('register')}>{T.auth_btn}</button>
+              </div>
+            </div>
+            <div>
+              <p className="lp-footer-col-head">Ijtimoiy tarmoqlar</p>
+              <div className="lp-footer-links">
+                <a href="#">Telegram</a>
+                <a href="#">Instagram</a>
+                <a href="#">Facebook</a>
+              </div>
             </div>
           </div>
-          <div>
-            <p className="lp-footer__col-head">{T.footer_contact}</p>
-            <div className="lp-footer__links">
-              <a href="tel:+998901234567">+998 90 123 45 67</a>
-              <a href="mailto:info@ecotaomlar.uz">info@ecotaomlar.uz</a>
-              <button onClick={() => openAuth('register')}>{T.auth_btn}</button>
-            </div>
+          <div className="lp-footer-bot">
+            <span>© {new Date().getFullYear()} ECO Taomlar. Barcha huquqlar himoyalangan.</span>
+            <a href="/staff" className="lp-footer-staff-link">{T.staff} →</a>
           </div>
-        </div>
-        <div className="lp-footer__bot">
-          <span className="lp-footer__copy">© {new Date().getFullYear()} ECO Taomlar. Barcha huquqlar himoyalangan.</span>
-          <a href="/staff" className="lp-footer__copy" style={{ color: 'var(--text3)', transition: 'color 0.3s' }}
-             onMouseEnter={e => e.target.style.color = 'var(--orange)'}
-             onMouseLeave={e => e.target.style.color = 'var(--text3)'}
-          >{T.staff} →</a>
         </div>
       </footer>
 
@@ -780,32 +921,32 @@ export default function LandingPage() {
       {/* ─── CART DRAWER ─────────────────────────────────────────────────────── */}
       {cartOpen && (
         <>
-          <div className="lp-ov" onClick={() => setCO(false)} />
-          <aside className="lp-cart">
-            <div className="lp-cart__hd">
-              <h3 className="lp-cart__ttl"><ShoppingCart size={18} /> {T.cart_ttl}</h3>
-              <button className="lp-close" onClick={() => setCO(false)}><X size={16} /></button>
+          <div className="lp-overlay" onClick={() => setCO(false)} />
+          <aside className="lp-cart-drawer">
+            <div className="lp-drawer-hd">
+              <h3><ShoppingCart size={18} /> {T.cart_ttl}</h3>
+              <button className="lp-close-btn" onClick={() => setCO(false)}><X size={16} /></button>
             </div>
-            <div className="lp-cart__body">
+            <div className="lp-drawer-body">
               {cart.length === 0 ? (
-                <div className="lp-cart__empty">
-                  <div className="lp-cart__empty-ico"><ShoppingCart size={48} strokeWidth={1} /></div>
+                <div className="lp-empty-state">
+                  <div className="lp-empty-icon"><ShoppingCart size={48} strokeWidth={1} /></div>
                   <p>{T.cart_empty}</p>
-                  <p style={{ fontSize: 13, color: 'var(--text3)' }}>{T.cart_empty_hint}</p>
+                  <p className="lp-empty-hint">{T.cart_empty_hint}</p>
                 </div>
               ) : (
-                <div className="lp-cart__items">
+                <div className="lp-cart-items">
                   {cart.map(item => (
-                    <div key={item.id} className="lp-cart__item">
+                    <div key={item.id} className="lp-cart-item">
                       {item.image_url
-                        ? <img src={item.image_url} alt={item.name} className="lp-cart__item-img" />
-                        : <div className="lp-cart__item-img" style={{ display:'flex',alignItems:'center',justifyContent:'center' }}><Utensils size={22} color="var(--text3)" /></div>
+                        ? <img src={item.image_url} alt={item.name} className="lp-cart-item-img" />
+                        : <div className="lp-cart-item-img lp-cart-item-img--empty"><Utensils size={22} /></div>
                       }
-                      <div className="lp-cart__item-info">
-                        <p className="lp-cart__item-name">{item.name}</p>
-                        <p className="lp-cart__item-pr">{fmt(item.price)}</p>
+                      <div className="lp-cart-item-info">
+                        <p className="lp-cart-item-name">{item.name}</p>
+                        <p className="lp-cart-item-price">{fmt(item.price)}</p>
                       </div>
-                      <div className="lp-cart__ctrl">
+                      <div className="lp-qty-ctrl">
                         <button onClick={() => updateQty(item.id, -1)}><Minus size={13} /></button>
                         <span>{item.quantity}</span>
                         <button onClick={() => updateQty(item.id, +1)}><Plus size={13} /></button>
@@ -816,12 +957,12 @@ export default function LandingPage() {
               )}
             </div>
             {cart.length > 0 && (
-              <div className="lp-cart__ft">
-                <div className="lp-cart__tot">
-                  <span className="lp-cart__tot-lbl">{T.cart_total}</span>
-                  <span className="lp-cart__tot-val">{fmt(cartTotal)}</span>
+              <div className="lp-drawer-ft">
+                <div className="lp-cart-total-row">
+                  <span>{T.cart_total}</span>
+                  <span className="lp-cart-total-val">{fmt(cartTotal)}</span>
                 </div>
-                <button className="lp-cart__go" onClick={() => { setCO(false); openCheckout() }}>
+                <button className="lp-btn-primary lp-btn-full" onClick={() => { setCO(false); openCheckout() }}>
                   {T.cart_btn}
                 </button>
               </div>
@@ -832,31 +973,31 @@ export default function LandingPage() {
 
       {/* ─── AUTH MODAL ───────────────────────────────────────────────────────── */}
       {authOpen && (
-        <div className="lp-mwrap" onClick={e => e.target === e.currentTarget && setAO(false)}>
-          <div className="lp-m">
-            <div className="lp-m__hd">
-              <h3 className="lp-m__ttl">{T.auth_ttl}</h3>
-              <button className="lp-close" onClick={() => setAO(false)}><X size={16} /></button>
+        <div className="lp-modal-wrap" onClick={e => e.target === e.currentTarget && setAO(false)}>
+          <div className="lp-modal">
+            <div className="lp-modal-hd">
+              <h3>{T.auth_ttl}</h3>
+              <button className="lp-close-btn" onClick={() => setAO(false)}><X size={16} /></button>
             </div>
-            <div className="lp-m__body">
+            <div className="lp-modal-body">
               <div className="lp-tabs">
                 <button className={authTab === 'register' ? 'active' : ''} onClick={() => { setATab('register'); setAuthErr('') }}>{T.tab_reg}</button>
                 <button className={authTab === 'login'    ? 'active' : ''} onClick={() => { setATab('login');    setAuthErr('') }}>{T.tab_login}</button>
               </div>
 
               {authTab === 'register' && (
-                <div className="lp-fld">
+                <div className="lp-field">
                   <label>{T.fname_lbl}</label>
                   <input placeholder={T.fname_ph} value={authFName} onChange={e => setAuthFName(e.target.value)} autoFocus />
                 </div>
               )}
               {authTab === 'register' && (
-                <div className="lp-fld">
+                <div className="lp-field">
                   <label>{T.lname_lbl}</label>
                   <input placeholder={T.lname_ph} value={authLName} onChange={e => setAuthLName(e.target.value)} />
                 </div>
               )}
-              <div className="lp-fld">
+              <div className="lp-field">
                 <label>{T.phone_lbl}</label>
                 <div className="lp-phone-row">
                   <span className="lp-phone-prefix">+998</span>
@@ -870,7 +1011,7 @@ export default function LandingPage() {
                   />
                 </div>
               </div>
-              <div className="lp-fld">
+              <div className="lp-field">
                 <label>{T.pass_lbl}</label>
                 <input
                   type="password"
@@ -881,15 +1022,15 @@ export default function LandingPage() {
                 />
               </div>
 
-              {authErr && <p className="lp-err">{authErr}</p>}
+              {authErr && <p className="lp-form-err">{authErr}</p>}
 
-              <button className="lp-submit" onClick={handleAuth} disabled={authLoading}>
+              <button className="lp-btn-primary lp-btn-full lp-btn-mt" onClick={handleAuth} disabled={authLoading}>
                 {authLoading
                   ? <Loader size={16} className="lp-spin" />
                   : (authTab === 'register' ? T.reg_btn : T.login_btn)
                 }
               </button>
-              <p className="lp-note">{authTab === 'register' ? T.reg_note : T.login_note}</p>
+              <p className="lp-form-note">{authTab === 'register' ? T.reg_note : T.login_note}</p>
             </div>
           </div>
         </div>
@@ -897,19 +1038,26 @@ export default function LandingPage() {
 
       {/* ─── CHECKOUT MODAL ───────────────────────────────────────────────────── */}
       {checkoutOpen && (
-        <div className="lp-mwrap" onClick={e => e.target === e.currentTarget && !placing && setCkO(false)}>
-          <div className="lp-m lp-m--wide">
-            <div className="lp-m__hd">
-              <h3 className="lp-m__ttl">{T.co_ttl}</h3>
-              {!placing && <button className="lp-close" onClick={() => setCkO(false)}><X size={16} /></button>}
+        <div className="lp-modal-wrap" onClick={e => e.target === e.currentTarget && !placing && setCkO(false)}>
+          <div className="lp-modal lp-modal--wide">
+            <div className="lp-modal-hd">
+              <h3>{T.co_ttl}</h3>
+              {!placing && <button className="lp-close-btn" onClick={() => setCkO(false)}><X size={16} /></button>}
             </div>
-            <div className="lp-m__body">
+            <div className="lp-modal-body">
               {checkoutDone ? (
-                <div className="lp-co-ok">
-                  <div className="lp-co-ok-icon"><CheckCircle size={56} color="var(--orange)" strokeWidth={1.5} /></div>
-                  <p className="lp-co-ok-ttl">{T.co_ok_ttl}</p>
+                <div className="lp-co-success">
+                  <div className="lp-co-success-ring">
+                    <CheckCircle size={60} color="#FF6B35" strokeWidth={1.5} />
+                  </div>
+                  <h2>{T.co_ok_ttl}</h2>
+                  {lastOrderCode && <div className="lp-co-code">#{lastOrderCode}</div>}
+                  <p className="lp-co-est">
+                    <Clock size={15} />
+                    {delivType === 'delivery' ? T.del_time_delivery : T.del_time_pickup}
+                  </p>
                   <p className="lp-co-ok-sub">{T.co_ok_sub}</p>
-                  <button className="lp-btn lp-btn--primary" style={{ marginTop: 20, width: '100%' }}
+                  <button className="lp-btn-primary lp-btn-full lp-btn-mt"
                     onClick={() => { setCkO(false); openOrders() }}>
                     <ClipboardList size={16} /> {T.orders_btn}
                   </button>
@@ -937,13 +1085,13 @@ export default function LandingPage() {
                   </div>
 
                   {delivType === 'delivery' && (
-                    <div className="lp-fld">
+                    <div className="lp-field">
                       <label>{T.addr_lbl}</label>
                       <input placeholder={T.addr_ph} value={addrVal} onChange={e => setAddr(e.target.value)} />
                     </div>
                   )}
 
-                  <div className="lp-fld">
+                  <div className="lp-field">
                     <label>{T.note_lbl}</label>
                     <input placeholder={T.note_ph} value={noteVal} onChange={e => setNote(e.target.value)} />
                   </div>
@@ -953,19 +1101,19 @@ export default function LandingPage() {
                     <input placeholder={T.promo_ph} value={promoVal} onChange={e => { setPromoVal(e.target.value); setPromoR(null); setPromoE('') }} />
                     <button onClick={checkPromo} disabled={promoChecking}>{promoChecking ? '...' : T.promo_btn}</button>
                   </div>
-                  {promoRes && <p className="lp-promo-ok"><CheckCircle size={13} /> {promoRes.message || 'Promokod qo\'llandi'}</p>}
+                  {promoRes && <p className="lp-promo-ok"><CheckCircle size={13} /> {promoRes.message || "Promokod qo'llandi"}</p>}
                   {promoErr && <p className="lp-promo-err"><X size={13} /> {promoErr}</p>}
 
                   {/* Total */}
                   <div className="lp-co-total">
                     <span>{T.total}</span>
                     <span>
-                      {promoRes && <span className="strike">{fmt(cartTotal)}</span>}
+                      {promoRes && <span className="lp-strike">{fmt(cartTotal)}</span>}
                       {fmt(finalTotal())}
                     </span>
                   </div>
 
-                  <button className="lp-submit" onClick={placeOrder} disabled={placing}>
+                  <button className="lp-btn-primary lp-btn-full lp-btn-mt" onClick={placeOrder} disabled={placing}>
                     {placing
                       ? <><Loader size={16} className="lp-spin" /> {T.placing}</>
                       : <><Send size={15} /> {T.place_order}</>
@@ -981,18 +1129,18 @@ export default function LandingPage() {
       {/* ─── MY ORDERS PANEL ──────────────────────────────────────────────────── */}
       {ordersOpen && (
         <>
-          <div className="lp-ov" onClick={() => setOO(false)} />
-          <aside className="lp-orders">
-            <div className="lp-orders__hd">
-              <h3 className="lp-orders__ttl"><ClipboardList size={18} /> {T.orders_ttl}</h3>
-              <button className="lp-close" onClick={() => setOO(false)}><X size={16} /></button>
+          <div className="lp-overlay" onClick={() => setOO(false)} />
+          <aside className="lp-orders-drawer">
+            <div className="lp-drawer-hd">
+              <h3><ClipboardList size={18} /> {T.orders_ttl}</h3>
+              <button className="lp-close-btn" onClick={() => setOO(false)}><X size={16} /></button>
             </div>
-            <div className="lp-orders__body">
+            <div className="lp-drawer-body">
               {myOrders.length === 0 ? (
-                <div className="lp-orders__empty">
-                  <div className="lp-orders__empty-ico"><ClipboardList size={48} strokeWidth={1} /></div>
+                <div className="lp-empty-state">
+                  <div className="lp-empty-icon"><ClipboardList size={48} strokeWidth={1} /></div>
                   <p>{T.orders_empty}</p>
-                  <p style={{ fontSize: 13, color: 'var(--text3)' }}>{T.orders_empty_hint}</p>
+                  <p className="lp-empty-hint">{T.orders_empty_hint}</p>
                 </div>
               ) : myOrders.map(order => {
                 const stepIdx = STATUS_STEPS.indexOf(order.status)
@@ -1001,25 +1149,25 @@ export default function LandingPage() {
                 const canReview   = order.status === 'served' && !reviewedCodes.has(order.order_code)
                 return (
                   <div key={order.id} className={`lp-ocard${flashId === order.id ? ' lp-ocard--flash' : ''}`}>
-                    <div className="lp-ocard__top">
-                      <span className="lp-ocard__code">#{order.order_code}</span>
-                      <span className={`lp-ocard__st lp-ocard__st--${order.status}`}>
+                    <div className="lp-ocard-top">
+                      <span className="lp-ocard-code">#{order.order_code}</span>
+                      <span className={`lp-ocard-st lp-ocard-st--${order.status}`}>
                         {T[STATUS_KEY[order.status]] || order.status}
                       </span>
                     </div>
-                    <div className="lp-ocard__items">
+                    <div className="lp-ocard-items">
                       {(order.items || []).map((it, j) => (
                         <span key={j}>{it.item_name || it.name || `#${it.menu_item_id}`}{it.quantity > 1 ? ` ×${it.quantity}` : ''}{j < (order.items.length - 1) ? ', ' : ''}</span>
                       ))}
                     </div>
                     {!isCancelled && (
                       <div className="lp-sbar">
-                        <div className="lp-sbar__steps">
+                        <div className="lp-sbar-steps">
                           {STATUS_STEPS.map((step, si) => (
                             <div key={step} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
                               <div className={`lp-sstep${si === stepIdx ? ' lp-sstep--active' : ''}${si < stepIdx ? ' lp-sstep--done' : ''}`}>
-                                <div className="lp-sstep__dot" />
-                                <span className="lp-sstep__lbl">{T[STATUS_KEY[step]]}</span>
+                                <div className="lp-sstep-dot" />
+                                <span className="lp-sstep-lbl">{T[STATUS_KEY[step]]}</span>
                               </div>
                               {si < STATUS_STEPS.length - 1 && (
                                 <div className={`lp-sconn${si < stepIdx ? ' lp-sconn--done' : ''}`} />
@@ -1029,15 +1177,15 @@ export default function LandingPage() {
                         </div>
                       </div>
                     )}
-                    <div className="lp-ocard__foot">
-                      <span className="lp-ocard__total">{fmt(order.final_price || order.total_price || 0)}</span>
+                    <div className="lp-ocard-foot">
+                      <span className="lp-ocard-total">{fmt(order.final_price || order.total_price || 0)}</span>
                       {canCancel && (
-                        <button className="lp-ocard__cancel" onClick={() => cancelOrder(order.order_code)}>
+                        <button className="lp-ocard-cancel" onClick={() => cancelOrder(order.order_code)}>
                           <X size={12} /> {T.cancel_btn}
                         </button>
                       )}
                       {canReview && (
-                        <button className="lp-ocard__review" onClick={() => { setRvOrd(order); setRvO(true) }}>
+                        <button className="lp-ocard-review" onClick={() => { setRvOrd(order); setRvO(true) }}>
                           <Star size={12} /> {T.rv_btn}
                         </button>
                       )}
@@ -1052,22 +1200,21 @@ export default function LandingPage() {
 
       {/* ─── REVIEW MODAL ─────────────────────────────────────────────────────── */}
       {reviewOpen && (
-        <div className="lp-mwrap" onClick={e => e.target === e.currentTarget && setRvO(false)}>
-          <div className="lp-m">
-            <div className="lp-m__hd">
-              <h3 className="lp-m__ttl">{T.rv_modal_ttl}</h3>
-              <button className="lp-close" onClick={() => setRvO(false)}><X size={16} /></button>
+        <div className="lp-modal-wrap" onClick={e => e.target === e.currentTarget && setRvO(false)}>
+          <div className="lp-modal">
+            <div className="lp-modal-hd">
+              <h3>{T.rv_modal_ttl}</h3>
+              <button className="lp-close-btn" onClick={() => setRvO(false)}><X size={16} /></button>
             </div>
-            <div className="lp-m__body">
+            <div className="lp-modal-body">
               {reviewOrder && (
-                <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>
-                  {T.rv_modal_sub} <strong style={{ color: 'var(--text)' }}>#{reviewOrder.order_code}</strong>
+                <p className="lp-rv-modal-sub">
+                  {T.rv_modal_sub} <strong>#{reviewOrder.order_code}</strong>
                 </p>
               )}
               {!reviewOrder && (
-                <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>{T.rv_cta_sub}</p>
+                <p className="lp-rv-modal-sub">{T.rv_cta_sub}</p>
               )}
-              {/* Stars */}
               <div className="lp-stars">
                 {[1,2,3,4,5].map(s => (
                   <button key={s} onClick={() => setRvR(s)}>
@@ -1075,15 +1222,15 @@ export default function LandingPage() {
                   </button>
                 ))}
               </div>
-              <div className="lp-fld">
+              <div className="lp-field">
                 <label>{T.rv_comment_lbl}</label>
                 <textarea placeholder={T.rv_comment_ph} value={rvComment} onChange={e => setRvC(e.target.value)} />
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="lp-btn lp-btn--ghost lp-btn--sm" style={{ flex: 1 }} onClick={() => setRvO(false)}>
+              <div className="lp-rv-actions">
+                <button className="lp-btn-outline lp-btn-sm" style={{ flex: 1 }} onClick={() => setRvO(false)}>
                   {T.rv_skip}
                 </button>
-                <button className="lp-submit" style={{ flex: 2, marginTop: 0 }} onClick={submitReview} disabled={!rvRating || rvSending}>
+                <button className="lp-btn-primary lp-btn-sm" style={{ flex: 2 }} onClick={submitReview} disabled={!rvRating || rvSending}>
                   {rvSending
                     ? <Loader size={16} className="lp-spin" />
                     : <><Star size={14} /> {T.rv_submit}</>
