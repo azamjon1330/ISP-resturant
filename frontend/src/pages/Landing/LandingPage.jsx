@@ -143,11 +143,11 @@ const LANG = {
 
 /* ─── Slide images ───────────────────────────────────────────────────────────── */
 const SLIDES_IMG = [
-  'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=1920&q=85&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1547592180-85f173990554?w=1920&q=85&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1555244162-803834f70033?w=1920&q=85&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=1920&q=85&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=1920&q=85&auto=format&fit=crop',
+  'https://images.unsplash.com/ojDzHZHcVx4?w=1920&q=85&auto=format&fit=crop',   // Plov - rice with meat & vegetables
+  'https://images.unsplash.com/qFpTSS7BSuM?w=1920&q=85&auto=format&fit=crop',   // Shorva - meat & vegetable soup/bone broth
+  'https://images.unsplash.com/xvAaSlU-zpM?w=1920&q=85&auto=format&fit=crop',   // Lagman - noodles with meat & vegetables
+  'https://images.unsplash.com/UCGeYgaAP0Y?w=1920&q=85&auto=format&fit=crop',   // Manti - steaming dumplings in bamboo basket
+  'https://images.unsplash.com/rjRctqPNCZU?w=1920&q=85&auto=format&fit=crop',   // Samsa - baked pastry
 ]
 
 /* ─── Status config ──────────────────────────────────────────────────────────── */
