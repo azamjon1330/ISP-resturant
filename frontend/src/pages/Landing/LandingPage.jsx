@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { menuAPI, ordersAPI, customerAPI } from '../../api'
+import {
+  ShoppingCart, X, Plus, Minus, ChevronLeft, ChevronRight,
+  User, LogOut, ClipboardList, Star, Truck, Package,
+  Search, ClipboardCheck, Rocket, MapPin, Phone, Utensils,
+  CheckCircle, Loader, ChevronDown, Send,
+} from 'lucide-react'
 import './LandingPage.css'
 
 /* ─── API helper for reviews ─────────────────────────────────────────────────── */
@@ -489,7 +495,7 @@ export default function LandingPage() {
       {/* ─── HEADER ─────────────────────────────────────────────────────────── */}
       <header className={`lp-header${scrolled ? ' lp-header--scrolled' : ''}`}>
         <a className="lp-header__logo" href="/">
-          <div className="lp-header__logo-icon">🍽</div>
+          <div className="lp-header__logo-icon"><Utensils size={18} color="#fff" /></div>
           <span className="lp-header__logo-name">ECO <em>Taomlar</em></span>
         </a>
 
@@ -506,7 +512,7 @@ export default function LandingPage() {
           </div>
 
           <button className="lp-hcart" onClick={() => setCO(true)}>
-            🛒
+            <ShoppingCart size={18} />
             {cartCount > 0 && <span className="lp-hcart-badge">{cartCount}</span>}
           </button>
 
@@ -515,17 +521,24 @@ export default function LandingPage() {
               <button className="lp-hprofile-btn" onClick={() => setDrop(d => !d)}>
                 <span className="lp-hprofile-av">{initials(customer.first_name)}</span>
                 {customer.first_name}
+                <ChevronDown size={14} style={{ opacity: 0.5 }} />
               </button>
               {dropOpen && (
                 <div className="lp-hdrop">
-                  <button onClick={() => { setDrop(false); openOrders() }}>📋 {T.orders_btn}</button>
+                  <button onClick={() => { setDrop(false); openOrders() }}>
+                    <ClipboardList size={15} /> {T.orders_btn}
+                  </button>
                   <div className="lp-hdrop-sep" />
-                  <button className="red" onClick={logout}>⎋ {T.logout}</button>
+                  <button className="red" onClick={logout}>
+                    <LogOut size={15} /> {T.logout}
+                  </button>
                 </div>
               )}
             </div>
           ) : (
-            <button className="lp-hauth" onClick={() => openAuth('register')}>{T.auth_btn}</button>
+            <button className="lp-hauth" onClick={() => openAuth('register')}>
+              <User size={14} /> {T.auth_btn}
+            </button>
           )}
         </div>
       </header>
@@ -553,18 +566,24 @@ export default function LandingPage() {
           </div>
 
           <div className="lp-hero__btns">
-            <button className="lp-btn lp-btn--primary" onClick={scrollToMenu}>🛒 {T.order_now}</button>
-            <button className="lp-btn lp-btn--ghost"   onClick={scrollToMenu}>{T.view_menu}</button>
+            <button className="lp-btn lp-btn--primary" onClick={scrollToMenu}>
+              <ShoppingCart size={16} /> {T.order_now}
+            </button>
+            <button className="lp-btn lp-btn--ghost" onClick={scrollToMenu}>{T.view_menu}</button>
           </div>
 
           <div className="lp-hero__nav">
-            <button className="lp-hero__arrow" onClick={() => goSlide(slide - 1)}>‹</button>
+            <button className="lp-hero__arrow" onClick={() => goSlide(slide - 1)}>
+              <ChevronLeft size={20} />
+            </button>
             <div className="lp-hero__dots">
               {[0,1,2,3,4].map(i => (
                 <button key={i} className={`lp-hero__dot${i === slide ? ' is-active' : ''}`} onClick={() => goSlide(i)} />
               ))}
             </div>
-            <button className="lp-hero__arrow" onClick={() => goSlide(slide + 1)}>›</button>
+            <button className="lp-hero__arrow" onClick={() => goSlide(slide + 1)}>
+              <ChevronRight size={20} />
+            </button>
           </div>
         </div>
       </section>
@@ -603,7 +622,7 @@ export default function LandingPage() {
                     <div className="lp-mcard__imgw">
                       {item.image_url
                         ? <img src={item.image_url} alt={item.name} className="lp-mcard__img" loading="lazy" />
-                        : <div className="lp-mcard__no-img">🍽</div>
+                        : <div className="lp-mcard__no-img"><Utensils size={36} color="var(--text3)" /></div>
                       }
                       {qty > 0 && <div className="lp-mcard__badge">×{qty}</div>}
                     </div>
@@ -617,7 +636,10 @@ export default function LandingPage() {
                           className={`lp-mcard__add${qty > 0 ? ' in-cart' : ''}`}
                           onClick={() => addToCart(item)}
                         >
-                          {qty > 0 ? `✓ ${T.in_cart}` : `+ ${T.add}`}
+                          {qty > 0
+                            ? <><CheckCircle size={14} /> {T.in_cart}</>
+                            : <><Plus size={14} /> {T.add}</>
+                          }
                         </button>
                       </div>
                     </div>
@@ -638,9 +660,9 @@ export default function LandingPage() {
           </div>
           <div className="lp-how">
             {[
-              { n: '01', ico: '🔍', t: T.how1_ttl, s: T.how1_sub },
-              { n: '02', ico: '📋', t: T.how2_ttl, s: T.how2_sub },
-              { n: '03', ico: '🚀', t: T.how3_ttl, s: T.how3_sub },
+              { n: '01', ico: <Search size={22} color="var(--orange)" />,       t: T.how1_ttl, s: T.how1_sub },
+              { n: '02', ico: <ClipboardCheck size={22} color="var(--orange)" />, t: T.how2_ttl, s: T.how2_sub },
+              { n: '03', ico: <Truck size={22} color="var(--orange)" />,         t: T.how3_ttl, s: T.how3_sub },
             ].map((h, i) => (
               <div key={i} className="lp-how-card lp-reveal" style={{ transitionDelay: `${i * 100}ms` }}>
                 <div className="lp-how-n">{h.n}</div>
@@ -671,7 +693,10 @@ export default function LandingPage() {
                 <div key={rv.id} className="lp-rv-card lp-reveal" style={{ transitionDelay: `${(i % 3) * 80}ms` }}>
                   <div className="lp-rv-stars">
                     {[1,2,3,4,5].map(s => (
-                      <span key={s} className={`lp-rv-star${s <= rv.rating ? ' on' : ' off'}`}>★</span>
+                      <Star key={s} size={14}
+                        fill={s <= rv.rating ? '#D4A853' : 'none'}
+                        color={s <= rv.rating ? '#D4A853' : 'var(--text3)'}
+                      />
                     ))}
                   </div>
                   <p className="lp-rv-comment">{rv.comment || '—'}</p>
@@ -695,7 +720,7 @@ export default function LandingPage() {
             </div>
             {customer ? (
               <button className="lp-btn lp-btn--primary lp-btn--sm" onClick={() => { setRvOrd(null); setRvO(true) }}>
-                ★ {T.rv_btn}
+                <Star size={14} /> {T.rv_btn}
               </button>
             ) : (
               <button className="lp-btn lp-btn--ghost lp-btn--sm" onClick={() => openAuth('register')}>
@@ -711,7 +736,7 @@ export default function LandingPage() {
         <div className="lp-footer__inner">
           <div>
             <div className="lp-footer__logo">
-              <div className="lp-footer__logo-icon">🍽</div>
+              <div className="lp-footer__logo-icon"><Utensils size={18} color="#fff" /></div>
               <span className="lp-footer__logo-name">ECO <em>Taomlar</em></span>
             </div>
             <p className="lp-footer__desc">{T.footer_desc}</p>
@@ -751,13 +776,13 @@ export default function LandingPage() {
           <div className="lp-ov" onClick={() => setCO(false)} />
           <aside className="lp-cart">
             <div className="lp-cart__hd">
-              <h3 className="lp-cart__ttl">🛒 {T.cart_ttl}</h3>
-              <button className="lp-close" onClick={() => setCO(false)}>✕</button>
+              <h3 className="lp-cart__ttl"><ShoppingCart size={18} /> {T.cart_ttl}</h3>
+              <button className="lp-close" onClick={() => setCO(false)}><X size={16} /></button>
             </div>
             <div className="lp-cart__body">
               {cart.length === 0 ? (
                 <div className="lp-cart__empty">
-                  <div className="lp-cart__empty-ico">🛒</div>
+                  <div className="lp-cart__empty-ico"><ShoppingCart size={48} strokeWidth={1} /></div>
                   <p>{T.cart_empty}</p>
                   <p style={{ fontSize: 13, color: 'var(--text3)' }}>{T.cart_empty_hint}</p>
                 </div>
@@ -767,16 +792,16 @@ export default function LandingPage() {
                     <div key={item.id} className="lp-cart__item">
                       {item.image_url
                         ? <img src={item.image_url} alt={item.name} className="lp-cart__item-img" />
-                        : <div className="lp-cart__item-img" style={{ display:'flex',alignItems:'center',justifyContent:'center',fontSize:22 }}>🍽</div>
+                        : <div className="lp-cart__item-img" style={{ display:'flex',alignItems:'center',justifyContent:'center' }}><Utensils size={22} color="var(--text3)" /></div>
                       }
                       <div className="lp-cart__item-info">
                         <p className="lp-cart__item-name">{item.name}</p>
                         <p className="lp-cart__item-pr">{fmt(item.price)}</p>
                       </div>
                       <div className="lp-cart__ctrl">
-                        <button onClick={() => updateQty(item.id, -1)}>−</button>
+                        <button onClick={() => updateQty(item.id, -1)}><Minus size={13} /></button>
                         <span>{item.quantity}</span>
-                        <button onClick={() => updateQty(item.id, +1)}>+</button>
+                        <button onClick={() => updateQty(item.id, +1)}><Plus size={13} /></button>
                       </div>
                     </div>
                   ))}
@@ -804,7 +829,7 @@ export default function LandingPage() {
           <div className="lp-m">
             <div className="lp-m__hd">
               <h3 className="lp-m__ttl">{T.auth_ttl}</h3>
-              <button className="lp-close" onClick={() => setAO(false)}>✕</button>
+              <button className="lp-close" onClick={() => setAO(false)}><X size={16} /></button>
             </div>
             <div className="lp-m__body">
               <div className="lp-tabs">
@@ -833,7 +858,10 @@ export default function LandingPage() {
               {authErr && <p className="lp-err">{authErr}</p>}
 
               <button className="lp-submit" onClick={handleAuth} disabled={authLoading}>
-                {authLoading ? <span className="lp-spin" /> : (authTab === 'register' ? T.reg_btn : T.login_btn)}
+                {authLoading
+                  ? <Loader size={16} className="lp-spin" />
+                  : (authTab === 'register' ? T.reg_btn : T.login_btn)
+                }
               </button>
               <p className="lp-note">{authTab === 'register' ? T.reg_note : T.login_note}</p>
             </div>
@@ -847,17 +875,17 @@ export default function LandingPage() {
           <div className="lp-m lp-m--wide">
             <div className="lp-m__hd">
               <h3 className="lp-m__ttl">{T.co_ttl}</h3>
-              {!placing && <button className="lp-close" onClick={() => setCkO(false)}>✕</button>}
+              {!placing && <button className="lp-close" onClick={() => setCkO(false)}><X size={16} /></button>}
             </div>
             <div className="lp-m__body">
               {checkoutDone ? (
                 <div className="lp-co-ok">
-                  <div className="lp-co-ok-icon">✅</div>
+                  <div className="lp-co-ok-icon"><CheckCircle size={56} color="var(--orange)" strokeWidth={1.5} /></div>
                   <p className="lp-co-ok-ttl">{T.co_ok_ttl}</p>
                   <p className="lp-co-ok-sub">{T.co_ok_sub}</p>
                   <button className="lp-btn lp-btn--primary" style={{ marginTop: 20, width: '100%' }}
                     onClick={() => { setCkO(false); openOrders() }}>
-                    📋 {T.orders_btn}
+                    <ClipboardList size={16} /> {T.orders_btn}
                   </button>
                 </div>
               ) : (
@@ -874,8 +902,12 @@ export default function LandingPage() {
 
                   {/* Delivery toggle */}
                   <div className="lp-dtoggle">
-                    <button className={delivType === 'pickup' ? 'active' : ''} onClick={() => setDT('pickup')}>🏪 {T.pickup}</button>
-                    <button className={delivType === 'delivery' ? 'active' : ''} onClick={() => setDT('delivery')}>🚚 {T.delivery}</button>
+                    <button className={delivType === 'pickup' ? 'active' : ''} onClick={() => setDT('pickup')}>
+                      <Package size={15} /> {T.pickup}
+                    </button>
+                    <button className={delivType === 'delivery' ? 'active' : ''} onClick={() => setDT('delivery')}>
+                      <Truck size={15} /> {T.delivery}
+                    </button>
                   </div>
 
                   {delivType === 'delivery' && (
@@ -895,8 +927,8 @@ export default function LandingPage() {
                     <input placeholder={T.promo_ph} value={promoVal} onChange={e => { setPromoVal(e.target.value); setPromoR(null); setPromoE('') }} />
                     <button onClick={checkPromo} disabled={promoChecking}>{promoChecking ? '...' : T.promo_btn}</button>
                   </div>
-                  {promoRes && <p className="lp-promo-ok">✓ {promoRes.message || 'Promokod qo\'llandi'}</p>}
-                  {promoErr && <p className="lp-promo-err">✕ {promoErr}</p>}
+                  {promoRes && <p className="lp-promo-ok"><CheckCircle size={13} /> {promoRes.message || 'Promokod qo\'llandi'}</p>}
+                  {promoErr && <p className="lp-promo-err"><X size={13} /> {promoErr}</p>}
 
                   {/* Total */}
                   <div className="lp-co-total">
@@ -908,7 +940,10 @@ export default function LandingPage() {
                   </div>
 
                   <button className="lp-submit" onClick={placeOrder} disabled={placing}>
-                    {placing ? <><span className="lp-spin" /> {T.placing}</> : T.place_order}
+                    {placing
+                      ? <><Loader size={16} className="lp-spin" /> {T.placing}</>
+                      : <><Send size={15} /> {T.place_order}</>
+                    }
                   </button>
                 </>
               )}
@@ -923,13 +958,13 @@ export default function LandingPage() {
           <div className="lp-ov" onClick={() => setOO(false)} />
           <aside className="lp-orders">
             <div className="lp-orders__hd">
-              <h3 className="lp-orders__ttl">📋 {T.orders_ttl}</h3>
-              <button className="lp-close" onClick={() => setOO(false)}>✕</button>
+              <h3 className="lp-orders__ttl"><ClipboardList size={18} /> {T.orders_ttl}</h3>
+              <button className="lp-close" onClick={() => setOO(false)}><X size={16} /></button>
             </div>
             <div className="lp-orders__body">
               {myOrders.length === 0 ? (
                 <div className="lp-orders__empty">
-                  <div className="lp-orders__empty-ico">📋</div>
+                  <div className="lp-orders__empty-ico"><ClipboardList size={48} strokeWidth={1} /></div>
                   <p>{T.orders_empty}</p>
                   <p style={{ fontSize: 13, color: 'var(--text3)' }}>{T.orders_empty_hint}</p>
                 </div>
@@ -971,11 +1006,13 @@ export default function LandingPage() {
                     <div className="lp-ocard__foot">
                       <span className="lp-ocard__total">{fmt(order.final_price || order.total_price || 0)}</span>
                       {canCancel && (
-                        <button className="lp-ocard__cancel" onClick={() => cancelOrder(order.order_code)}>✕ {T.cancel_btn}</button>
+                        <button className="lp-ocard__cancel" onClick={() => cancelOrder(order.order_code)}>
+                          <X size={12} /> {T.cancel_btn}
+                        </button>
                       )}
                       {canReview && (
                         <button className="lp-ocard__review" onClick={() => { setRvOrd(order); setRvO(true) }}>
-                          ★ {T.rv_btn}
+                          <Star size={12} /> {T.rv_btn}
                         </button>
                       )}
                     </div>
@@ -993,7 +1030,7 @@ export default function LandingPage() {
           <div className="lp-m">
             <div className="lp-m__hd">
               <h3 className="lp-m__ttl">{T.rv_modal_ttl}</h3>
-              <button className="lp-close" onClick={() => setRvO(false)}>✕</button>
+              <button className="lp-close" onClick={() => setRvO(false)}><X size={16} /></button>
             </div>
             <div className="lp-m__body">
               {reviewOrder && (
@@ -1007,7 +1044,9 @@ export default function LandingPage() {
               {/* Stars */}
               <div className="lp-stars">
                 {[1,2,3,4,5].map(s => (
-                  <button key={s} onClick={() => setRvR(s)} style={{ color: s <= rvRating ? '#D4A853' : 'var(--text3)' }}>★</button>
+                  <button key={s} onClick={() => setRvR(s)}>
+                    <Star size={28} fill={s <= rvRating ? '#D4A853' : 'none'} color={s <= rvRating ? '#D4A853' : 'var(--text3)'} />
+                  </button>
                 ))}
               </div>
               <div className="lp-fld">
@@ -1019,7 +1058,10 @@ export default function LandingPage() {
                   {T.rv_skip}
                 </button>
                 <button className="lp-submit" style={{ flex: 2, marginTop: 0 }} onClick={submitReview} disabled={!rvRating || rvSending}>
-                  {rvSending ? <span className="lp-spin" /> : `★ ${T.rv_submit}`}
+                  {rvSending
+                    ? <Loader size={16} className="lp-spin" />
+                    : <><Star size={14} /> {T.rv_submit}</>
+                  }
                 </button>
               </div>
             </div>

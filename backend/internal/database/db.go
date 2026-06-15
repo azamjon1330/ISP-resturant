@@ -39,7 +39,31 @@ func Connect() {
 
 func runMigrations() {
 	migrations := []string{
-		// Expenses columns (original)
+		// ── Customer accounts (phone-based, no password) ──────────────────────
+		`CREATE TABLE IF NOT EXISTS customers (
+			id         SERIAL PRIMARY KEY,
+			phone      VARCHAR(30) UNIQUE NOT NULL,
+			first_name VARCHAR(100) NOT NULL DEFAULT '',
+			last_name  VARCHAR(100) DEFAULT '',
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
+
+		// Customer saved addresses
+		`CREATE TABLE IF NOT EXISTS customer_addresses (
+			id          SERIAL PRIMARY KEY,
+			customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
+			label       VARCHAR(100) DEFAULT 'Manzil',
+			address     TEXT NOT NULL,
+			lat         DOUBLE PRECISION,
+			lng         DOUBLE PRECISION,
+			is_default  BOOLEAN DEFAULT false,
+			created_at  TIMESTAMPTZ DEFAULT NOW()
+		)`,
+
+		// Link orders to a customer
+		`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id)`,
+
+		// ── Expenses columns ──────────────────────────────────────────────────
 		`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS expense_type VARCHAR(20) DEFAULT 'one_time'`,
 		`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT false`,
 
