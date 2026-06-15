@@ -1,78 +1,99 @@
-import { useState, useCallback, useRef } from 'react'
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
+import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
-const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
+// Fix default icon paths broken by bundlers
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
 
-const mapStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#304a7d' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#255763' }] },
-  { featureType: 'water', stylers: [{ color: '#0f0f2a' }] },
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-]
+// Custom orange marker
+const orangeIcon = new L.DivIcon({
+  className: '',
+  iconSize:  [30, 42],
+  iconAnchor:[15, 42],
+  popupAnchor:[0, -42],
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42">
+    <path d="M15 0C6.72 0 0 6.72 0 15C0 26.25 15 42 15 42C15 42 30 26.25 30 15C30 6.72 23.28 0 15 0Z" fill="#FF6B35" stroke="white" stroke-width="1.5"/>
+    <circle cx="15" cy="15" r="6" fill="white"/>
+  </svg>`,
+})
 
-const containerStyle = { width: '100%', height: '100%' }
+// Restaurant/pickup marker (darker)
+const pickupIcon = new L.DivIcon({
+  className: '',
+  iconSize:  [34, 48],
+  iconAnchor:[17, 48],
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="48" viewBox="0 0 34 48">
+    <path d="M17 0C7.61 0 0 7.61 0 17C0 29.75 17 48 17 48C17 48 34 29.75 34 17C34 7.61 26.39 0 17 0Z" fill="#1c1c2e" stroke="#FF6B35" stroke-width="2"/>
+    <text x="17" y="22" text-anchor="middle" font-size="14">🍴</text>
+  </svg>`,
+})
 
-export default function MapPicker({ lat, lng, onChange, readonly, zoom = 14 }) {
-  const center = { lat: lat || 41.2995, lng: lng || 69.2401 }
-  const mapRef = useRef(null)
-  const [markerPos, setMarkerPos] = useState(center)
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: MAPS_KEY,
-    libraries: ['places'],
+// Click handler sub-component
+function ClickHandler({ onPick }) {
+  useMapEvents({
+    click(e) { onPick(e.latlng) },
   })
+  return null
+}
 
-  const onMapClick = useCallback((e) => {
+// Fly-to when lat/lng change
+function FlyTo({ lat, lng }) {
+  const map = useMap()
+  useEffect(() => {
+    if (lat && lng) map.flyTo([lat, lng], map.getZoom(), { duration: 0.8 })
+  }, [lat, lng, map])
+  return null
+}
+
+export default function MapPicker({
+  lat, lng,
+  onChange,
+  readonly = false,
+  zoom = 14,
+  isPickup = false,
+}) {
+  const defaultCenter = [41.2995, 69.2401] // Tashkent
+  const center = lat && lng ? [lat, lng] : defaultCenter
+  const [pos, setPos] = useState(center)
+
+  const handlePick = (latlng) => {
     if (readonly) return
-    const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() }
-    setMarkerPos(pos)
-    onChange?.(pos)
-  }, [readonly, onChange])
-
-  if (loadError) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'var(--text3)', fontSize:13 }}>
-      Карта недоступна (проверьте API ключ)
-    </div>
-  )
-
-  if (!isLoaded) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'var(--text3)', fontSize:13 }}>
-      Загрузка карты...
-    </div>
-  )
-
-  if (!MAPS_KEY || MAPS_KEY === 'YOUR_API_KEY_HERE') return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', gap:8, color:'var(--text3)', fontSize:13, textAlign:'center', padding:16 }}>
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-      <span>Добавьте VITE_GOOGLE_MAPS_API_KEY в .env файл</span>
-    </div>
-  )
+    setPos([latlng.lat, latlng.lng])
+    onChange?.({ lat: latlng.lat, lng: latlng.lng })
+  }
 
   return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={lat && lng ? { lat, lng } : center}
+    <MapContainer
+      center={center}
       zoom={zoom}
-      options={{ styles: mapStyle, disableDefaultUI: true, zoomControl: true, clickableIcons: false }}
-      onClick={onMapClick}
-      onLoad={map => { mapRef.current = map }}
+      style={{ width: '100%', height: '100%', borderRadius: 'inherit' }}
+      zoomControl
+      scrollWheelZoom={false}
     >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      {lat && lng && <FlyTo lat={lat} lng={lng} />}
+      {!readonly && <ClickHandler onPick={handlePick} />}
       <Marker
-        position={lat && lng ? { lat, lng } : markerPos}
-        icon={{
-          url: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">
-              <path d="M18 0C8.06 0 0 8.06 0 18C0 31.5 18 48 18 48C18 48 36 31.5 36 18C36 8.06 27.94 0 18 0Z" fill="#FF6B35"/>
-              <circle cx="18" cy="18" r="8" fill="white"/>
-            </svg>
-          `),
-          scaledSize: { width: 36, height: 48 },
-          anchor: { x: 18, y: 48 },
+        position={lat && lng ? [lat, lng] : pos}
+        icon={isPickup ? pickupIcon : orangeIcon}
+        draggable={!readonly}
+        eventHandlers={readonly ? {} : {
+          dragend(e) {
+            const { lat: la, lng: lo } = e.target.getLatLng()
+            setPos([la, lo])
+            onChange?.({ lat: la, lng: lo })
+          },
         }}
       />
-    </GoogleMap>
+    </MapContainer>
   )
 }

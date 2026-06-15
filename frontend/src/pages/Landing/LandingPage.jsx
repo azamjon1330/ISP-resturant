@@ -5,7 +5,7 @@ import {
   User, LogOut, ClipboardList, Star, Truck, Package,
   Search, ClipboardCheck, Rocket, MapPin, Phone, Utensils,
   CheckCircle, Loader, ChevronDown, Send, Moon, Sun, Menu,
-  Clock, Navigation,
+  Clock,
 } from 'lucide-react'
 import MapPicker from '../../components/MapPicker'
 import './LandingPage.css'
@@ -1250,7 +1250,7 @@ export default function LandingPage() {
                           />
                           {delivLat && (
                             <p className="lp-map-coords">
-                              <Navigation size={12} /> {delivLat.toFixed(5)}, {delivLng.toFixed(5)}
+                              <MapPin size={12} /> {delivLat.toFixed(5)}, {delivLng.toFixed(5)}
                             </p>
                           )}
                         </div>
@@ -1265,7 +1265,7 @@ export default function LandingPage() {
                         {restSettings.pickup_address && <span style={{ fontWeight: 400, marginLeft: 6 }}>— {restSettings.pickup_address}</span>}
                       </p>
                       <div className="lp-map-wrap">
-                        <MapPicker lat={restSettings.pickup_lat} lng={restSettings.pickup_lng} readonly zoom={15} />
+                        <MapPicker lat={restSettings.pickup_lat} lng={restSettings.pickup_lng} readonly zoom={15} isPickup />
                       </div>
                     </div>
                   )}
