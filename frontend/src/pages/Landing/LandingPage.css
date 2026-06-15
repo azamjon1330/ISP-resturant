@@ -381,12 +381,17 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   gap: 60px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Left side */
 .lp-hero-left {
   flex: 1;
   min-width: 0;
+  max-width: 50%;
+  position: relative;
+  z-index: 1;
 }
 
 .lp-hero-tag {
@@ -478,27 +483,35 @@ a { color: inherit; text-decoration: none; }
 }
 .lp-hero-stat svg { color: var(--orange); }
 
-/* Right side */
+/* Right side — absolutely fills the hero from top to bottom */
 .lp-hero-right {
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 58%;
+  z-index: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  animation: slideInRight 0.9s 0.15s var(--ease-out) both;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding-bottom: 40px;
+  padding-right: 36px;
+  animation: fadeIn 1s 0.2s var(--ease-out) both;
 }
 
 .lp-hero-img-ring {
-  position: relative;
-  width: clamp(280px, 42vw, 520px);
-  height: clamp(320px, 48vw, 600px);
-  border-radius: 28px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
   overflow: hidden;
-  /* Desktop: left edge fades to transparent — blends text with image */
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.65) 40%, #000 60%);
-  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.65) 40%, #000 60%);
-  animation: float 6s ease-in-out infinite;
-  box-shadow: 24px 0 80px rgba(0,0,0,0.35);
+  /* Strong left fade — edge completely invisible, smooth blend into text */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.03) 10%, rgba(0,0,0,0.22) 24%, rgba(0,0,0,0.65) 42%, #000 60%);
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.03) 10%, rgba(0,0,0,0.22) 24%, rgba(0,0,0,0.65) 42%, #000 60%);
+  animation: fadeIn 1.2s var(--ease-out) both;
+  box-shadow: none;
 }
 .lp-hero-img {
   position: absolute;
@@ -511,6 +524,8 @@ a { color: inherit; text-decoration: none; }
 .lp-hero-img.active { opacity: 1; }
 
 .lp-hero-dots {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 8px;
 }
@@ -1567,10 +1582,26 @@ a { color: inherit; text-decoration: none; }
 
   .lp-hero { padding: 100px 0 60px; min-height: auto; }
   .lp-hero-inner { flex-direction: column-reverse; text-align: center; gap: 40px; }
-  .lp-hero-left { display: flex; flex-direction: column; align-items: center; }
+  .lp-hero-left {
+    display: flex; flex-direction: column; align-items: center;
+    max-width: none;
+  }
   .lp-hero-sub { text-align: center; }
   .lp-hero-stats { justify-content: center; }
+  /* Mobile: restore to normal flow, bottom fade */
+  .lp-hero-right {
+    position: static;
+    width: auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    animation: fadeUp 0.8s 0.2s var(--ease-out) both;
+  }
   .lp-hero-img-ring {
+    position: relative;
+    inset: auto;
     width: clamp(240px, 72vw, 400px);
     height: clamp(240px, 72vw, 400px);
     border-radius: 20px;
@@ -1579,6 +1610,7 @@ a { color: inherit; text-decoration: none; }
     mask-image: linear-gradient(to bottom, #000 48%, rgba(0,0,0,0.5) 72%, transparent 100%);
     box-shadow: 0 24px 60px rgba(0,0,0,0.4);
   }
+  .lp-hero-dots { position: static; }
 
   .lp-how-grid { grid-template-columns: 1fr; gap: 14px; }
   .lp-offers-grid { grid-template-columns: 1fr; }

@@ -560,13 +560,13 @@
 }
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
 }
 
 .order-card {
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 16px;
+  padding: 20px;
   transition: all 0.15s;
   animation: cardSlideIn 0.25s ease;
 }
