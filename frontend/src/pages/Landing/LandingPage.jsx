@@ -337,6 +337,16 @@ export default function LandingPage() {
 
     // Preload hero images
     SLIDES_IMG.forEach(src => { const img = new Image(); img.src = src })
+
+    // Check for pending review (persisted after delivery)
+    const pendingReview = localStorage.getItem('eco_pending_review')
+    if (pendingReview && raw) {
+      try {
+        const ord = JSON.parse(pendingReview)
+        // Show review modal after a short delay so page loads first
+        setTimeout(() => { setRvOrd(ord); setRvO(true) }, 1500)
+      } catch {}
+    }
   }, [])
 
   // ─── WebSocket ────────────────────────────────────────────────────────────────
@@ -361,6 +371,8 @@ export default function LandingPage() {
                   showToast(T.delivered_notif, 'success')
                   setRvOrd(ord)
                   setRvO(true)
+                  // Persist pending review so it survives page refresh
+                  localStorage.setItem('eco_pending_review', JSON.stringify(ord))
                   setFlash(ord.id)
                   setTimeout(() => setFlash(null), 3000)
                 }
@@ -439,7 +451,7 @@ export default function LandingPage() {
       showToast(`Xush kelibsiz, ${customer?.first_name || ''}!`, 'success')
       // Auto-open checkout if cart has items
       if (cart.length > 0) {
-        setCkD(false); setPromoR(null); setPromoE(''); setPromoVal('')
+        setCkD(false); setPromoR(null); setPromoE(''); setPromo('')
         setCkO(true)
       }
     } catch { setAuthErr('Serverda xatolik') }
@@ -473,7 +485,7 @@ export default function LandingPage() {
   // ─── Checkout ─────────────────────────────────────────────────────────────────
   const openCheckout = () => {
     if (!customer) { openAuth(); return }
-    setCkD(false); setPromoR(null); setPromoE(''); setPromoVal('')
+    setCkD(false); setPromoR(null); setPromoE(''); setPromo('')
     setCkO(true)
   }
 
@@ -533,6 +545,7 @@ export default function LandingPage() {
     if (res.ok) {
       showToast(T.rv_thanks, 'success')
       setRC(prev => new Set([...prev, reviewOrder.order_code]))
+      localStorage.removeItem('eco_pending_review')
       setRvO(false); setRvR(0); setRvC('')
       setRvs(prev => [res.data, ...prev])
     } else {
@@ -575,12 +588,6 @@ export default function LandingPage() {
           </nav>
 
           <div className="lp-header-right">
-            {/* Lang switcher */}
-            <div className="lp-lang">
-              <button className={lang === 'uz' ? 'active' : ''} onClick={() => changeLang('uz')}>UZ</button>
-              <button className={lang === 'ru' ? 'active' : ''} onClick={() => changeLang('ru')}>RU</button>
-            </div>
-
             {/* Dark mode toggle */}
             <button className="lp-icon-btn" onClick={() => setDarkMode(d => !d)} title="Toggle theme">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -606,6 +613,12 @@ export default function LandingPage() {
                       <ClipboardList size={15} /> {T.orders_btn}
                     </button>
                     <div className="lp-drop-sep" />
+                    {/* Language inside profile */}
+                    <div className="lp-drop-lang">
+                      <button className={lang === 'uz' ? 'active' : ''} onClick={() => changeLang('uz')}>UZ</button>
+                      <button className={lang === 'ru' ? 'active' : ''} onClick={() => changeLang('ru')}>RU</button>
+                    </div>
+                    <div className="lp-drop-sep" />
                     <button className="danger" onClick={logout}>
                       <LogOut size={15} /> {T.logout}
                     </button>
@@ -613,9 +626,15 @@ export default function LandingPage() {
                 )}
               </div>
             ) : (
-              <button className="lp-auth-btn" onClick={() => openAuth('register')}>
-                <User size={14} /> {T.auth_btn}
-              </button>
+              <div className="lp-auth-group">
+                <div className="lp-lang-mini">
+                  <button className={lang === 'uz' ? 'active' : ''} onClick={() => changeLang('uz')}>UZ</button>
+                  <button className={lang === 'ru' ? 'active' : ''} onClick={() => changeLang('ru')}>RU</button>
+                </div>
+                <button className="lp-auth-btn" onClick={() => openAuth('register')}>
+                  <User size={14} /> {T.auth_btn}
+                </button>
+              </div>
             )}
 
             {/* Hamburger */}
@@ -774,21 +793,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── OFFERS ──────────────────────────────────────────────────────────── */}
-      <section className="lp-offers">
-        <div className="container">
-          <div className="lp-offers-grid">
-            {OFFERS.map((o, i) => (
-              <div key={i} className="lp-offer-card lp-reveal" style={{ background: o.color, transitionDelay: `${i * 80}ms` }}>
-                <div className="lp-offer-emoji">{o.emoji}</div>
-                <h3 className="lp-offer-title">{o.title}</h3>
-                <p className="lp-offer-sub">{o.sub}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ─── HOW IT WORKS ─────────────────────────────────────────────────────── */}
       <section id="how" className="lp-how-section">
         <div className="container">
@@ -798,15 +802,21 @@ export default function LandingPage() {
           </div>
           <div className="lp-how-grid">
             {[
-              { n: '01', ico: <Search size={22} />,         t: T.how1_ttl, s: T.how1_sub },
-              { n: '02', ico: <ClipboardCheck size={22} />, t: T.how2_ttl, s: T.how2_sub },
-              { n: '03', ico: <Truck size={22} />,          t: T.how3_ttl, s: T.how3_sub },
+              { n: '01', img: '/images/manti.jpg',  ico: <Search size={22} />,         t: T.how1_ttl, s: T.how1_sub },
+              { n: '02', img: '/images/plov.jpg',   ico: <ClipboardCheck size={22} />, t: T.how2_ttl, s: T.how2_sub },
+              { n: '03', img: '/images/lagman.jpg', ico: <Truck size={22} />,          t: T.how3_ttl, s: T.how3_sub },
             ].map((h, i) => (
               <div key={i} className="lp-how-card lp-reveal" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="lp-how-n">{h.n}</div>
-                <div className="lp-how-ico">{h.ico}</div>
-                <p className="lp-how-ttl">{h.t}</p>
-                <p className="lp-how-sub">{h.s}</p>
+                <div className="lp-how-img-wrap">
+                  <img src={h.img} alt={h.t} className="lp-how-img" />
+                  <div className="lp-how-img-overlay" />
+                  <span className="lp-how-n">{h.n}</span>
+                </div>
+                <div className="lp-how-body">
+                  <div className="lp-how-ico">{h.ico}</div>
+                  <p className="lp-how-ttl">{h.t}</p>
+                  <p className="lp-how-sub">{h.s}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -1098,7 +1108,7 @@ export default function LandingPage() {
 
                   {/* Promo */}
                   <div className="lp-promo">
-                    <input placeholder={T.promo_ph} value={promoVal} onChange={e => { setPromoVal(e.target.value); setPromoR(null); setPromoE('') }} />
+                    <input placeholder={T.promo_ph} value={promoVal} onChange={e => { setPromo(e.target.value); setPromoR(null); setPromoE('') }} />
                     <button onClick={checkPromo} disabled={promoChecking}>{promoChecking ? '...' : T.promo_btn}</button>
                   </div>
                   {promoRes && <p className="lp-promo-ok"><CheckCircle size={13} /> {promoRes.message || "Promokod qo'llandi"}</p>}
