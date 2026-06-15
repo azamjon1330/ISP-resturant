@@ -553,6 +553,7 @@ func UpdateOrderStatus(c *gin.Context) {
 	}
 
 	var order models.Order
+	order.Items = []models.OrderItem{}
 	database.DB.QueryRow(
 		`SELECT id, order_code, total_price, discount_amount, final_price, status,
 		        COALESCE(card_code,''), COALESCE(note,''),
@@ -566,6 +567,21 @@ func UpdateOrderStatus(c *gin.Context) {
 		&order.CustomerFirstName, &order.CustomerLastName, &order.CustomerPhone,
 		&order.DeliveryType, &order.DeliveryAddress, &order.DeliveryLat, &order.DeliveryLng,
 		&order.CustomerID, &order.CreatedAt, &order.UpdatedAt)
+
+	// Include order items in the broadcast so kitchen/courier panels can display them
+	itemRows, _ := database.DB.Query(
+		`SELECT id, order_id, COALESCE(menu_item_id,0), item_name, quantity, unit_price
+		 FROM order_items WHERE order_id=$1`, id,
+	)
+	if itemRows != nil {
+		defer itemRows.Close()
+		for itemRows.Next() {
+			var item models.OrderItem
+			itemRows.Scan(&item.ID, &item.OrderID, &item.MenuItemID, &item.ItemName, &item.Quantity, &item.UnitPrice)
+			order.Items = append(order.Items, item)
+		}
+	}
+
 	BroadcastMessage("order_status_changed", order)
 	if body.Status == "served" {
 		BroadcastMessage("order_delivered", order)

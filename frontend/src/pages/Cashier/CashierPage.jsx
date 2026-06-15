@@ -1,13 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { menuAPI, ordersAPI, agentsAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X, CheckCircle, Search, QrCode, ChefHat, Home, Camera, RefreshCw } from 'lucide-react'
+import {
+  ShoppingCart, Plus, Minus, Trash2, X, CheckCircle, Search,
+  QrCode, ChefHat, Home, Camera, RefreshCw, Globe, Phone, MapPin, Truck, Store, User, Bell,
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode'
 import './CashierPage.css'
 
-const statusLabels = { pending: "Kutilmoqda", cooking: "Tayyorlanmoqda", ready: "Tayyor", served: "Berildi" }
-const statusColors = { pending: 'badge-yellow', cooking: 'badge-orange', ready: 'badge-green', served: 'badge-gray' }
+const statusLabels = {
+  pending:  'Yangi (online)',
+  cooking:  'Tayyorlanmoqda',
+  ready:    'Tayyor',
+  on_way:   'Yetkazilmoqda',
+  served:   'Berildi',
+  rejected: 'Rad etildi',
+}
+const statusColors = {
+  pending:  'badge-yellow',
+  cooking:  'badge-orange',
+  ready:    'badge-green',
+  on_way:   'badge-blue',
+  served:   'badge-gray',
+  rejected: 'badge-red',
+}
 
 export default function CashierPage() {
   const navigate = useNavigate()
@@ -23,42 +40,108 @@ export default function CashierPage() {
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState('menu')
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [confirming, setConfirming] = useState(null)
+  const [pendingCount, setPendingCount] = useState(0)
   const wsRef = useRef(null)
+  const reconnectRef = useRef(null)
   const scanCardRef = useRef(null)
+  const seenOrderIdsRef = useRef(new Set())
 
   useEffect(() => {
     loadMenu()
     loadOrders()
     connectWS()
-    return () => wsRef.current?.close()
+    // Refresh orders list every 10s as fallback
+    const poll = setInterval(loadOrders, 10000)
+    return () => {
+      clearInterval(poll)
+      wsRef.current?.close()
+      if (reconnectRef.current) clearTimeout(reconnectRef.current)
+    }
   }, [])
 
+  // Count pending online orders to show badge on tab
+  useEffect(() => {
+    setPendingCount(orders.filter(o => o.status === 'pending').length)
+  }, [orders])
+
   const connectWS = () => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`)
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data)
-      if (msg.type === 'order_status_changed') {
-        setOrders(prev => prev.map(o => o.id === msg.payload.id ? { ...o, status: msg.payload.status } : o))
-        if (msg.payload.status === 'served') {
-          toast.success(`Buyurtma №${msg.payload.order_code} tayyor va berildi!`, { duration: 6000, icon: '🍽️' })
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(`${protocol}//${window.location.host}/ws`)
+      ws.onmessage = (e) => {
+        let msg
+        try { msg = JSON.parse(e.data) } catch { return }
+
+        if (msg.type === 'new_order') {
+          const order = msg.payload
+          // Only notify for online orders (those with customer info)
+          if (order && order.id && (order.customer_phone || order.customer_first_name)) {
+            if (!seenOrderIdsRef.current.has(order.id)) {
+              seenOrderIdsRef.current.add(order.id)
+              setOrders(prev => {
+                if (prev.some(o => o.id === order.id)) return prev
+                return [order, ...prev]
+              })
+              playNotification()
+              toast(`🌐 Onlayn buyurtma! #${order.order_code}`, {
+                duration: 10000,
+                style: { background: '#1e3a5f', color: '#fff', border: '1px solid #3b82f6' },
+              })
+            }
+          }
+        }
+
+        if (msg.type === 'order_status_changed') {
+          const updated = msg.payload
+          setOrders(prev =>
+            prev
+              .map(o => o.id === updated.id ? { ...o, status: updated.status } : o)
+              .filter(o => o.status !== 'served' && o.status !== 'rejected')
+          )
         }
       }
+      ws.onclose = () => {
+        if (reconnectRef.current) clearTimeout(reconnectRef.current)
+        reconnectRef.current = setTimeout(connectWS, 3000)
+      }
+      ws.onerror = () => { try { ws.close() } catch {} }
+      wsRef.current = ws
+    } catch {
+      reconnectRef.current = setTimeout(connectWS, 3000)
     }
-    wsRef.current = ws
+  }
+
+  const playNotification = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.setValueAtTime(1000, ctx.currentTime)
+      osc.frequency.setValueAtTime(800, ctx.currentTime + 0.15)
+      osc.frequency.setValueAtTime(1000, ctx.currentTime + 0.3)
+      gain.gain.setValueAtTime(0.35, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.5)
+    } catch {}
   }
 
   const loadMenu = async () => {
     try {
       const res = await menuAPI.getAll()
       setMenu(res.data)
-    } catch { toast.error("Menyu yuklanmadi") }
+    } catch { toast.error('Menyu yuklanmadi') }
   }
 
   const loadOrders = async () => {
     try {
       const res = await ordersAPI.getAll()
-      setOrders(res.data.filter(o => o.status !== 'served').slice(0, 20))
+      const active = (res.data || []).filter(o => o.status !== 'served' && o.status !== 'rejected').slice(0, 50)
+      active.forEach(o => seenOrderIdsRef.current.add(o.id))
+      setOrders(active)
     } catch {}
   }
 
@@ -70,7 +153,7 @@ export default function CashierPage() {
       const matchSearch = m.name.toLowerCase().includes(search.toLowerCase())
       return matchCat && matchSearch && m.available
     })
-    .sort((a, b) => b.price - a.price) // qimmatlar tepada, arzonlar pastda
+    .sort((a, b) => b.price - a.price)
 
   const addToCart = (item) => {
     setCart(prev => {
@@ -81,10 +164,7 @@ export default function CashierPage() {
   }
 
   const updateQty = (id, delta) => {
-    setCart(prev => {
-      const updated = prev.map(c => c.id === id ? { ...c, qty: c.qty + delta } : c)
-      return updated.filter(c => c.qty > 0)
-    })
+    setCart(prev => prev.map(c => c.id === id ? { ...c, qty: c.qty + delta } : c).filter(c => c.qty > 0))
   }
 
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.qty, 0)
@@ -100,7 +180,7 @@ export default function CashierPage() {
       setCardCode(code)
       toast.success(`Karta: ${res.data.agent_name} — chegirma ${res.data.discount.toLocaleString()} so'm`)
     } catch (e) {
-      toast.error(e.response?.data?.error || "Karta topilmadi")
+      toast.error(e.response?.data?.error || 'Karta topilmadi')
       setCardInfo(null)
     }
   }
@@ -111,21 +191,13 @@ export default function CashierPage() {
     let scanner
     let handled = false
     let cancelled = false
-
     const timer = setTimeout(() => {
       try {
-        scanner = new Html5QrcodeScanner(
-          'qr-scanner-target',
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            rememberLastUsedCamera: true,
-            showTorchButtonIfSupported: true,
-            videoConstraints: { facingMode: { ideal: 'environment' } },
-            aspectRatio: 1.0,
-          },
-          /* verbose */ false,
-        )
+        scanner = new Html5QrcodeScanner('qr-scanner-target', {
+          fps: 10, qrbox: { width: 250, height: 250 },
+          rememberLastUsedCamera: true, showTorchButtonIfSupported: true,
+          videoConstraints: { facingMode: { ideal: 'environment' } }, aspectRatio: 1.0,
+        }, false)
         scanner.render(
           (decoded) => {
             if (handled || cancelled) return
@@ -134,22 +206,18 @@ export default function CashierPage() {
             setScannerOpen(false)
             scanCardRef.current?.(decoded)
           },
-          () => {}, // ignore per-frame failures
+          () => {},
         )
-      } catch (e) {
-        toast.error("Skanerni ochib bo'lmadi — pastdagi «Rasm yuklab skanerlash» ni ishlating")
-      }
+      } catch { toast.error("Skanerni ochib bo'lmadi") }
     }, 80)
-
     return () => {
       cancelled = true
       clearTimeout(timer)
-      if (scanner) {
-        try { scanner.clear() } catch {}
-      }
+      if (scanner) { try { scanner.clear() } catch {} }
     }
   }, [scannerOpen])
 
+  // Cashier creates a counter order → auto-confirm (set to cooking) so kitchen sees it immediately
   const submitOrder = async () => {
     if (cart.length === 0) { toast.error("Savat bo'sh"); return }
     setSubmitting(true)
@@ -159,23 +227,49 @@ export default function CashierPage() {
         card_code: cardCode || undefined,
         note,
       })
-      setLastOrder(res.data)
+      const newOrder = res.data
+      // Immediately confirm the counter order (cashier already knows what was ordered)
+      await ordersAPI.updateStatus(newOrder.id, 'cooking')
+      setLastOrder(newOrder)
       setCart([])
       setCardCode('')
       setCardInfo(null)
       setNote('')
-      toast.success(`Buyurtma №${res.data.order_code} qabul qilindi!`)
+      toast.success(`Buyurtma №${newOrder.order_code} oshpazxonaga yuborildi!`)
       loadOrders()
     } catch (e) {
-      toast.error(e.response?.data?.error || "Xatolik yuz berdi")
+      toast.error(e.response?.data?.error || 'Xatolik yuz berdi')
     } finally {
       setSubmitting(false)
     }
   }
 
+  // Cashier confirms an online order → sends to kitchen
+  const confirmOrder = async (order) => {
+    setConfirming(order.id)
+    try {
+      await ordersAPI.updateStatus(order.id, 'cooking')
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cooking' } : o))
+      toast.success(`#${order.order_code} oshpazxonaga yuborildi!`, { icon: '👨‍🍳' })
+    } catch { toast.error('Xatolik yuz berdi') }
+    finally { setConfirming(null) }
+  }
+
+  const rejectOrder = async (order) => {
+    setConfirming(order.id)
+    try {
+      await ordersAPI.updateStatus(order.id, 'rejected')
+      setOrders(prev => prev.filter(o => o.id !== order.id))
+      toast(`#${order.order_code} rad etildi`, { icon: '❌' })
+    } catch { toast.error('Xatolik yuz berdi') }
+    finally { setConfirming(null) }
+  }
+
+  const tabOrderCount = orders.length
+  const onlineTab = activeTab === 'orders'
+
   return (
     <div className="cashier-page">
-      {/* Cosmic animated background */}
       <div className="background-container">
         <img className="moon" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png" alt="" />
         <div className="stars" />
@@ -197,7 +291,12 @@ export default function CashierPage() {
           </button>
           <button className={`tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
             Joriy buyurtmalar
-            {orders.length > 0 && <span className="tab-badge">{orders.length}</span>}
+            {tabOrderCount > 0 && (
+              <span className={`tab-badge ${pendingCount > 0 ? 'tab-badge-alert' : ''}`}>
+                {tabOrderCount}
+                {pendingCount > 0 && <Bell size={10} />}
+              </span>
+            )}
           </button>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={() => navigate('/kitchen')}>
@@ -336,23 +435,61 @@ export default function CashierPage() {
                 onClick={submitOrder}
                 disabled={submitting || cart.length === 0}
               >
-                {submitting ? 'Yuborilmoqda...' : "Buyurtma bering"}
+                {submitting ? 'Yuborilmoqda...' : 'Buyurtma bering'}
               </button>
             </div>
           </div>
         </div>
       ) : (
         <div className="orders-list-section">
+          <div className="orders-list-toolbar">
+            <span className="orders-list-title">
+              Joriy buyurtmalar ({orders.length})
+              {pendingCount > 0 && (
+                <span className="pending-alert">
+                  <Bell size={14} /> {pendingCount} ta tasdiqlash kutilmoqda
+                </span>
+              )}
+            </span>
+            <button className="btn btn-secondary btn-sm" onClick={loadOrders}>
+              <RefreshCw size={14} /> Yangilash
+            </button>
+          </div>
           <div className="orders-grid">
             {orders.length === 0 ? (
               <div className="empty-state">Joriy buyurtmalar yo'q</div>
             ) : (
               orders.map(order => (
-                <div key={order.id} className={`order-card glass-card status-${order.status}`}>
+                <div
+                  key={order.id}
+                  className={`order-card glass-card status-${order.status} ${order.status === 'pending' ? 'order-card-online' : ''}`}
+                >
                   <div className="order-card-header">
-                    <span className="order-number">#{order.order_code}</span>
+                    <div className="order-card-title">
+                      <span className="order-number">#{order.order_code}</span>
+                      {order.status === 'pending' && (
+                        <span className="online-badge"><Globe size={12} /> Online</span>
+                      )}
+                    </div>
                     <span className={`badge ${statusColors[order.status]}`}>{statusLabels[order.status]}</span>
                   </div>
+
+                  {(order.customer_first_name || order.customer_phone) && (
+                    <div className="order-card-customer">
+                      {order.customer_first_name && (
+                        <div><User size={12} /> {order.customer_first_name} {order.customer_last_name || ''}</div>
+                      )}
+                      {order.customer_phone && (
+                        <a href={`tel:${order.customer_phone}`}><Phone size={12} /> {order.customer_phone}</a>
+                      )}
+                      {order.delivery_type === 'delivery' ? (
+                        <div><Truck size={12} /> {order.delivery_address || 'Manzil yo\'q'}</div>
+                      ) : (
+                        <div><Store size={12} /> Olib ketadi</div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="order-card-body">
                     <span className="order-total">{order.final_price?.toLocaleString()} so'm</span>
                     {order.card_code && <span className="order-card-code"><QrCode size={12} /> {order.card_code}</span>}
@@ -361,6 +498,27 @@ export default function CashierPage() {
                   <div className="order-time">
                     {new Date(order.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
                   </div>
+
+                  {order.status === 'pending' && (
+                    <div className="order-card-actions">
+                      <button
+                        className="btn-confirm"
+                        onClick={() => confirmOrder(order)}
+                        disabled={confirming === order.id}
+                      >
+                        <ChefHat size={15} />
+                        {confirming === order.id ? 'Yuborilmoqda...' : 'Oshpazga yuborish'}
+                      </button>
+                      <button
+                        className="btn-reject"
+                        onClick={() => rejectOrder(order)}
+                        disabled={confirming === order.id}
+                      >
+                        <X size={15} />
+                        Rad etish
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -373,7 +531,7 @@ export default function CashierPage() {
           <div className="order-success-card slide-in">
             <button className="modal-close" onClick={() => setLastOrder(null)}><X size={20} /></button>
             <div className="success-icon">✅</div>
-            <h2>Buyurtma qabul qilindi!</h2>
+            <h2>Buyurtma oshpazxonaga yuborildi!</h2>
             <div className="order-code-big">#{lastOrder.order_code}</div>
             <p>Mijozga ushbu raqamni bering</p>
             <div className="order-summary">
@@ -408,28 +566,21 @@ export default function CashierPage() {
                 <Camera size={22} />
                 <h2 style={{ margin: 0, fontSize: 17 }}>QR kodni skanerlash</h2>
               </div>
-              <button
-                onClick={() => setScannerOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 6 }}
-              >
+              <button onClick={() => setScannerOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 6 }}>
                 <X size={22} />
               </button>
             </div>
 
-            {/* FILE UPLOAD — birinchi va asosiy yo'l (har doim ishlaydi) */}
             <label style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               padding: '16px', borderRadius: 10, background: 'linear-gradient(135deg, #FF6B35, #E85A24)',
               color: 'white', cursor: 'pointer', marginBottom: 16,
-              fontSize: 15, fontWeight: 700,
-              boxShadow: '0 4px 12px rgba(255,107,53,0.4)',
+              fontSize: 15, fontWeight: 700, boxShadow: '0 4px 12px rgba(255,107,53,0.4)',
             }}>
               <Camera size={20} />
               <span>📷 Rasm yuklash yoki surat olish</span>
               <input
-                type="file"
-                accept="image/*"
-                capture="environment"
+                type="file" accept="image/*" capture="environment"
                 style={{ display: 'none' }}
                 onChange={async (e) => {
                   const file = e.target.files?.[0]
@@ -441,7 +592,7 @@ export default function CashierPage() {
                     try { tmp.clear() } catch {}
                     setScannerOpen(false)
                     scanCardRef.current?.(decoded)
-                  } catch (err) {
+                  } catch {
                     toast.error("Rasmda QR topilmadi — yaqinroq surat oling")
                   }
                 }}
@@ -458,8 +609,6 @@ export default function CashierPage() {
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginBottom: 10 }}>
               Live skaner (kamera orqali)
             </div>
-
-            {/* Camera viewport — html5-qrcode'ning o'z UI komponenti */}
             <div id="qr-scanner-target" style={{
               width: '100%', minHeight: 80, background: '#0a0a0a',
               borderRadius: 10, border: '1px solid rgba(255,107,53,0.3)',

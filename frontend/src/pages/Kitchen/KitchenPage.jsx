@@ -33,10 +33,9 @@ export default function KitchenPage() {
   useEffect(() => {
     initialLoad()
     connectWS()
-    // Fast polling fallback — runs every 500 ms (real-time feel).
-    // If WS already delivered the order, the de-dupe by ID prevents double sound/toast.
-    pollRef.current = setInterval(() => pollOrders(), 500)
-    // Refresh the elapsed-time labels every 30s
+    // Polling fallback every 3s — catches orders if WS drops
+    pollRef.current = setInterval(() => pollOrders(), 3000)
+    // Refresh elapsed-time labels every 30s
     tickRef.current = setInterval(() => forceUpdate(n => n + 1), 30000)
     return () => {
       wsRef.current?.close()
@@ -46,7 +45,11 @@ export default function KitchenPage() {
     }
   }, [])
 
-  const handleNewOrder = (order) => {
+  // Kitchen only handles orders that are in 'cooking' status.
+  // Cashier confirms pending orders → they become 'cooking' → kitchen sees them.
+  const isCooking = (o) => o.status === 'cooking'
+
+  const handleNewCookingOrder = (order) => {
     if (!order || !order.id) return
     if (seenIdsRef.current.has(order.id)) return
     seenIdsRef.current.add(order.id)
@@ -65,15 +68,21 @@ export default function KitchenPage() {
       ws.onmessage = (e) => {
         let msg
         try { msg = JSON.parse(e.data) } catch { return }
-        if (msg.type === 'new_order') {
-          handleNewOrder(msg.payload)
-        }
+
         if (msg.type === 'order_status_changed') {
-          setOrders(prev => prev.filter(o => o.id !== msg.payload.id))
+          const updated = msg.payload
+          if (updated.status === 'cooking') {
+            // Order was confirmed by cashier — add to kitchen display
+            handleNewCookingOrder(updated)
+          } else {
+            // Order left cooking state (ready/served/rejected) — remove from display
+            setOrders(prev => prev.filter(o => o.id !== updated.id))
+          }
         }
+        // 'new_order' events are ignored here — orders start as 'pending' and
+        // must be confirmed by the cashier (status → 'cooking') before appearing here
       }
       ws.onclose = () => {
-        // Auto-reconnect in 2s — tunnel/Cloudflare may drop idle sockets
         if (reconnectRef.current) clearTimeout(reconnectRef.current)
         reconnectRef.current = setTimeout(connectWS, 2000)
       }
@@ -82,43 +91,27 @@ export default function KitchenPage() {
       }
       wsRef.current = ws
     } catch {
-      // If WS construction failed, retry shortly
       reconnectRef.current = setTimeout(connectWS, 2000)
     }
   }
 
-  // Polling fallback — catches orders even if WS is broken
   const pollOrders = async () => {
     try {
       const res = await ordersAPI.getAll()
-      // Kitchen handles both freshly-accepted and currently-cooking orders
-      const active = (res.data || []).filter(o => o.status === 'pending' || o.status === 'cooking')
-      // Seed seenIds with the current order set so we don't beep for everything on first run
+      const active = (res.data || []).filter(isCooking)
+      // On first run, seed seenIds so we don't beep for everything
       if (seenIdsRef.current.size === 0) {
         active.forEach(o => seenIdsRef.current.add(o.id))
         setOrders(active)
         return
       }
-      // Detect orders we haven't seen yet (new pending only — already-cooking ones don't beep)
-      const fresh = active.filter(o => o.status === 'pending' && !seenIdsRef.current.has(o.id))
-      fresh.forEach(o => handleNewOrder(o))
-      // Drop orders that are no longer pending/cooking (e.g. marked ready by another client)
+      // Detect newly cooking orders we haven't seen yet
+      const fresh = active.filter(o => !seenIdsRef.current.has(o.id))
+      fresh.forEach(o => handleNewCookingOrder(o))
+      // Drop orders that are no longer cooking (marked ready/served elsewhere)
       setOrders(prev => prev.filter(o => active.some(p => p.id === o.id)))
     } catch {}
   }
-
-  // Auto-promote the topmost pending order to "cooking" once the chef sees it
-  // (i.e. it's #1 in their queue). This makes the customer's "Tayyorlanmoqda" go active.
-  useEffect(() => {
-    if (orders.length === 0) return
-    const top = orders[orders.length - 1] // oldest = topmost in the queue
-    if (top && top.status === 'pending') {
-      ordersAPI.updateStatus(top.id, 'cooking').then(() => {
-        setOrders(prev => prev.map(o => o.id === top.id ? { ...o, status: 'cooking' } : o))
-      }).catch(() => {})
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders.length])
 
   const playSound = () => {
     try {
@@ -140,14 +133,13 @@ export default function KitchenPage() {
     setLoading(true)
     try {
       const res = await ordersAPI.getAll()
-      const active = (res.data || []).filter(o => o.status === 'pending' || o.status === 'cooking')
+      const active = (res.data || []).filter(isCooking)
       active.forEach(o => seenIdsRef.current.add(o.id))
       setOrders(active)
     } catch { toast.error('Yuklanmadi') }
     finally { setLoading(false) }
   }
 
-  // "Tayyor" — mark the order as ready (kitchen is done). Courier handles the rest.
   const markDone = async (order) => {
     setCompleting(order.id)
     try {
@@ -182,7 +174,7 @@ export default function KitchenPage() {
           {orders.length > 0 ? (
             <span className="kh-badge-new">
               <Bell size={15} />
-              {orders.length} ta yangi buyurtma
+              {orders.length} ta buyurtma
             </span>
           ) : (
             <span className="kh-badge-empty">Buyurtma yo'q</span>

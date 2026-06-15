@@ -580,6 +580,7 @@
 .order-card.status-served  { opacity: 0.5; }
 
 .order-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.order-card-body { display: flex; flex-direction: column; gap: 4px; }
 .order-number { font-size: 20px; font-weight: 800; color: #FF6B35; }
 .order-total { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.88); }
 .order-card-code { display: flex; align-items: center; gap: 4px; font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 4px; }
@@ -591,6 +592,84 @@
 .badge-orange { background: rgba(255,107,53,0.15); color: #FF8C5A; }
 .badge-green  { background: rgba(16,185,129,0.15); color: #10B981; }
 .badge-gray   { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+.badge-blue   { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.badge-red    { background: rgba(239,68,68,0.12); color: #f87171; }
+
+/* Online orders — highlighted pending state */
+.order-card-online {
+  border-color: rgba(59,130,246,0.5) !important;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.2), 0 4px 20px rgba(59,130,246,0.1);
+}
+.order-card-online:hover { box-shadow: 0 0 0 1px rgba(59,130,246,0.4), 0 8px 28px rgba(59,130,246,0.2); }
+
+.order-card-title { display: flex; align-items: center; gap: 8px; }
+.online-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 100px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+  background: rgba(59,130,246,0.18); color: #60a5fa;
+}
+
+.order-card-customer {
+  margin-bottom: 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 12px; color: rgba(255,255,255,0.55);
+}
+.order-card-customer a { color: rgba(255,255,255,0.55); text-decoration: none; }
+.order-card-customer a:hover { color: #FF6B35; }
+.order-card-customer > div,
+.order-card-customer > a { display: flex; align-items: center; gap: 5px; }
+
+.order-card-actions {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+.btn-confirm {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 10px; border-radius: 9px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700;
+  background: linear-gradient(135deg, #FF6B35, #e85a24);
+  color: white; transition: opacity 0.15s;
+}
+.btn-confirm:hover { opacity: 0.88; }
+.btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-reject {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 8px 10px; border-radius: 9px; border: 1px solid rgba(239,68,68,0.3);
+  cursor: pointer; font-size: 12px; font-weight: 600;
+  background: rgba(239,68,68,0.1); color: #f87171; transition: background 0.15s;
+}
+.btn-reject:hover { background: rgba(239,68,68,0.18); }
+.btn-reject:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Orders list toolbar */
+.orders-list-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.orders-list-title {
+  font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.6);
+  display: flex; align-items: center; gap: 10px;
+}
+.pending-alert {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(245,158,11,0.18); color: #F59E0B;
+  animation: pulse-badge 1.5s infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Tab badge for pending orders */
+.tab-badge-alert {
+  background: #F59E0B !important;
+  color: #000 !important;
+  display: inline-flex; align-items: center; gap: 3px;
+  animation: pulse-badge 1.5s infinite;
+}
 
 /* === SUCCESS MODAL === */
 .order-success-modal {
