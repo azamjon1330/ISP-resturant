@@ -1,9 +1,122 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { ordersAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { ChefHat, Bell, Home, RefreshCw, CheckCircle, Clock, MapPin, Phone, Truck, Store, User } from 'lucide-react'
+import { ChefHat, Bell, Home, RefreshCw, CheckCircle, Clock, MapPin, Phone, Truck, Store, User, Navigation2, X, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import './KitchenPage.css'
+
+/* ─── OSRM route helper ─── */
+async function fetchOSRMRoute(start, end) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
+    const res = await fetch(url)
+    const data = await res.json()
+    const route = data.routes?.[0]
+    if (!route) return null
+    return {
+      coords: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+      distance: route.distance,
+      duration: route.duration,
+    }
+  } catch { return null }
+}
+
+/* ─── Kitchen Route Map Modal ─── */
+function KitchenRouteModal({ order, onClose }) {
+  const mapElRef = useRef(null)
+  const mapRef   = useRef(null)
+  const [status, setStatus] = useState('loading') // loading | ok | error
+  const [info, setInfo]     = useState(null)
+
+  useEffect(() => {
+    if (!order?.delivery_lat || !order?.delivery_lng) { setStatus('error'); return }
+    const delivPos = [order.delivery_lat, order.delivery_lng]
+
+    const initMap = async (userPos) => {
+      const L = (await import('leaflet')).default
+      await import('leaflet/dist/leaflet.css')
+      delete L.Icon.Default.prototype._getIconUrl
+      if (!mapElRef.current || mapRef.current) return
+
+      const center = userPos || delivPos
+      const map = L.map(mapElRef.current, { zoomControl: true }).setView(center, 13)
+      mapRef.current = map
+
+      L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        subdomains: ['0','1','2','3'], maxZoom: 21, attribution: '© Google Maps',
+      }).addTo(map)
+
+      const delivIcon = L.divIcon({
+        html: `<div style="width:32px;height:32px;background:#FF6B35;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(255,107,53,0.5)"></div>`,
+        iconSize: [32,32], iconAnchor: [16,32], className: '',
+      })
+      L.marker(delivPos, { icon: delivIcon }).addTo(map).bindPopup(`<b>${order.delivery_address || 'Yetkazish manzili'}</b>`, { closeButton: false })
+
+      if (userPos) {
+        const myIcon = L.divIcon({
+          html: `<div style="width:18px;height:18px;background:#2196F3;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(33,150,243,0.55)"></div>`,
+          iconSize: [18,18], iconAnchor: [9,9], className: '',
+        })
+        L.marker(userPos, { icon: myIcon }).addTo(map).bindPopup('<b>Mening joylashuvim</b>', { closeButton: false })
+
+        const route = await fetchOSRMRoute(userPos, delivPos)
+        if (route?.coords?.length) {
+          setInfo(route)
+          L.polyline(route.coords, { color: '#FF6B35', weight: 5, opacity: 0.85, lineJoin: 'round' }).addTo(map)
+          map.fitBounds(L.latLngBounds(route.coords), { padding: [50, 50] })
+        } else {
+          map.fitBounds([userPos, delivPos], { padding: [60, 60] })
+        }
+      } else {
+        map.setView(delivPos, 15)
+      }
+
+      setStatus('ok')
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => initMap([pos.coords.latitude, pos.coords.longitude]),
+        () => initMap(null),
+        { enableHighAccuracy: true, timeout: 8000 }
+      )
+    } else {
+      initMap(null)
+    }
+
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null }
+    }
+  }, [order])
+
+  return (
+    <div className="km-overlay" onClick={onClose}>
+      <div className="km-modal" onClick={e => e.stopPropagation()}>
+        <div className="km-head">
+          <div className="km-head-info">
+            <Navigation2 size={15} />
+            <span>#{order.order_code} — {order.delivery_address || 'Yetkazish manzili'}</span>
+            {info && (
+              <span className="km-route-info">
+                {(info.distance / 1000).toFixed(1)} km · {Math.round(info.duration / 60)} daq
+              </span>
+            )}
+          </div>
+          <button className="km-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="km-map-wrap">
+          {status === 'loading' && (
+            <div className="km-loading">
+              <Loader2 size={32} className="km-spin" />
+              <span>Xarita yuklanmoqda...</span>
+            </div>
+          )}
+          <div ref={mapElRef} style={{ width: '100%', height: '100%' }} />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const fmtTime = (iso) => {
   const d = new Date(iso)
@@ -23,6 +136,7 @@ export default function KitchenPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(null)
+  const [kMapOrder, setKMapOrder] = useState(null)
   const wsRef = useRef(null)
   const reconnectRef = useRef(null)
   const pollRef = useRef(null)
@@ -158,6 +272,7 @@ export default function KitchenPage() {
 
   return (
     <div className="kitchen-page">
+      {kMapOrder && <KitchenRouteModal order={kMapOrder} onClose={() => setKMapOrder(null)} />}
       <div className="background-container">
         <img className="moon" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png" alt="" />
         <div className="stars" />
@@ -217,13 +332,12 @@ export default function KitchenPage() {
                         <Truck size={12} />
                         <span>{order.delivery_address || 'Manzil yo\'q'}</span>
                         {order.delivery_lat && order.delivery_lng && (
-                          <a
-                            href={`https://yandex.uz/maps/?ll=${order.delivery_lng},${order.delivery_lat}&z=17&pt=${order.delivery_lng},${order.delivery_lat}`}
-                            target="_blank" rel="noreferrer"
+                          <button
                             className="korder-map-link"
+                            onClick={() => setKMapOrder(order)}
                           >
-                            <MapPin size={12} /> Xaritada
-                          </a>
+                            <Navigation2 size={12} /> Yo'l
+                          </button>
                         )}
                       </div>
                     ) : order.customer_phone ? (

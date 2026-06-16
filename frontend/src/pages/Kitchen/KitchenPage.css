@@ -380,4 +380,118 @@
   color: #FFB48A !important;
   font-size: 11px;
   font-weight: 600;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+.korder-map-link:hover {
+  background: rgba(255, 107, 53, 0.4);
+}
+
+/* ─── Kitchen Route Map Modal ─── */
+.km-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.km-modal {
+  background: #1e1e2e;
+  border-radius: 18px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.km-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #FF6B35, #E85A24);
+  flex-shrink: 0;
+}
+
+.km-head-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.km-head-info span:first-of-type {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.km-route-info {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.km-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 10px;
+  transition: background 0.15s;
+}
+.km-close:hover { background: rgba(255, 255, 255, 0.35); }
+
+.km-map-wrap {
+  flex: 1;
+  min-height: 420px;
+  position: relative;
+}
+
+.km-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #1e1e2e;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  z-index: 10;
+}
+
+@keyframes km-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.km-spin { animation: km-spin 1s linear infinite; color: #FF6B35; }

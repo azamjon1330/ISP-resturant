@@ -1284,6 +1284,50 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 4px;
 }
 .lp-pickup-map { margin-bottom: 14px; }
+
+.lp-map-2btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.lp-map-gps-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 38px;
+  border: 1.5px solid var(--orange);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--orange);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lp-map-gps-btn:hover { background: rgba(255,107,53,0.09); }
+.lp-map-sel-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 38px;
+  border-radius: var(--r-sm);
+  background: rgba(255,107,53,0.09);
+  border: 1.5px solid rgba(255,107,53,0.3);
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
 .lp-pickup-label {
   font-size: 11px; font-weight: 700;
   color: var(--text2);

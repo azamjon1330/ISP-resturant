@@ -41,10 +41,13 @@ export default function MapPicker({
   isPickup = false,
   zoom = 14,
   showSearch = false,
+  userLat,
+  userLng,
 }) {
   const mapElRef    = useRef(null)
   const mapRef      = useRef(null)
   const markerRef   = useRef(null)
+  const userMkRef   = useRef(null)
   const LRef        = useRef(null)
   const [searchQ,   setSearchQ]   = useState('')
   const [suggests,  setSuggests]  = useState([])
@@ -158,6 +161,23 @@ export default function MapPicker({
       mapRef.current.panTo([lat, lng])
     }
   }, [lat, lng])
+
+  // Show/update "my location" blue dot when userLat/userLng prop changes
+  useEffect(() => {
+    if (!mapRef.current || !userLat || !userLng || !LRef.current) return
+    const L = LRef.current
+    const myIcon = L.divIcon({
+      html: `<div style="width:18px;height:18px;background:#2196F3;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(33,150,243,0.55)"></div>`,
+      iconSize: [18, 18], iconAnchor: [9, 9], className: '',
+    })
+    if (userMkRef.current) {
+      userMkRef.current.setLatLng([userLat, userLng])
+    } else {
+      userMkRef.current = L.marker([userLat, userLng], { icon: myIcon, interactive: false }).addTo(mapRef.current)
+      userMkRef.current.bindPopup('Mening joylashuvim', { closeButton: false })
+    }
+    mapRef.current.panTo([userLat, userLng])
+  }, [userLat, userLng])
 
   const doSearch = async (e) => {
     e.preventDefault()

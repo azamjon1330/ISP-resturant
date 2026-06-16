@@ -375,8 +375,8 @@ func CustomerCancelOrder(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Buyurtma topilmadi"})
 		return
 	}
-	if status != "pending" && status != "cooking" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bu buyurtmani endi bekor qilib bo'lmaydi"})
+	if status != "pending" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Buyurtma faqat 'kutilmoqda' holatida bekor qilinishi mumkin"})
 		return
 	}
 

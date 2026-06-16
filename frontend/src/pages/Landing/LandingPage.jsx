@@ -4,7 +4,7 @@ import {
   ShoppingCart, X, Plus, Minus, ChevronLeft, ChevronRight,
   User, LogOut, ClipboardList, Star, Truck, Package,
   Search, ClipboardCheck, Rocket, MapPin, Phone, Utensils,
-  CheckCircle, Loader, ChevronDown, Send, Moon, Sun, Menu,
+  CheckCircle, Loader, ChevronDown, Send, Moon, Sun, Menu, Navigation2,
   Clock,
 } from 'lucide-react'
 import MapPicker from '../../components/MapPicker'
@@ -199,6 +199,22 @@ const STATUS_KEY   = { pending: 'st_pending', cooking: 'st_cooking', ready: 'st_
 
 /* ─── Helpers ────────────────────────────────────────────────────────────────── */
 const fmt = n => Math.round(n).toLocaleString('uz-UZ') + " so'm"
+
+async function reverseGeocodeLP(lat, lng) {
+  try {
+    const res = await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}&lang=ru`)
+    const data = await res.json()
+    const p = data.features[0]?.properties
+    if (!p) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    return [
+      p.name,
+      p.street && p.housenumber ? `${p.street} ${p.housenumber}` : p.street,
+      p.city || p.town,
+    ].filter(Boolean).join(', ')
+  } catch {
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+  }
+}
 const fmtDate = iso => new Date(iso).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short', year: 'numeric' })
 const initials = name => (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
@@ -250,8 +266,9 @@ export default function LandingPage() {
   const [addrVal, setAddr]     = useState('')
   const [delivLat, setDLat]    = useState(null)
   const [delivLng, setDLng]    = useState(null)
-  const [mapOpen, setMapOpen]  = useState(false)
-  const [restSettings, setRS]  = useState({ pickup_lat: 41.2995, pickup_lng: 69.2401, pickup_address: '' })
+  const [restSettings, setRS]  = useState({ pickup_lat: 40.808673, pickup_lng: 72.327401, pickup_address: '' })
+  const [userPickupLat, setUPLat] = useState(null)
+  const [userPickupLng, setUPLng] = useState(null)
   const [noteVal, setNote]     = useState('')
   const [promoVal, setPromo]   = useState('')
   const [promoRes, setPromoR]  = useState(null)
@@ -1393,29 +1410,32 @@ export default function LandingPage() {
                   {delivType === 'delivery' && (
                     <div className="lp-field">
                       <label>{T.addr_lbl}</label>
-                      <div className="lp-addr-row">
-                        <input placeholder={T.addr_ph} value={addrVal} onChange={e => setAddr(e.target.value)} />
-                        <button className="lp-map-btn" type="button" onClick={() => setMapOpen(m => !m)} title="Выбрать на карте">
-                          <MapPin size={16} />
-                        </button>
+                      <div className="lp-map-wrap" style={{ height: 260 }}>
+                        <MapPicker
+                          lat={delivLat} lng={delivLng}
+                          onChange={({ lat, lng, address }) => {
+                            setDLat(lat); setDLng(lng)
+                            if (address) setAddr(address)
+                          }}
+                        />
                       </div>
-                      {mapOpen && (
-                        <div className="lp-map-wrap" style={{ height: 260 }}>
-                          <MapPicker
-                            lat={delivLat} lng={delivLng}
-                            showSearch
-                            onChange={({ lat, lng, address }) => {
-                              setDLat(lat); setDLng(lng)
-                              if (address) setAddr(address)
-                            }}
-                          />
-                        </div>
-                      )}
-                      {delivLat && (
-                        <p className="lp-map-coords">
-                          <MapPin size={12} /> {delivLat.toFixed(5)}, {delivLng.toFixed(5)}
-                        </p>
-                      )}
+                      <div className="lp-map-2btns">
+                        <button type="button" className="lp-map-gps-btn" onClick={() => {
+                          if (!navigator.geolocation) { showToast('GPS topilmadi', 'error'); return }
+                          navigator.geolocation.getCurrentPosition(async pos => {
+                            const { latitude: la, longitude: lo } = pos.coords
+                            const addr = await reverseGeocodeLP(la, lo)
+                            setDLat(la); setDLng(lo); setAddr(addr)
+                          }, () => showToast('GPS ruxsat berilmadi', 'error'), { enableHighAccuracy: true, timeout: 10000 })
+                        }}>
+                          <Navigation2 size={14} /> {lang === 'uz' ? 'Meni toping' : 'Найти меня'}
+                        </button>
+                        {delivLat && (
+                          <div className="lp-map-sel-info">
+                            <CheckCircle size={13} /> {addrVal || `${delivLat.toFixed(4)}, ${delivLng.toFixed(4)}`}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                   {delivType === 'pickup' && (
@@ -1426,7 +1446,22 @@ export default function LandingPage() {
                         {restSettings.pickup_address && <span style={{ fontWeight: 400, marginLeft: 6 }}>— {restSettings.pickup_address}</span>}
                       </p>
                       <div className="lp-map-wrap" style={{ height: 220 }}>
-                        <MapPicker lat={restSettings.pickup_lat} lng={restSettings.pickup_lng} readonly zoom={16} isPickup />
+                        <MapPicker
+                          lat={restSettings.pickup_lat || 40.808673}
+                          lng={restSettings.pickup_lng || 72.327401}
+                          readonly zoom={16} isPickup
+                          userLat={userPickupLat} userLng={userPickupLng}
+                        />
+                      </div>
+                      <div className="lp-map-2btns">
+                        <button type="button" className="lp-map-gps-btn" onClick={() => {
+                          if (!navigator.geolocation) { showToast('GPS topilmadi', 'error'); return }
+                          navigator.geolocation.getCurrentPosition(pos => {
+                            setUPLat(pos.coords.latitude); setUPLng(pos.coords.longitude)
+                          }, () => showToast('GPS ruxsat berilmadi', 'error'), { enableHighAccuracy: true, timeout: 10000 })
+                        }}>
+                          <Navigation2 size={14} /> {lang === 'uz' ? 'Meni toping' : 'Найти меня'}
+                        </button>
                       </div>
                     </div>
                   )}

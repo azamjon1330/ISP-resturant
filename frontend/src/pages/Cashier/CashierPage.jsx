@@ -490,6 +490,18 @@ export default function CashierPage() {
                     </div>
                   )}
 
+                  {order.items?.length > 0 && (
+                    <div className="order-items-list">
+                      {order.items.map((it, i) => (
+                        <div key={i} className="order-item-row">
+                          <span className="order-item-qty">×{it.quantity}</span>
+                          <span className="order-item-name">{it.item_name}</span>
+                          <span className="order-item-price">{((it.unit_price || 0) * it.quantity).toLocaleString()} so'm</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="order-card-body">
                     <span className="order-total">{order.final_price?.toLocaleString()} so'm</span>
                     {order.card_code && <span className="order-card-code"><QrCode size={12} /> {order.card_code}</span>}
