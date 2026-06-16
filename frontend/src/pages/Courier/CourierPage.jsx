@@ -87,7 +87,25 @@ async function initLeafletMap(containerEl, courierPos, orderPos) {
     map.setView(orderPos, 15)
   }
 
-  return { map, markers, L }
+  return { map, markers, L, routeLine: null }
+}
+
+/* ─── OSRM driving route between courier and delivery point ─── */
+async function fetchOSRMRoute(start, end) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
+    const res = await fetch(url)
+    const data = await res.json()
+    const route = data.routes?.[0]
+    if (!route) return null
+    return {
+      coords: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+      distance: route.distance,
+      duration: route.duration,
+    }
+  } catch {
+    return null
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -97,11 +115,6 @@ function OrderCard({ order, onAccept, onComplete, accepting, completing, onSelec
   const [expanded, setExpanded] = useState(false)
   const isActive = order.status === 'on_way'
   const isDone   = order.status === 'served'
-
-  const yandexUrl =
-    order.delivery_lat && order.delivery_lng
-      ? `https://yandex.uz/maps/?ll=${order.delivery_lng},${order.delivery_lat}&z=17&pt=${order.delivery_lng},${order.delivery_lat}`
-      : null
 
   return (
     <div
@@ -153,16 +166,14 @@ function OrderCard({ order, onAccept, onComplete, accepting, completing, onSelec
         <div className="cr-oc-addr">
           <MapPin size={13} />
           <span>{order.delivery_address}</span>
-          {yandexUrl && (
-            <a
-              href={yandexUrl}
-              target="_blank"
-              rel="noreferrer"
+          {order.delivery_lat && order.delivery_lng && (
+            <button
+              type="button"
               className="cr-oc-map-link"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onSelect?.(order) }}
             >
-              <Navigation2 size={11} /> Xarita
-            </a>
+              <Navigation2 size={11} /> Yo'l
+            </button>
           )}
         </div>
       )}
@@ -270,8 +281,9 @@ export default function CourierPage() {
 
   /* ─ Map ─ */
   const mapContainerRef = useRef(null)
-  const leafletRef      = useRef(null) // { map, markers, L }
-  const [showRoute, setShowRoute]   = useState(false)
+  const leafletRef      = useRef(null) // { map, markers, L, routeLine }
+  const [routeInfo,    setRouteInfo]    = useState(null) // { coords, distance, duration }
+  const [routeLoading, setRouteLoading] = useState(false)
 
   /* ─ WS ─ */
   const wsRef     = useRef(null)
@@ -336,12 +348,17 @@ export default function CourierPage() {
 
   /* ─ Load orders ─ */
   const loadOrders = useCallback(async () => {
-    if (!localStorage.getItem('eco_courier_token')) return
+    if (!localStorage.getItem('eco_courier_token')) return { available: [], mine: [] }
     try {
       const [av, mn] = await Promise.all([courierAPI.available(), courierAPI.mine()])
-      setAvailable(av.data || [])
-      setMine(mn.data || [])
-    } catch {}
+      const availableData = av.data || []
+      const mineData = mn.data || []
+      setAvailable(availableData)
+      setMine(mineData)
+      return { available: availableData, mine: mineData }
+    } catch {
+      return { available: [], mine: [] }
+    }
   }, [])
 
   useEffect(() => {
@@ -400,14 +417,30 @@ export default function CourierPage() {
     courierAPI.updateLocation(lat, lng).catch(() => {})
   }, [])
 
+  const geoErrorToast = useCallback((err) => {
+    if (err.code === 1) {
+      toast.error("Joylashuvga ruxsat berilmadi. Brauzer sozlamalaridan ruxsat bering", { duration: 6000 })
+    } else if (err.code === 2) {
+      toast.error("Joylashuv aniqlanmadi (GPS signal yo'q)")
+    } else {
+      toast.error("Joylashuvni aniqlash vaqti tugadi, qaytadan urinib ko'ring")
+    }
+  }, [])
+
   const startLocation = useCallback(() => {
     if (!navigator.geolocation) {
       toast.error("Geolokatsiya qo'llab-quvvatlanmaydi")
+      setOnline(false)
+      return
+    }
+    if (!window.isSecureContext) {
+      toast.error("Joylashuv uchun xavfsiz ulanish (HTTPS) kerak. Saytni https:// orqali oching", { duration: 8000 })
+      setOnline(false)
       return
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => pushLocation(pos.coords.latitude, pos.coords.longitude),
-      () => toast.error("Joylashuvni aniqlab bo'lmadi"),
+      (err) => { geoErrorToast(err); setOnline(false) },
       { enableHighAccuracy: true, timeout: 10000 }
     )
     locationInterval.current = setInterval(() => {
@@ -417,7 +450,7 @@ export default function CourierPage() {
         { enableHighAccuracy: true, timeout: 8000 }
       )
     }, 20000)
-  }, [pushLocation])
+  }, [pushLocation, geoErrorToast])
 
   const stopLocation = useCallback(() => {
     clearInterval(locationInterval.current)
@@ -433,6 +466,34 @@ export default function CourierPage() {
 
   useEffect(() => () => stopLocation(), [stopLocation])
 
+  /* ─ Fetch OSRM route whenever courier position or selected order changes ─ */
+  useEffect(() => {
+    const orderPos =
+      selectedOrder?.delivery_lat && selectedOrder?.delivery_lng
+        ? [selectedOrder.delivery_lat, selectedOrder.delivery_lng]
+        : null
+    if (!courierPos || !orderPos) {
+      setRouteInfo(null)
+      return
+    }
+    let active = true
+    setRouteLoading(true)
+    fetchOSRMRoute(courierPos, orderPos).then((info) => {
+      if (active) {
+        setRouteInfo(info)
+        setRouteLoading(false)
+      }
+    })
+    return () => { active = false }
+  }, [selectedOrder, courierPos])
+
+  /* ─ Auto-select the active delivery so its route draws without a click ─ */
+  useEffect(() => {
+    if (selectedOrder) return
+    const firstActive = mine.find((o) => o.status === 'on_way')
+    if (firstActive) setSelected(firstActive)
+  }, [mine, selectedOrder])
+
   /* ─ Map init / update ─ */
   useEffect(() => {
     if (!courier) return
@@ -443,9 +504,7 @@ export default function CourierPage() {
         ? [selectedOrder.delivery_lat, selectedOrder.delivery_lng]
         : null
 
-    if (leafletRef.current) {
-      const { map, markers, L } = leafletRef.current
-
+    const applyState = ({ map, markers, L }) => {
       if (courierPos) {
         if (markers.courier) {
           markers.courier.setLatLng(courierPos)
@@ -468,24 +527,49 @@ export default function CourierPage() {
           })
           markers.delivery = L.marker(orderPos, { icon }).addTo(map)
         }
+      } else if (markers.delivery) {
+        markers.delivery.remove()
+        markers.delivery = null
       }
 
-      if (courierPos && orderPos) {
-        map.fitBounds([courierPos, orderPos], { padding: [60, 60] })
-      } else if (courierPos) {
-        map.setView(courierPos, 15)
-      } else if (orderPos) {
-        map.setView(orderPos, 15)
+      // OSRM route polyline
+      if (routeInfo?.coords?.length) {
+        if (leafletRef.current.routeLine) {
+          leafletRef.current.routeLine.setLatLngs(routeInfo.coords)
+        } else {
+          leafletRef.current.routeLine = L.polyline(routeInfo.coords, {
+            color: '#FF6B35', weight: 5, opacity: 0.85, lineJoin: 'round',
+          }).addTo(map)
+        }
+        map.fitBounds(L.latLngBounds(routeInfo.coords), { padding: [70, 70] })
+      } else {
+        if (leafletRef.current.routeLine) {
+          leafletRef.current.routeLine.remove()
+          leafletRef.current.routeLine = null
+        }
+        if (courierPos && orderPos) {
+          map.fitBounds([courierPos, orderPos], { padding: [60, 60] })
+        } else if (courierPos) {
+          map.setView(courierPos, 15)
+        } else if (orderPos) {
+          map.setView(orderPos, 15)
+        }
       }
+    }
 
+    if (leafletRef.current) {
+      applyState(leafletRef.current)
       return
     }
 
     // First init
     initLeafletMap(mapContainerRef.current, courierPos, orderPos)
-      .then((result) => { leafletRef.current = result })
+      .then((result) => {
+        leafletRef.current = result
+        applyState(result)
+      })
       .catch(() => {})
-  }, [courier, courierPos, selectedOrder])
+  }, [courier, courierPos, selectedOrder, routeInfo])
 
   // Cleanup map on unmount
   useEffect(() => () => {
@@ -502,7 +586,9 @@ export default function CourierPage() {
       await courierAPI.accept(id)
       toast.success('Buyurtma qabul qilindi!')
       setTab('active')
-      await loadOrders()
+      const { mine: freshMine } = await loadOrders()
+      const accepted = freshMine.find((o) => o.id === id)
+      if (accepted) setSelected(accepted)
     } catch {
       toast.error('Xatolik yuz berdi')
     }
@@ -545,11 +631,6 @@ export default function CourierPage() {
     tab === 'available' ? available
     : tab === 'active'  ? activeOrders
     : doneOrders
-
-  const routeUrl =
-    selectedOrder?.status === 'on_way' && courierPos && selectedOrder.delivery_lat
-      ? `https://maps.google.com/maps?saddr=${courierPos[0]},${courierPos[1]}&daddr=${selectedOrder.delivery_lat},${selectedOrder.delivery_lng}&dirflg=d&output=embed`
-      : null
 
   /* ═══════════ LOGIN PAGE ═══════════ */
   if (!courier) {
@@ -780,10 +861,7 @@ export default function CourierPage() {
                   accepting={accepting}
                   completing={completing}
                   selected={selectedOrder?.id === order.id}
-                  onSelect={(o) => {
-                    setSelected((prev) => (prev?.id === o.id ? null : o))
-                    setShowRoute(false)
-                  }}
+                  onSelect={(o) => setSelected((prev) => (prev?.id === o.id ? null : o))}
                 />
               ))
             )}
@@ -802,28 +880,22 @@ export default function CourierPage() {
                 : 'Xarita'
               }
             </div>
-            {selectedOrder?.status === 'on_way' && courierPos && selectedOrder.delivery_lat && (
-              <button
-                className={`cr-route-toggle${showRoute ? ' active' : ''}`}
-                onClick={() => setShowRoute((x) => !x)}
-              >
-                <Navigation2 size={14} /> {showRoute ? 'Xaritaga' : 'Marshrut'}
-              </button>
+            {routeLoading && (
+              <div className="cr-route-info">
+                <Loader2 size={13} className="cr-spin" /> Yo'l hisoblanmoqda...
+              </div>
+            )}
+            {!routeLoading && routeInfo && (
+              <div className="cr-route-info">
+                <Navigation2 size={13} />
+                {(routeInfo.distance / 1000).toFixed(1)} km · {Math.round(routeInfo.duration / 60)} daq
+              </div>
             )}
           </div>
 
-          {/* Map / Route */}
+          {/* Map */}
           <div className="cr-map-area">
-            {showRoute && routeUrl ? (
-              <iframe
-                src={routeUrl}
-                className="cr-route-iframe"
-                allowFullScreen
-                loading="lazy"
-              />
-            ) : (
-              <div ref={mapContainerRef} className="cr-leaflet-map" />
-            )}
+            <div ref={mapContainerRef} className="cr-leaflet-map" />
           </div>
 
           {/* Legend */}
