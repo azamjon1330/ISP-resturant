@@ -21,6 +21,19 @@ const reviewsAPI = {
       body: JSON.stringify(data),
     }).then(r => r.json().then(d => ({ ok: r.ok, data: d })))
   },
+  getMine: () => {
+    const token = localStorage.getItem('eco_customer_token')
+    return fetch('/api/customer/reviews', {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => r.json())
+  },
+  deleteMine: (id) => {
+    const token = localStorage.getItem('eco_customer_token')
+    return fetch(`/api/customer/reviews/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => r.json())
+  },
 }
 
 /* ─── Translations ────────────────────────────────────────────────────────────── */
@@ -53,6 +66,8 @@ const LANG = {
     rv_empty: "Hali fikrlar yo'q. Birinchi bo'lib fikr qoldiring!",
     footer_desc: "O'zbek milliy oshxonasining eng sara ta'mi. Har kuni yangi, har kuni mazali.",
     footer_pages: 'Sahifalar', footer_contact: 'Aloqa',
+    my_reviews: 'Mening sharhlarim', rv_delete: "O'chirish", rv_no_reviews: "Siz hali sharh qoldirmagansingiz",
+    rv_load_more: "Ko'proq ko'rsatish", rv_all_shown: "Barcha sharhlar ko'rsatildi",
     staff: 'Xodimlar paneli', privacy: 'Maxfiylik', terms: 'Shartlar',
     cart_ttl: 'Savat', cart_empty: "Savat bo'sh", cart_empty_hint: "Menyudan taom qo'shing",
     cart_total: 'Jami', cart_btn: 'Buyurtma berish',
@@ -126,6 +141,8 @@ const LANG = {
     rv_empty: 'Пока отзывов нет. Будьте первым!',
     footer_desc: 'Лучшие вкусы узбекской национальной кухни. Каждый день свежее.',
     footer_pages: 'Страницы', footer_contact: 'Контакты',
+    my_reviews: 'Мои отзывы', rv_delete: 'Удалить', rv_no_reviews: 'Вы ещё не оставляли отзывов',
+    rv_load_more: 'Показать ещё', rv_all_shown: 'Все отзывы показаны',
     staff: 'Панель сотрудников', privacy: 'Конфиденциальность', terms: 'Условия',
     cart_ttl: 'Корзина', cart_empty: 'Корзина пуста', cart_empty_hint: 'Добавьте блюда из меню',
     cart_total: 'Итого', cart_btn: 'Оформить заказ',
@@ -215,7 +232,13 @@ async function reverseGeocodeLP(lat, lng) {
     return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
   }
 }
-const fmtDate = iso => new Date(iso).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short', year: 'numeric' })
+const fmtDate = iso => {
+  const d = new Date(iso)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yy = d.getFullYear()
+  return `${dd}.${mm}.${yy}`
+}
 const initials = name => (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
 let toastId = 0
@@ -283,7 +306,15 @@ export default function LandingPage() {
   const [rvRating, setRvR]     = useState(0)
   const [rvComment, setRvC]    = useState('')
   const [rvSending, setRvS]    = useState(false)
-  const [reviewedCodes, setRC] = useState(new Set())
+  const [reviewedCodes, setRC] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('eco_reviewed_codes') || '[]')) } catch { return new Set() }
+  })
+  const [rvVisible, setRvVisible] = useState(10)
+  // ── My Reviews panel
+  const [myReviewsOpen, setMRO]  = useState(false)
+  const [myReviews, setMRvs]     = useState([])
+  const [myRvLoading, setMRL]    = useState(false)
+  const [deletingRvId, setDelRv] = useState(null)
 
   // ── Header scroll
   const [scrolled, setScrolled] = useState(false)
@@ -596,13 +627,51 @@ export default function LandingPage() {
     setRvS(false)
     if (res.ok) {
       showToast(T.rv_thanks, 'success')
-      setRC(prev => new Set([...prev, reviewOrder.order_code]))
+      setRC(prev => {
+        const next = new Set([...prev, reviewOrder.order_code])
+        localStorage.setItem('eco_reviewed_codes', JSON.stringify([...next]))
+        return next
+      })
       localStorage.removeItem('eco_pending_review')
       setRvO(false); setRvR(0); setRvC('')
-      setRvs(prev => [res.data, ...prev])
+      // Keep max 30 in display, newest first
+      setRvs(prev => [res.data, ...prev].slice(0, 30))
+      setRvVisible(v => Math.min(v + 1, 30))
     } else {
       showToast(res.data?.error || 'Xatolik', 'error')
     }
+  }
+
+  // ─── My Reviews ──────────────────────────────────────────────────────────────
+  const openMyReviews = async () => {
+    setMRO(true)
+    setMRL(true)
+    try {
+      const data = await reviewsAPI.getMine()
+      setMRvs(Array.isArray(data) ? data : [])
+    } catch { setMRvs([]) }
+    finally { setMRL(false) }
+  }
+
+  const deleteMyReview = async (id, orderCode) => {
+    setDelRv(id)
+    try {
+      await reviewsAPI.deleteMine(id)
+      setMRvs(prev => prev.filter(r => r.id !== id))
+      // Remove from public reviews list too
+      setRvs(prev => prev.filter(r => r.id !== id))
+      // Remove from reviewed codes if we have the order code
+      if (orderCode) {
+        setRC(prev => {
+          const next = new Set(prev)
+          next.delete(orderCode)
+          localStorage.setItem('eco_reviewed_codes', JSON.stringify([...next]))
+          return next
+        })
+      }
+      showToast(lang === 'uz' ? "Sharh o'chirildi" : 'Отзыв удалён', 'info')
+    } catch { showToast('Xatolik', 'error') }
+    finally { setDelRv(null) }
   }
 
   // ─── Category list ────────────────────────────────────────────────────────────
@@ -665,6 +734,9 @@ export default function LandingPage() {
                   <div className="lp-drop">
                     <button onClick={() => { setDrop(false); openOrders() }}>
                       <ClipboardList size={15} /> {T.orders_btn}
+                    </button>
+                    <button onClick={() => { setDrop(false); openMyReviews() }}>
+                      <Star size={15} /> {T.my_reviews}
                     </button>
                     <div className="lp-drop-sep" />
                     {/* Theme switcher — Day / Night */}
@@ -867,38 +939,14 @@ export default function LandingPage() {
           <div className="lp-how-grid">
             {/* Step 1 – Browse menu & add to cart */}
             <div className="lp-how-card lp-reveal">
-              <div className="lp-how-img-wrap lp-how-bg1">
-                <svg viewBox="0 0 280 180" className="lp-how-svg" xmlns="http://www.w3.org/2000/svg">
-                  {/* Phone */}
-                  <rect x="88" y="14" width="78" height="140" rx="14" fill="#1a1a35" stroke="rgba(255,107,53,0.6)" strokeWidth="2"/>
-                  <rect x="94" y="26" width="66" height="110" rx="6" fill="#0f0f28"/>
-                  <circle cx="127" cy="20" r="3" fill="rgba(255,107,53,0.5)"/>
-                  {/* Menu card 1 */}
-                  <rect x="98" y="32" width="58" height="30" rx="6" fill="#2a2a50"/>
-                  <rect x="98" y="32" width="22" height="30" rx="6" fill="rgba(255,107,53,0.25)"/>
-                  <circle cx="109" cy="47" r="7" fill="#FF6B35" opacity="0.8"/>
-                  <rect x="124" y="38" width="28" height="4" rx="2" fill="rgba(255,255,255,0.5)"/>
-                  <rect x="124" y="46" width="18" height="3" rx="1.5" fill="rgba(255,255,255,0.25)"/>
-                  <rect x="124" y="53" width="22" height="3" rx="1.5" fill="rgba(255,107,53,0.6)"/>
-                  {/* Menu card 2 */}
-                  <rect x="98" y="67" width="58" height="30" rx="6" fill="#2a2a50"/>
-                  <rect x="98" y="67" width="22" height="30" rx="6" fill="rgba(245,158,11,0.2)"/>
-                  <circle cx="109" cy="82" r="7" fill="#f59e0b" opacity="0.8"/>
-                  <rect x="124" y="73" width="28" height="4" rx="2" fill="rgba(255,255,255,0.5)"/>
-                  <rect x="124" y="81" width="18" height="3" rx="1.5" fill="rgba(255,255,255,0.25)"/>
-                  <rect x="124" y="88" width="22" height="3" rx="1.5" fill="rgba(245,158,11,0.6)"/>
-                  {/* Add to cart button */}
-                  <rect x="98" y="105" width="58" height="26" rx="8" fill="#FF6B35"/>
-                  <text x="127" y="122" textAnchor="middle" fill="white" fontSize="11" fontWeight="700">+ Cart</text>
-                  {/* Cart badge floating */}
-                  <circle cx="170" cy="30" r="16" fill="#FF6B35"/>
-                  <text x="170" y="35" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">2</text>
-                  <path d="M162 24 L165 36 M165 36 L178 36" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                  {/* Sparkles */}
-                  <circle cx="65" cy="50" r="4" fill="rgba(255,107,53,0.35)"/>
-                  <circle cx="200" cy="110" r="5" fill="rgba(255,107,53,0.25)"/>
-                  <circle cx="72" cy="120" r="3" fill="rgba(245,158,11,0.3)"/>
-                </svg>
+              <div className="lp-how-img-wrap lp-how-photo-wrap">
+                <img
+                  src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=85&fit=crop"
+                  alt="Menyudan tanlash"
+                  className="lp-how-photo"
+                  loading="lazy"
+                />
+                <div className="lp-how-photo-overlay" />
                 <span className="lp-how-n">01</span>
               </div>
               <div className="lp-how-body">
@@ -910,36 +958,14 @@ export default function LandingPage() {
 
             {/* Step 2 – Enter address & confirm */}
             <div className="lp-how-card lp-reveal" style={{ transitionDelay: '100ms' }}>
-              <div className="lp-how-img-wrap lp-how-bg2">
-                <svg viewBox="0 0 280 180" className="lp-how-svg" xmlns="http://www.w3.org/2000/svg">
-                  {/* Form card */}
-                  <rect x="50" y="20" width="150" height="130" rx="12" fill="#1a1a35" stroke="rgba(59,130,246,0.5)" strokeWidth="1.5"/>
-                  {/* Header bar */}
-                  <rect x="50" y="20" width="150" height="28" rx="12" fill="rgba(59,130,246,0.2)"/>
-                  <rect x="50" y="36" width="150" height="12" fill="rgba(59,130,246,0.2)"/>
-                  <text x="125" y="38" textAnchor="middle" fill="rgba(255,255,255,0.8)" fontSize="10" fontWeight="600">Manzil / Адрес</text>
-                  {/* Fields */}
-                  <rect x="62" y="56" width="126" height="16" rx="5" fill="#2a2a50"/>
-                  <text x="70" y="68" fill="rgba(255,255,255,0.4)" fontSize="8">Ko'cha, uy...</text>
-                  <rect x="62" y="78" width="126" height="16" rx="5" fill="#2a2a50"/>
-                  <text x="70" y="90" fill="rgba(255,255,255,0.4)" fontSize="8">Telefon raqami</text>
-                  {/* Map mini */}
-                  <rect x="62" y="100" width="88" height="36" rx="5" fill="#2a2a50"/>
-                  <rect x="62" y="100" width="88" height="36" rx="5" fill="rgba(16,185,129,0.08)"/>
-                  <path d="M80 118 Q95 106 106 118 Q95 130 80 118Z" fill="rgba(16,185,129,0.2)" stroke="rgba(16,185,129,0.5)" strokeWidth="1"/>
-                  <circle cx="95" cy="118" r="4" fill="#10b981"/>
-                  <line x1="95" y1="110" x2="95" y2="114" stroke="#10b981" strokeWidth="2"/>
-                  {/* Confirm button */}
-                  <rect x="155" y="100" width="33" height="36" rx="5" fill="#3b82f6"/>
-                  <text x="171.5" y="122" textAnchor="middle" fill="white" fontSize="8" fontWeight="700">OK ✓</text>
-                  {/* Pin icon */}
-                  <circle cx="220" cy="55" r="20" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.3)" strokeWidth="1"/>
-                  <path d="M220 44 C215 44 211 48 211 53 C211 60 220 68 220 68 C220 68 229 60 229 53 C229 48 225 44 220 44Z" fill="#3b82f6"/>
-                  <circle cx="220" cy="53" r="3" fill="white"/>
-                  {/* Dots */}
-                  <circle cx="42" cy="70" r="5" fill="rgba(59,130,246,0.3)"/>
-                  <circle cx="245" cy="130" r="4" fill="rgba(59,130,246,0.2)"/>
-                </svg>
+              <div className="lp-how-img-wrap lp-how-photo-wrap">
+                <img
+                  src="https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=600&q=85&fit=crop"
+                  alt="Buyurtma berish"
+                  className="lp-how-photo"
+                  loading="lazy"
+                />
+                <div className="lp-how-photo-overlay" />
                 <span className="lp-how-n">02</span>
               </div>
               <div className="lp-how-body">
@@ -951,37 +977,14 @@ export default function LandingPage() {
 
             {/* Step 3 – Courier delivery */}
             <div className="lp-how-card lp-reveal" style={{ transitionDelay: '200ms' }}>
-              <div className="lp-how-img-wrap lp-how-bg3">
-                <svg viewBox="0 0 280 180" className="lp-how-svg" xmlns="http://www.w3.org/2000/svg">
-                  {/* Door / house */}
-                  <rect x="165" y="40" width="70" height="110" rx="4" fill="#1a1a35" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5"/>
-                  <rect x="178" y="65" width="44" height="85" rx="3" fill="#10b981" opacity="0.15"/>
-                  <rect x="178" y="65" width="44" height="85" rx="3" stroke="rgba(16,185,129,0.5)" strokeWidth="1" fill="none"/>
-                  <circle cx="186" cy="108" r="3" fill="rgba(16,185,129,0.7)"/>
-                  {/* Roof triangle */}
-                  <polygon points="160,42 200,16 240,42" fill="#1e1e40" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5"/>
-                  {/* Courier figure */}
-                  <circle cx="108" cy="62" r="14" fill="#FF6B35" opacity="0.9"/>
-                  <text x="108" y="67" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">:)</text>
-                  {/* Body */}
-                  <rect x="96" y="78" width="24" height="36" rx="8" fill="#2a2a50" stroke="rgba(255,107,53,0.5)" strokeWidth="1.5"/>
-                  {/* Delivery bag */}
-                  <rect x="122" y="82" width="34" height="30" rx="7" fill="#FF6B35"/>
-                  <rect x="122" y="82" width="34" height="30" rx="7" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
-                  <path d="M130 82 Q139 74 148 82" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-                  <text x="139" y="101" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">🍱</text>
-                  {/* Legs */}
-                  <rect x="99" y="112" width="8" height="26" rx="4" fill="#2a2a50"/>
-                  <rect x="111" y="112" width="8" height="26" rx="4" fill="#2a2a50"/>
-                  {/* Motion lines */}
-                  <line x1="55" y1="100" x2="75" y2="100" stroke="rgba(16,185,129,0.4)" strokeWidth="2" strokeDasharray="4 3"/>
-                  <line x1="50" y1="108" x2="72" y2="108" stroke="rgba(16,185,129,0.3)" strokeWidth="1.5" strokeDasharray="4 3"/>
-                  <line x1="55" y1="116" x2="70" y2="116" stroke="rgba(16,185,129,0.2)" strokeWidth="1" strokeDasharray="4 3"/>
-                  {/* Stars */}
-                  <text x="42" y="62" fill="rgba(245,158,11,0.8)" fontSize="14">★</text>
-                  <text x="33" y="78" fill="rgba(245,158,11,0.5)" fontSize="10">★</text>
-                  <text x="48" y="48" fill="rgba(245,158,11,0.4)" fontSize="9">★</text>
-                </svg>
+              <div className="lp-how-img-wrap lp-how-photo-wrap">
+                <img
+                  src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&q=85&fit=crop"
+                  alt="Yetkazib olish"
+                  className="lp-how-photo"
+                  loading="lazy"
+                />
+                <div className="lp-how-photo-overlay" />
                 <span className="lp-how-n">03</span>
               </div>
               <div className="lp-how-body">
@@ -1018,33 +1021,48 @@ export default function LandingPage() {
           {reviews.length === 0 ? (
             <p className="lp-reveal lp-empty-msg">{T.rv_empty}</p>
           ) : (
-            <div className="lp-rv-grid">
-              {reviews.map((rv, i) => (
-                <div key={rv.id} className="lp-rv-card lp-reveal" style={{ transitionDelay: `${(i % 3) * 80}ms` }}>
-                  <div className="lp-rv-card-top">
-                    <div className="lp-rv-stars">
-                      {[1,2,3,4,5].map(s => (
-                        <Star key={s} size={16}
-                          fill={s <= rv.rating ? '#D4A853' : 'none'}
-                          color={s <= rv.rating ? '#D4A853' : 'var(--text3)'}
-                        />
-                      ))}
+            <>
+              <div className="lp-rv-grid">
+                {reviews.slice(0, rvVisible).map((rv, i) => (
+                  <div key={rv.id} className="lp-rv-card lp-reveal" style={{ transitionDelay: `${(i % 3) * 80}ms` }}>
+                    <div className="lp-rv-card-top">
+                      <div className="lp-rv-stars">
+                        {[1,2,3,4,5].map(s => (
+                          <Star key={s} size={16}
+                            fill={s <= rv.rating ? '#D4A853' : 'none'}
+                            color={s <= rv.rating ? '#D4A853' : 'var(--text3)'}
+                          />
+                        ))}
+                      </div>
+                      <span className="lp-rv-verified">
+                        <CheckCircle size={12} /> {lang === 'uz' ? 'Tasdiqlangan' : 'Подтверждён'}
+                      </span>
                     </div>
-                    <span className="lp-rv-verified">
-                      <CheckCircle size={12} /> {lang === 'uz' ? 'Tasdiqlangan' : 'Подтверждён'}
-                    </span>
-                  </div>
-                  <p className="lp-rv-comment">{rv.comment || '—'}</p>
-                  <div className="lp-rv-author">
-                    <div className="lp-rv-av">{initials(rv.customer_name)}</div>
-                    <div>
-                      <p className="lp-rv-name">{rv.customer_name || (lang === 'uz' ? 'Mijoz' : 'Клиент')}</p>
-                      <p className="lp-rv-date">{fmtDate(rv.created_at)}</p>
+                    <p className="lp-rv-comment">{rv.comment || '—'}</p>
+                    <div className="lp-rv-author">
+                      <div className="lp-rv-av">{initials(rv.customer_name)}</div>
+                      <div>
+                        <p className="lp-rv-name">{rv.customer_name || (lang === 'uz' ? 'Mijoz' : 'Клиент')}</p>
+                        <p className="lp-rv-date">{fmtDate(rv.created_at)}</p>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+              {rvVisible < reviews.length && (
+                <div className="lp-rv-more-wrap">
+                  <button
+                    className="lp-rv-load-more"
+                    onClick={() => setRvVisible(v => Math.min(v + 10, 30))}
+                  >
+                    {T.rv_load_more}
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+              {rvVisible >= reviews.length && reviews.length > 10 && (
+                <p className="lp-rv-all-shown">{T.rv_all_shown}</p>
+              )}
+            </>
           )}
 
           <div className="lp-rv-cta lp-reveal">
@@ -1545,6 +1563,65 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── MY REVIEWS DRAWER ───────────────────────────────────────────────── */}
+      {myReviewsOpen && (
+        <>
+          <div className="lp-overlay" onClick={() => setMRO(false)} />
+          <aside className="lp-cart-drawer">
+            <div className="lp-drawer-hd">
+              <h3><Star size={18} /> {T.my_reviews}</h3>
+              <button className="lp-close-btn" onClick={() => setMRO(false)}><X size={16} /></button>
+            </div>
+            <div className="lp-drawer-body">
+              {myRvLoading ? (
+                <div className="lp-empty-state">
+                  <Loader size={32} className="lp-spin" style={{ borderTopColor: 'var(--orange)' }} />
+                </div>
+              ) : myReviews.length === 0 ? (
+                <div className="lp-empty-state">
+                  <div className="lp-empty-icon"><Star size={48} strokeWidth={1} /></div>
+                  <p>{T.rv_no_reviews}</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {myReviews.map(rv => (
+                    <div key={rv.id} className="lp-my-rv-card">
+                      <div className="lp-my-rv-top">
+                        <div className="lp-rv-stars">
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} size={13}
+                              fill={s <= rv.rating ? '#D4A853' : 'none'}
+                              color={s <= rv.rating ? '#D4A853' : 'var(--text3)'}
+                            />
+                          ))}
+                        </div>
+                        <span className="lp-my-rv-date">{fmtDate(rv.created_at)}</span>
+                      </div>
+                      {rv.order_code && (
+                        <p className="lp-my-rv-order">#{rv.order_code}</p>
+                      )}
+                      {rv.comment && (
+                        <p className="lp-my-rv-comment">{rv.comment}</p>
+                      )}
+                      <button
+                        className="lp-my-rv-del"
+                        onClick={() => deleteMyReview(rv.id, rv.order_code)}
+                        disabled={deletingRvId === rv.id}
+                      >
+                        {deletingRvId === rv.id
+                          ? <Loader size={13} className="lp-spin" />
+                          : <><X size={12} /> {T.rv_delete}</>
+                        }
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        </>
       )}
 
       {/* ─── TOASTS ───────────────────────────────────────────────────────────── */}

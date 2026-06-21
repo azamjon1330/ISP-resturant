@@ -36,6 +36,7 @@ func GetReviews(c *gin.Context) {
 }
 
 // CreateReview — authenticated customer submits a review for a completed order.
+// Auto-deletes the oldest review when total exceeds 30.
 func CreateReview(c *gin.Context) {
 	customerID := c.GetInt("customer_id")
 	code := strings.ToUpper(strings.TrimSpace(c.Param("code")))
@@ -96,5 +97,101 @@ func CreateReview(c *gin.Context) {
 		return
 	}
 
+	// Auto-delete oldest review when total exceeds 30
+	var total int
+	database.DB.QueryRow(`SELECT COUNT(*) FROM reviews`).Scan(&total)
+	if total > 30 {
+		database.DB.Exec(`DELETE FROM reviews WHERE id = (SELECT id FROM reviews ORDER BY created_at ASC LIMIT 1)`)
+	}
+
 	c.JSON(http.StatusCreated, review)
+}
+
+// GetMyReviews — returns all reviews written by the authenticated customer.
+func GetMyReviews(c *gin.Context) {
+	customerID := c.GetInt("customer_id")
+	rows, err := database.DB.Query(
+		`SELECT id, COALESCE(order_id,0), COALESCE(order_code,''),
+		        COALESCE(customer_id,0), customer_name, rating, COALESCE(comment,''), created_at
+		 FROM reviews WHERE customer_id=$1 ORDER BY created_at DESC`,
+		customerID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var out []models.Review
+	for rows.Next() {
+		var r models.Review
+		rows.Scan(&r.ID, &r.OrderID, &r.OrderCode, &r.CustomerID, &r.CustomerName, &r.Rating, &r.Comment, &r.CreatedAt)
+		out = append(out, r)
+	}
+	if out == nil {
+		out = []models.Review{}
+	}
+	c.JSON(http.StatusOK, out)
+}
+
+// DeleteMyReview — customer deletes their own review.
+func DeleteMyReview(c *gin.Context) {
+	customerID := c.GetInt("customer_id")
+	id := c.Param("id")
+
+	result, err := database.DB.Exec(
+		`DELETE FROM reviews WHERE id=$1 AND customer_id=$2`, id, customerID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Review not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// AdminGetReviews — admin views all reviews.
+func AdminGetReviews(c *gin.Context) {
+	rows, err := database.DB.Query(
+		`SELECT id, COALESCE(order_id,0), COALESCE(order_code,''),
+		        COALESCE(customer_id,0), customer_name, rating, COALESCE(comment,''), created_at
+		 FROM reviews ORDER BY created_at DESC`,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var out []models.Review
+	for rows.Next() {
+		var r models.Review
+		rows.Scan(&r.ID, &r.OrderID, &r.OrderCode, &r.CustomerID, &r.CustomerName, &r.Rating, &r.Comment, &r.CreatedAt)
+		out = append(out, r)
+	}
+	if out == nil {
+		out = []models.Review{}
+	}
+	c.JSON(http.StatusOK, out)
+}
+
+// AdminDeleteReview — admin deletes any review.
+func AdminDeleteReview(c *gin.Context) {
+	id := c.Param("id")
+
+	result, err := database.DB.Exec(`DELETE FROM reviews WHERE id=$1`, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Review not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

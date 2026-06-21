@@ -326,3 +326,66 @@
 
 .adm-table tr:last-child td { border-bottom: none; }
 .adm-table tr:hover td { background: #FAFAFA; }
+
+/* ── Admin Reviews ── */
+.arv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+.arv-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px !important;
+}
+.arv-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.arv-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.arv-av {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF6B35, #E85A24);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+.arv-name { font-size: 14px; font-weight: 700; color: #111827; margin: 0 0 2px; }
+.arv-order { font-size: 11px; color: #9CA3AF; font-weight: 600; margin: 0; }
+.arv-stars { display: flex; gap: 2px; margin-bottom: 3px; }
+.arv-date { font-size: 11px; color: #9CA3AF; margin: 0; }
+.arv-comment {
+  font-size: 13px; color: #4B5563;
+  line-height: 1.65;
+  margin: 0;
+  font-style: italic;
+  padding: 10px 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  border-left: 3px solid #FED7AA;
+}
+.arv-footer { display: flex; justify-content: flex-end; }
+.arv-del-btn {
+  display: flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid #FCA5A5;
+  background: transparent; color: #EF4444;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.arv-del-btn:hover { background: #FEE2E2; }
+.arv-del-btn:disabled { opacity: 0.5; cursor: not-allowed; }

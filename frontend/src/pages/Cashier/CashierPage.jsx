@@ -4,10 +4,127 @@ import toast from 'react-hot-toast'
 import {
   ShoppingCart, Plus, Minus, Trash2, X, CheckCircle, Search,
   QrCode, ChefHat, Home, Camera, RefreshCw, Globe, Phone, MapPin, Truck, Store, User, Bell,
+  Navigation2, Loader2,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode'
 import './CashierPage.css'
+
+/* ─── OSRM route helper ─── */
+async function fetchOSRMRoute(start, end) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
+    const res = await fetch(url)
+    const data = await res.json()
+    const route = data.routes?.[0]
+    if (!route) return null
+    return {
+      coords: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+      distance: route.distance,
+      duration: route.duration,
+    }
+  } catch { return null }
+}
+
+/* ─── Cashier Route Map Modal ─── */
+function CashierRouteModal({ order, onClose }) {
+  const mapElRef = React.useRef(null)
+  const mapRef   = React.useRef(null)
+  const [status, setStatus] = React.useState('loading')
+  const [info, setInfo]     = React.useState(null)
+
+  React.useEffect(() => {
+    if (!order?.delivery_lat || !order?.delivery_lng) { setStatus('error'); return }
+    const delivPos = [order.delivery_lat, order.delivery_lng]
+
+    const initMap = async (userPos) => {
+      const L = (await import('leaflet')).default
+      await import('leaflet/dist/leaflet.css')
+      delete L.Icon.Default.prototype._getIconUrl
+      if (!mapElRef.current || mapRef.current) return
+
+      const center = userPos || delivPos
+      const map = L.map(mapElRef.current, { zoomControl: true }).setView(center, 13)
+      mapRef.current = map
+
+      L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        subdomains: ['0','1','2','3'], maxZoom: 21, attribution: '© Google Maps',
+      }).addTo(map)
+
+      const delivIcon = L.divIcon({
+        html: `<div style="width:32px;height:32px;background:#FF6B35;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(255,107,53,0.5)"></div>`,
+        iconSize: [32,32], iconAnchor: [16,32], className: '',
+      })
+      L.marker(delivPos, { icon: delivIcon }).addTo(map).bindPopup(`<b>${order.delivery_address || 'Yetkazish manzili'}</b>`, { closeButton: false })
+
+      if (userPos) {
+        const myIcon = L.divIcon({
+          html: `<div style="width:18px;height:18px;background:#2196F3;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(33,150,243,0.55)"></div>`,
+          iconSize: [18,18], iconAnchor: [9,9], className: '',
+        })
+        L.marker(userPos, { icon: myIcon }).addTo(map).bindPopup('<b>Mening joylashuvim</b>', { closeButton: false })
+
+        const route = await fetchOSRMRoute(userPos, delivPos)
+        if (route?.coords?.length) {
+          setInfo(route)
+          L.polyline(route.coords, { color: '#FF6B35', weight: 5, opacity: 0.85, lineJoin: 'round' }).addTo(map)
+          map.fitBounds(L.latLngBounds(route.coords), { padding: [50, 50] })
+        } else {
+          map.fitBounds([userPos, delivPos], { padding: [60, 60] })
+        }
+      } else {
+        map.setView(delivPos, 15)
+      }
+      setStatus('ok')
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => initMap([pos.coords.latitude, pos.coords.longitude]),
+        () => initMap(null),
+        { enableHighAccuracy: true, timeout: 8000 }
+      )
+    } else {
+      initMap(null)
+    }
+
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null }
+    }
+  }, [order])
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div style={{ background: '#1a1a2e', borderRadius: 14, width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255,107,53,0.3)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#FF6B35', fontSize: 13, fontWeight: 600, overflow: 'hidden' }}>
+            <Navigation2 size={15} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              #{order.order_code} — {order.delivery_address || 'Yetkazish manzili'}
+            </span>
+            {info && (
+              <span style={{ background: 'rgba(255,107,53,0.15)', border: '1px solid rgba(255,107,53,0.35)', borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {(info.distance / 1000).toFixed(1)} km · {Math.round(info.duration / 60)} daq
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'rgba(255,255,255,0.7)', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+            <X size={16} />
+          </button>
+        </div>
+        <div style={{ flex: 1, minHeight: 400, position: 'relative' }}>
+          {status === 'loading' && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'rgba(255,255,255,0.5)' }}>
+              <Loader2 size={32} style={{ animation: 'spin 0.7s linear infinite', color: '#FF6B35' }} />
+              <span style={{ fontSize: 13 }}>Xarita yuklanmoqda...</span>
+            </div>
+          )}
+          <div ref={mapElRef} style={{ width: '100%', height: '100%', minHeight: 400 }} />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const statusLabels = {
   pending:  'Yangi (online)',
@@ -42,6 +159,7 @@ export default function CashierPage() {
   const [scannerOpen, setScannerOpen] = useState(false)
   const [confirming, setConfirming] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [mapOrder, setMapOrder] = useState(null)
   const wsRef = useRef(null)
   const reconnectRef = useRef(null)
   const scanCardRef = useRef(null)
@@ -483,7 +601,18 @@ export default function CashierPage() {
                         <a href={`tel:${order.customer_phone}`}><Phone size={12} /> {order.customer_phone}</a>
                       )}
                       {order.delivery_type === 'delivery' ? (
-                        <div><Truck size={12} /> {order.delivery_address || 'Manzil yo\'q'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                          <Truck size={12} />
+                          <span style={{ flex: 1, minWidth: 0 }}>{order.delivery_address || 'Manzil yo\'q'}</span>
+                          {order.delivery_lat && order.delivery_lng && (
+                            <button
+                              onClick={() => setMapOrder(order)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 8px', border: 'none', borderRadius: 100, background: 'rgba(255,107,53,0.18)', color: '#FF8C5A', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+                            >
+                              <Navigation2 size={11} /> Yo'l
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <div><Store size={12} /> Olib ketadi</div>
                       )}
@@ -557,6 +686,8 @@ export default function CashierPage() {
           </div>
         </div>
       )}
+
+      {mapOrder && <CashierRouteModal order={mapOrder} onClose={() => setMapOrder(null)} />}
 
       {scannerOpen && (
         <div

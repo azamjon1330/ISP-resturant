@@ -872,6 +872,21 @@ a { color: inherit; text-decoration: none; }
 .lp-how-ttl { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 7px; }
 .lp-how-sub { font-size: 13px; color: var(--text2); line-height: 1.65; }
 
+/* Photo-based how-it-works illustrations */
+.lp-how-photo-wrap { background: var(--card2); }
+.lp-how-photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s var(--ease);
+}
+.lp-how-card:hover .lp-how-photo { transform: scale(1.06); }
+.lp-how-photo-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.48) 100%);
+  pointer-events: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    REVIEWS
 ═══════════════════════════════════════════════════════════════════════════════ */
@@ -903,8 +918,8 @@ a { color: inherit; text-decoration: none; }
 
 .lp-rv-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
   margin-top: 32px;
 }
 .lp-rv-card {
@@ -968,6 +983,57 @@ a { color: inherit; text-decoration: none; }
 }
 .lp-rv-cta-txt strong { display: block; font-size: 16px; color: var(--text); margin-bottom: 4px; }
 .lp-rv-cta-txt span  { font-size: 13px; color: var(--text2); }
+
+/* Load-more / all-shown */
+.lp-rv-more-wrap {
+  display: flex; justify-content: center;
+  margin-top: 28px;
+}
+.lp-rv-load-more {
+  height: 42px; padding: 0 32px;
+  border-radius: 100px;
+  border: 2px solid var(--orange);
+  background: transparent;
+  color: var(--orange);
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur);
+}
+.lp-rv-load-more:hover { background: var(--orange); color: #fff; }
+.lp-rv-all-shown {
+  text-align: center; margin-top: 20px;
+  font-size: 13px; color: var(--text3);
+}
+
+/* My Reviews card (inside drawer) */
+.lp-my-rv-card {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: border-color var(--dur);
+}
+.lp-my-rv-card:hover { border-color: rgba(255,107,53,0.25); }
+.lp-my-rv-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.lp-my-rv-date { font-size: 11px; color: var(--text3); }
+.lp-my-rv-order { font-size: 12px; font-weight: 700; color: var(--text2); }
+.lp-my-rv-comment { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.lp-my-rv-del {
+  align-self: flex-end;
+  display: flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(248,113,113,0.3);
+  background: transparent; color: #f87171;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur), border-color var(--dur);
+}
+.lp-my-rv-del:hover { background: rgba(248,113,113,0.1); border-color: #f87171; }
+.lp-my-rv-del:disabled { opacity: 0.5; pointer-events: none; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    FOOTER

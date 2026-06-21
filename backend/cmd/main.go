@@ -64,6 +64,8 @@ func main() {
 		customer.DELETE("/addresses/:id", handlers.CustomerDeleteAddress)
 		customer.POST("/orders/:code/cancel", handlers.CustomerCancelOrder)
 		customer.POST("/orders/:code/review", handlers.CreateReview)
+		customer.GET("/reviews", handlers.GetMyReviews)
+		customer.DELETE("/reviews/:id", handlers.DeleteMyReview)
 	}
 
 	// Public reviews (for landing page)
@@ -146,6 +148,10 @@ func main() {
 
 		// Restaurant settings (pickup location, etc.)
 		admin.POST("/settings", handlers.UpdateSetting)
+
+		// Reviews management
+		admin.GET("/reviews", handlers.AdminGetReviews)
+		admin.DELETE("/reviews/:id", handlers.AdminDeleteReview)
 	}
 
 	port := os.Getenv("PORT")
