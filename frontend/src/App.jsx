@@ -13,9 +13,6 @@ import AdminOrders from './pages/Admin/AdminOrders'
 import AdminMenu from './pages/Admin/AdminMenu'
 import AdminMenuDetail from './pages/Admin/AdminMenuDetail'
 import AdminInventory from './pages/Admin/AdminInventory'
-import AdminAgents from './pages/Admin/AdminAgents'
-import AdminPromo from './pages/Admin/AdminPromo'
-import AdminVip from './pages/Admin/AdminVip'
 import AdminAnalytics from './pages/Admin/AdminAnalytics'
 import AdminCouriers from './pages/Admin/AdminCouriers'
 import AdminReviews from './pages/Admin/AdminReviews'
@@ -45,9 +42,6 @@ export default function App() {
           <Route path="menu" element={<AdminMenu />} />
           <Route path="menu/:id" element={<AdminMenuDetail />} />
           <Route path="inventory" element={<AdminInventory />} />
-          <Route path="agents" element={<AdminAgents />} />
-          <Route path="promo" element={<AdminPromo />} />
-          <Route path="vip" element={<AdminVip />} />
           <Route path="couriers" element={<AdminCouriers />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="reviews" element={<AdminReviews />} />

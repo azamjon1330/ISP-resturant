@@ -4,9 +4,9 @@ import toast from 'react-hot-toast'
 import {
   Truck, MapPin, Phone, User, Package, CheckCircle2,
   Navigation2, Wifi, WifiOff, LogOut, RefreshCw,
-  Clock, Layers, ChevronDown, ChevronUp,
-  ShieldCheck, ArrowRight, Loader2,
-  AlertCircle, Eye, EyeOff, CircleDot, Circle, CheckCircle
+  Clock, ShieldCheck, ArrowRight, ArrowLeft,
+  Loader2, AlertCircle, Eye, EyeOff, ChevronRight,
+  CircleDot, Circle, CheckCircle
 } from 'lucide-react'
 import './CourierPage.css'
 
@@ -25,7 +25,7 @@ const fmtElapsed = (iso) => {
 
 const fmt = (n) => `${Number(n || 0).toLocaleString('uz-UZ')} so'm`
 
-/* ─── Map initialization using Leaflet + Google Maps tiles ─── */
+/* ─── Map init ─── */
 async function initLeafletMap(containerEl, courierPos, orderPos) {
   const L = (await import('leaflet')).default
   await import('leaflet/dist/leaflet.css')
@@ -48,28 +48,23 @@ async function initLeafletMap(containerEl, courierPos, orderPos) {
 
   const courierIcon = L.divIcon({
     html: `<div class="cr-map-marker cr-map-marker--courier">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
       </svg>
     </div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    className: '',
+    iconSize: [40, 40], iconAnchor: [20, 40], className: '',
   })
 
   const deliveryIcon = L.divIcon({
     html: `<div class="cr-map-marker cr-map-marker--delivery">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
       </svg>
     </div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    className: '',
+    iconSize: [40, 40], iconAnchor: [20, 40], className: '',
   })
 
   const markers = {}
-
   if (courierPos) {
     markers.courier = L.marker(courierPos, { icon: courierIcon }).addTo(map)
     markers.courier.bindPopup('<b>Mening joylashuvim</b>', { closeButton: false })
@@ -90,7 +85,6 @@ async function initLeafletMap(containerEl, courierPos, orderPos) {
   return { map, markers, L, routeLine: null }
 }
 
-/* ─── OSRM driving route between courier and delivery point ─── */
 async function fetchOSRMRoute(start, end) {
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
@@ -108,146 +102,34 @@ async function fetchOSRMRoute(start, end) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════
-   ORDER CARD COMPONENT
-═══════════════════════════════════════════════════════ */
-function OrderCard({ order, onAccept, onComplete, accepting, completing, onSelect, selected }) {
-  const [expanded, setExpanded] = useState(false)
+/* ─── Compact Order Card (for bottom list) ─── */
+function CompactOrderCard({ order, selected, onSelect }) {
   const isActive = order.status === 'on_way'
   const isDone   = order.status === 'served'
-
   return (
     <div
       className={[
-        'cr-order-card',
-        isActive ? 'cr-order-card--active' : '',
-        isDone   ? 'cr-order-card--done'   : '',
-        selected ? 'cr-order-card--selected' : '',
+        'cr-coc',
+        isActive  ? 'cr-coc--active'   : '',
+        isDone    ? 'cr-coc--done'     : '',
+        selected  ? 'cr-coc--selected' : '',
       ].filter(Boolean).join(' ')}
-      onClick={() => onSelect?.(order)}
+      onClick={() => onSelect(order)}
     >
-      {/* Header */}
-      <div className="cr-oc-header">
-        <div className="cr-oc-code">
-          {isActive && <span className="cr-oc-pulse" />}
-          #{order.order_code}
-        </div>
-        <div className="cr-oc-meta">
-          <Clock size={12} />
-          {fmtTime(order.created_at)} · {fmtElapsed(order.created_at)}
-        </div>
+      <div className="cr-coc-left">
+        {isActive && <span className="cr-oc-pulse" />}
+        <span className="cr-coc-code">#{order.order_code}</span>
+        {order.customer_first_name && (
+          <span className="cr-coc-name">{order.customer_first_name}</span>
+        )}
       </div>
-
-      {/* Status badge */}
-      <div className={`cr-oc-status cr-oc-status--${order.status}`}>
-        {order.status === 'ready'  && <><Circle size={10} /> Tayyor — qabul qiling</>}
-        {order.status === 'on_way' && <><CircleDot size={10} /> Yo'lda — yetkazilmoqda</>}
-        {order.status === 'served' && <><CheckCircle size={10} /> Yetkazildi</>}
-      </div>
-
-      {/* Customer */}
-      {(order.customer_first_name || order.customer_phone) && (
-        <div className="cr-oc-customer">
-          {order.customer_first_name && (
-            <div>
-              <User size={12} /> {order.customer_first_name} {order.customer_last_name || ''}
-            </div>
-          )}
-          {order.customer_phone && (
-            <a href={`tel:${order.customer_phone}`} onClick={(e) => e.stopPropagation()}>
-              <Phone size={12} /> {order.customer_phone}
-            </a>
-          )}
-        </div>
-      )}
-
-      {/* Address */}
-      {order.delivery_address && (
-        <div className="cr-oc-addr">
-          <MapPin size={13} />
-          <span>{order.delivery_address}</span>
-          {order.delivery_lat && order.delivery_lng && (
-            <button
-              type="button"
-              className="cr-oc-map-link"
-              onClick={(e) => { e.stopPropagation(); onSelect?.(order) }}
-            >
-              <Navigation2 size={11} /> Yo'l
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Items toggle */}
-      {order.items?.length > 0 && (
-        <button
-          className="cr-oc-items-toggle"
-          onClick={(e) => {
-            e.stopPropagation()
-            setExpanded((x) => !x)
-          }}
-        >
-          <Package size={13} /> {order.items.length} ta mahsulot
-          {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-        </button>
-      )}
-      {expanded && (
-        <ul className="cr-oc-items">
-          {order.items.map((it, i) => (
-            <li key={i}>
-              <span className="cr-oc-qty">×{it.quantity}</span>
-              <span>{it.item_name}</span>
-              <span className="cr-oc-item-price">{fmt(it.unit_price * it.quantity)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Note */}
-      {order.note && (
-        <div className="cr-oc-note">
-          <AlertCircle size={12} /> {order.note}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="cr-oc-footer">
-        <span className="cr-oc-total">{fmt(order.final_price || order.total_price)}</span>
-        {order.status === 'ready' && (
-          <button
-            className="cr-oc-btn cr-oc-btn--accept"
-            disabled={accepting === order.id}
-            onClick={(e) => {
-              e.stopPropagation()
-              onAccept(order.id)
-            }}
-          >
-            {accepting === order.id
-              ? <Loader2 size={14} className="cr-spin" />
-              : <><Truck size={14} /> Olaman</>
-            }
-          </button>
-        )}
-        {order.status === 'on_way' && (
-          <button
-            className="cr-oc-btn cr-oc-btn--complete"
-            disabled={completing === order.id}
-            onClick={(e) => {
-              e.stopPropagation()
-              onComplete(order.id)
-            }}
-          >
-            {completing === order.id
-              ? <Loader2 size={14} className="cr-spin" />
-              : <><CheckCircle2 size={14} /> Yetkazildi</>
-            }
-          </button>
-        )}
-        {order.status === 'served' && (
-          <span className="cr-oc-done-badge">
-            <CheckCircle size={14} /> Yetkazildi
-          </span>
-        )}
+      <div className="cr-coc-right">
+        <span className={`cr-coc-status cr-coc-status--${order.status}`}>
+          {order.status === 'ready'  && 'Tayyor'}
+          {order.status === 'on_way' && "Yo'lda"}
+          {order.status === 'served' && '✓'}
+        </span>
+        <ChevronRight size={13} className="cr-coc-arrow" />
       </div>
     </div>
   )
@@ -265,10 +147,11 @@ export default function CourierPage() {
   const [showPin,     setShowPin]  = useState(false)
 
   /* ─ Orders ─ */
-  const [available,     setAvailable]    = useState([])
-  const [mine,          setMine]         = useState([])
-  const [tab,           setTab]          = useState('available') // 'available' | 'active' | 'done'
-  const [selectedOrder, setSelected]     = useState(null)
+  const [available,     setAvailable] = useState([])
+  const [mine,          setMine]      = useState([])
+  const [tab,           setTab]       = useState('available')
+  const [selectedOrder, setSelected]  = useState(null)
+  const [detailOrder,   setDetail]    = useState(null)
 
   /* ─ Actions ─ */
   const [accepting,  setAccepting]  = useState(null)
@@ -276,20 +159,20 @@ export default function CourierPage() {
 
   /* ─ Location ─ */
   const [online,     setOnline]    = useState(false)
-  const [courierPos, setCourierPos] = useState(null) // [lat, lng]
+  const [courierPos, setCourierPos] = useState(null)
   const locationInterval = useRef(null)
 
   /* ─ Map ─ */
   const mapContainerRef = useRef(null)
-  const leafletRef      = useRef(null) // { map, markers, L, routeLine }
-  const [routeInfo,    setRouteInfo]    = useState(null) // { coords, distance, duration }
+  const leafletRef      = useRef(null)
+  const [routeInfo,    setRouteInfo]    = useState(null)
   const [routeLoading, setRouteLoading] = useState(false)
 
   /* ─ WS ─ */
-  const wsRef     = useRef(null)
-  const reconnRef = useRef(null)
+  const wsRef      = useRef(null)
+  const reconnRef  = useRef(null)
   const seenIdsRef = useRef(new Set())
-  const [, tick]  = useState(0)
+  const [, tick]   = useState(0)
 
   /* ─ Sound ─ */
   const playBeep = useCallback(() => {
@@ -338,12 +221,8 @@ export default function CourierPage() {
     if (!token) return
     courierAPI
       .me()
-      .then((r) => {
-        if (r.data?.id) setCourier(r.data)
-      })
-      .catch(() => {
-        localStorage.removeItem('eco_courier_token')
-      })
+      .then((r) => { if (r.data?.id) setCourier(r.data) })
+      .catch(() => { localStorage.removeItem('eco_courier_token') })
   }, [])
 
   /* ─ Load orders ─ */
@@ -366,10 +245,7 @@ export default function CourierPage() {
     loadOrders()
     const iv     = setInterval(loadOrders, 5000)
     const tickIv = setInterval(() => tick((n) => n + 1), 30000)
-    return () => {
-      clearInterval(iv)
-      clearInterval(tickIv)
-    }
+    return () => { clearInterval(iv); clearInterval(tickIv) }
   }, [courier, loadOrders])
 
   /* ─ WebSocket ─ */
@@ -396,48 +272,31 @@ export default function CourierPage() {
       clearTimeout(reconnRef.current)
       reconnRef.current = setTimeout(connectWS, 2000)
     }
-    ws.onerror = () => {
-      try { ws.close() } catch {}
-    }
+    ws.onerror = () => { try { ws.close() } catch {} }
     wsRef.current = ws
   }, [loadOrders, playBeep])
 
   useEffect(() => {
     if (!courier) return
     connectWS()
-    return () => {
-      wsRef.current?.close()
-      clearTimeout(reconnRef.current)
-    }
+    return () => { wsRef.current?.close(); clearTimeout(reconnRef.current) }
   }, [courier, connectWS])
 
-  /* ─ Location sharing ─ */
+  /* ─ Location ─ */
   const pushLocation = useCallback((lat, lng) => {
     setCourierPos([lat, lng])
     courierAPI.updateLocation(lat, lng).catch(() => {})
   }, [])
 
   const geoErrorToast = useCallback((err) => {
-    if (err.code === 1) {
-      toast.error("Joylashuvga ruxsat berilmadi. Brauzer sozlamalaridan ruxsat bering", { duration: 6000 })
-    } else if (err.code === 2) {
-      toast.error("Joylashuv aniqlanmadi (GPS signal yo'q)")
-    } else {
-      toast.error("Joylashuvni aniqlash vaqti tugadi, qaytadan urinib ko'ring")
-    }
+    if (err.code === 1) toast.error("Joylashuvga ruxsat berilmadi", { duration: 6000 })
+    else if (err.code === 2) toast.error("GPS signal yo'q")
+    else toast.error("Joylashuv aniqlanmadi, qaytadan urinib ko'ring")
   }, [])
 
   const startLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      toast.error("Geolokatsiya qo'llab-quvvatlanmaydi")
-      setOnline(false)
-      return
-    }
-    if (!window.isSecureContext) {
-      toast.error("Joylashuv uchun xavfsiz ulanish (HTTPS) kerak. Saytni https:// orqali oching", { duration: 8000 })
-      setOnline(false)
-      return
-    }
+    if (!navigator.geolocation) { toast.error("Geolokatsiya qo'llab-quvvatlanmaydi"); setOnline(false); return }
+    if (!window.isSecureContext) { toast.error("HTTPS ulanish kerak", { duration: 8000 }); setOnline(false); return }
     navigator.geolocation.getCurrentPosition(
       (pos) => pushLocation(pos.coords.latitude, pos.coords.longitude),
       (err) => { geoErrorToast(err); setOnline(false) },
@@ -466,28 +325,22 @@ export default function CourierPage() {
 
   useEffect(() => () => stopLocation(), [stopLocation])
 
-  /* ─ Fetch OSRM route whenever courier position or selected order changes ─ */
+  /* ─ OSRM route ─ */
   useEffect(() => {
     const orderPos =
       selectedOrder?.delivery_lat && selectedOrder?.delivery_lng
         ? [selectedOrder.delivery_lat, selectedOrder.delivery_lng]
         : null
-    if (!courierPos || !orderPos) {
-      setRouteInfo(null)
-      return
-    }
+    if (!courierPos || !orderPos) { setRouteInfo(null); return }
     let active = true
     setRouteLoading(true)
     fetchOSRMRoute(courierPos, orderPos).then((info) => {
-      if (active) {
-        setRouteInfo(info)
-        setRouteLoading(false)
-      }
+      if (active) { setRouteInfo(info); setRouteLoading(false) }
     })
     return () => { active = false }
   }, [selectedOrder, courierPos])
 
-  /* ─ Auto-select the active delivery so its route draws without a click ─ */
+  /* ─ Auto-select active delivery ─ */
   useEffect(() => {
     if (selectedOrder) return
     const firstActive = mine.find((o) => o.status === 'on_way')
@@ -516,7 +369,6 @@ export default function CourierPage() {
           markers.courier = L.marker(courierPos, { icon }).addTo(map)
         }
       }
-
       if (orderPos) {
         if (markers.delivery) {
           markers.delivery.setLatLng(orderPos)
@@ -532,7 +384,6 @@ export default function CourierPage() {
         markers.delivery = null
       }
 
-      // OSRM route polyline
       if (routeInfo?.coords?.length) {
         if (leafletRef.current.routeLine) {
           leafletRef.current.routeLine.setLatLngs(routeInfo.coords)
@@ -557,30 +408,18 @@ export default function CourierPage() {
       }
     }
 
-    if (leafletRef.current) {
-      applyState(leafletRef.current)
-      return
-    }
-
-    // First init
+    if (leafletRef.current) { applyState(leafletRef.current); return }
     initLeafletMap(mapContainerRef.current, courierPos, orderPos)
-      .then((result) => {
-        leafletRef.current = result
-        applyState(result)
-      })
+      .then((result) => { leafletRef.current = result; applyState(result) })
       .catch(() => {})
   }, [courier, courierPos, selectedOrder, routeInfo])
 
-  // Cleanup map on unmount
   useEffect(() => () => {
-    if (leafletRef.current) {
-      leafletRef.current.map.remove()
-      leafletRef.current = null
-    }
+    if (leafletRef.current) { leafletRef.current.map.remove(); leafletRef.current = null }
   }, [])
 
   /* ─ Actions ─ */
-  const acceptOrder = async (id) => {
+  const acceptOrder = async (id, onSuccess) => {
     setAccepting(id)
     try {
       await courierAPI.accept(id)
@@ -589,19 +428,21 @@ export default function CourierPage() {
       const { mine: freshMine } = await loadOrders()
       const accepted = freshMine.find((o) => o.id === id)
       if (accepted) setSelected(accepted)
+      onSuccess?.()
     } catch {
       toast.error('Xatolik yuz berdi')
     }
     setAccepting(null)
   }
 
-  const completeOrder = async (id) => {
+  const completeOrder = async (id, onSuccess) => {
     setCompleting(id)
     try {
       await courierAPI.complete(id)
       toast.success('Yetkazildi! Rahmat', { duration: 5000 })
       setSelected(null)
       await loadOrders()
+      onSuccess?.()
     } catch {
       toast.error('Xatolik yuz berdi')
     }
@@ -613,21 +454,15 @@ export default function CourierPage() {
     wsRef.current?.close()
     localStorage.removeItem('eco_courier_token')
     setCourier(null)
-    setAvailable([])
-    setMine([])
-    setOnline(false)
-    setSelected(null)
-    if (leafletRef.current) {
-      leafletRef.current.map.remove()
-      leafletRef.current = null
-    }
+    setAvailable([]); setMine([])
+    setOnline(false); setSelected(null); setDetail(null)
+    if (leafletRef.current) { leafletRef.current.map.remove(); leafletRef.current = null }
   }
 
   /* ─ Computed ─ */
   const activeOrders = mine.filter((o) => o.status === 'on_way')
   const doneOrders   = mine.filter((o) => o.status === 'served')
-
-  const currentList =
+  const currentList  =
     tab === 'available' ? available
     : tab === 'active'  ? activeOrders
     : doneOrders
@@ -637,71 +472,49 @@ export default function CourierPage() {
     return (
       <div className="cr-login-page">
         <div className="background-container">
-          <img
-            className="moon"
-            src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png"
-            alt=""
-          />
+          <img className="moon" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png" alt="" />
           <div className="stars" />
           <div className="twinkling" />
           <div className="clouds" />
         </div>
-
         <div className="cr-login-card">
           <div className="cr-login-logo">
-            <div className="cr-login-logo-icon">
-              <Truck size={24} color="#FF6B35" />
-            </div>
+            <div className="cr-login-logo-icon"><Truck size={24} color="#FF6B35" /></div>
             <div>
               <div className="cr-login-logo-name">ECO <span>Taomlar</span></div>
               <div className="cr-login-logo-sub">Kuryer paneli</div>
             </div>
           </div>
-
           <h2 className="cr-login-title">Tizimga kirish</h2>
           <p className="cr-login-hint">Telefon raqami va PIN-kodingizni kiriting</p>
-
           <div className="cr-login-field">
             <label><Phone size={13} /> Telefon raqami</label>
             <div className="cr-login-phone-row">
               <span className="cr-phone-prefix">+998</span>
               <input
-                type="tel"
-                placeholder="90 123 45 67"
-                value={authPhone}
-                maxLength={9}
+                type="tel" placeholder="90 123 45 67"
+                value={authPhone} maxLength={9}
                 onChange={(e) => setAPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
                 onKeyDown={(e) => e.key === 'Enter' && doLogin()}
               />
             </div>
           </div>
-
           <div className="cr-login-field">
             <label><ShieldCheck size={13} /> PIN-kod</label>
             <div className="cr-login-pin-row">
               <input
-                type={showPin ? 'text' : 'password'}
-                placeholder="• • • •"
-                value={authPin}
-                maxLength={10}
+                type={showPin ? 'text' : 'password'} placeholder="• • • •"
+                value={authPin} maxLength={10}
                 onChange={(e) => setAPin(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 onKeyDown={(e) => e.key === 'Enter' && doLogin()}
               />
-              <button
-                type="button"
-                className="cr-pin-toggle"
-                onClick={() => setShowPin((x) => !x)}
-              >
+              <button type="button" className="cr-pin-toggle" onClick={() => setShowPin((x) => !x)}>
                 {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
-
           <button className="cr-login-btn" onClick={doLogin} disabled={authLoading}>
-            {authLoading
-              ? <Loader2 size={18} className="cr-spin" />
-              : <><ArrowRight size={18} /> Kirish</>
-            }
+            {authLoading ? <Loader2 size={18} className="cr-spin" /> : <><ArrowRight size={18} /> Kirish</>}
           </button>
         </div>
       </div>
@@ -712,68 +525,60 @@ export default function CourierPage() {
   return (
     <div className="cr-page">
       <div className="background-container">
-        <img
-          className="moon"
-          src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png"
-          alt=""
-        />
+        <img className="moon" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/moon2.png" alt="" />
         <div className="stars" />
         <div className="twinkling" />
         <div className="clouds" />
       </div>
 
-      {/* ── HEADER ── */}
+      {/* ── COMPACT HEADER ── */}
       <header className="cr-header">
-        <div className="cr-header-left">
-          <div className="cr-logo">
-            <Truck size={20} color="#fff" /> ECO Taomlar
-          </div>
+        <div className="cr-h-left">
+          <div className="cr-courier-av">{courier.first_name?.[0]?.toUpperCase()}</div>
           <div className="cr-courier-info">
-            <div className="cr-courier-av">{courier.first_name?.[0]?.toUpperCase()}</div>
-            <div>
-              <div className="cr-courier-name">
-                {courier.first_name} {courier.last_name || ''}
-              </div>
-              <div className="cr-courier-phone">
-                <Phone size={10} /> {courier.phone}
-              </div>
-            </div>
+            <span className="cr-courier-name">{courier.first_name} {courier.last_name || ''}</span>
+            <span className="cr-courier-phone"><Phone size={10} /> {courier.phone}</span>
           </div>
         </div>
 
-        <div className="cr-header-stats">
-          <div className="cr-stat cr-stat--available" onClick={() => setTab('available')}>
-            <Package size={16} />
-            <span className="cr-stat-n">{available.length}</span>
-            <span className="cr-stat-l">Tayyor</span>
-          </div>
-          <div className="cr-stat cr-stat--active" onClick={() => setTab('active')}>
-            <Truck size={16} />
-            <span className="cr-stat-n">{activeOrders.length}</span>
-            <span className="cr-stat-l">Yo'lda</span>
-          </div>
-          <div className="cr-stat cr-stat--done" onClick={() => setTab('done')}>
-            <CheckCircle size={16} />
-            <span className="cr-stat-n">{doneOrders.length}</span>
-            <span className="cr-stat-l">Yetkazildi</span>
-          </div>
+        <div className="cr-h-stats">
+          <button
+            className={`cr-hstat ${tab === 'available' ? 'cr-hstat--active' : ''}`}
+            onClick={() => setTab('available')}
+          >
+            <Package size={13} />
+            {available.length > 0 && <span className="cr-hstat-badge">{available.length}</span>}
+          </button>
+          <button
+            className={`cr-hstat ${tab === 'active' ? 'cr-hstat--active' : ''}`}
+            onClick={() => setTab('active')}
+          >
+            <Truck size={13} />
+            {activeOrders.length > 0 && <span className="cr-hstat-badge cr-hstat-badge--on">{activeOrders.length}</span>}
+          </button>
+          <button
+            className={`cr-hstat ${tab === 'done' ? 'cr-hstat--active' : ''}`}
+            onClick={() => setTab('done')}
+          >
+            <CheckCircle size={13} />
+            {doneOrders.length > 0 && <span className="cr-hstat-badge cr-hstat-badge--done">{doneOrders.length}</span>}
+          </button>
         </div>
 
-        <div className="cr-header-right">
+        <div className="cr-h-right">
           <button
             className={`cr-online-btn${online ? ' cr-online-btn--on' : ''}`}
             onClick={toggleOnline}
+            title={online ? 'Faol' : 'Offline'}
           >
-            {online
-              ? <><Wifi size={15} /> Faol</>
-              : <><WifiOff size={15} /> Offline</>
-            }
+            {online ? <Wifi size={14} /> : <WifiOff size={14} />}
+            <span className="cr-online-label">{online ? 'Faol' : 'Offline'}</span>
           </button>
           <button className="cr-icon-btn" onClick={loadOrders} title="Yangilash">
-            <RefreshCw size={16} />
+            <RefreshCw size={14} />
           </button>
           <button className="cr-icon-btn cr-icon-btn--danger" onClick={logout} title="Chiqish">
-            <LogOut size={16} />
+            <LogOut size={14} />
           </button>
         </div>
       </header>
@@ -781,138 +586,193 @@ export default function CourierPage() {
       {/* ── BODY ── */}
       <div className="cr-body">
 
-        {/* Left: Order Panel */}
-        <div className="cr-panel">
+        {/* MAP — PRIMARY, takes most space */}
+        <div className="cr-map-panel">
+          <div ref={mapContainerRef} className="cr-leaflet-map" />
 
-          {/* Tabs */}
-          <div className="cr-tabs">
-            <button
-              className={tab === 'available' ? 'active' : ''}
-              onClick={() => setTab('available')}
-            >
-              <Package size={14} /> Tayyor
-              {available.length > 0 && (
-                <span className="cr-tab-badge">{available.length}</span>
-              )}
-            </button>
-            <button
-              className={tab === 'active' ? 'active' : ''}
-              onClick={() => setTab('active')}
-            >
-              <Truck size={14} /> Yo'lda
-              {activeOrders.length > 0 && (
-                <span className="cr-tab-badge">{activeOrders.length}</span>
-              )}
-            </button>
-            <button
-              className={tab === 'done' ? 'active' : ''}
-              onClick={() => setTab('done')}
-            >
-              <CheckCircle size={14} /> Yetkazildi
-            </button>
-          </div>
-
-          {/* Location banner */}
-          {tab === 'active' && (
-            <div className={`cr-location-banner${online ? ' cr-location-banner--on' : ''}`}>
-              <Navigation2 size={14} />
-              {online
-                ? courierPos
-                  ? `Joylashuv: ${courierPos[0].toFixed(4)}, ${courierPos[1].toFixed(4)}`
-                  : 'Joylashuv aniqlanmoqda...'
-                : 'Joylashuvni ulash uchun "Faol" tugmasini bosing'
-              }
+          {/* Floating route info badge */}
+          {routeLoading && (
+            <div className="cr-map-badge">
+              <Loader2 size={11} className="cr-spin" /> Yo'l hisoblanmoqda...
+            </div>
+          )}
+          {!routeLoading && routeInfo && (
+            <div className="cr-map-badge">
+              <Navigation2 size={11} />
+              {(routeInfo.distance / 1000).toFixed(1)} km · {Math.round(routeInfo.duration / 60)} daq
             </div>
           )}
 
-          {/* Order list */}
+          {/* Floating "Delivered" FAB on map */}
+          {activeOrders.length > 0 && !detailOrder && (
+            <button
+              className="cr-map-fab"
+              disabled={completing !== null}
+              onClick={() => {
+                const order = (selectedOrder?.status === 'on_way' ? selectedOrder : null) || activeOrders[0]
+                if (order) completeOrder(order.id)
+              }}
+            >
+              {completing !== null
+                ? <Loader2 size={16} className="cr-spin" />
+                : <><CheckCircle2 size={16} /> Yetkazildi</>
+              }
+            </button>
+          )}
+        </div>
+
+        {/* BOTTOM SHEET — orders list */}
+        <div className="cr-sheet">
+          <div className="cr-sheet-handle" />
+
+          {/* Compact tabs */}
+          <div className="cr-tabs">
+            <button className={tab === 'available' ? 'active' : ''} onClick={() => setTab('available')}>
+              <Package size={12} /> Tayyor
+              {available.length > 0 && <span className="cr-tab-badge">{available.length}</span>}
+            </button>
+            <button className={tab === 'active' ? 'active' : ''} onClick={() => setTab('active')}>
+              <Truck size={12} /> Yo'lda
+              {activeOrders.length > 0 && <span className="cr-tab-badge">{activeOrders.length}</span>}
+            </button>
+            <button className={tab === 'done' ? 'active' : ''} onClick={() => setTab('done')}>
+              <CheckCircle size={12} /> Bajarildi
+            </button>
+          </div>
+
+          {/* Compact order list */}
           <div className="cr-order-list">
             {currentList.length === 0 ? (
-              <div className="cr-empty">
-                {tab === 'available' && (
-                  <>
-                    <Package size={48} />
-                    <p>Tayyor buyurtmalar yo'q</p>
-                    <span>Yangi buyurtmalar kelganda bu yerda ko'rinadi</span>
-                  </>
-                )}
-                {tab === 'active' && (
-                  <>
-                    <Truck size={48} />
-                    <p>Faol buyurtmalar yo'q</p>
-                    <span>Buyurtma qabul qiling</span>
-                  </>
-                )}
-                {tab === 'done' && (
-                  <>
-                    <CheckCircle size={48} />
-                    <p>Yetkazilgan buyurtmalar yo'q</p>
-                    <span>Bajarilgan buyurtmalar bu yerda saqlanadi</span>
-                  </>
-                )}
+              <div className="cr-empty-sm">
+                {tab === 'available' && "Tayyor buyurtmalar yo'q"}
+                {tab === 'active'    && "Faol buyurtmalar yo'q"}
+                {tab === 'done'      && "Yetkazilgan buyurtmalar yo'q"}
               </div>
             ) : (
               currentList.map((order) => (
-                <OrderCard
+                <CompactOrderCard
                   key={order.id}
                   order={order}
-                  onAccept={acceptOrder}
-                  onComplete={completeOrder}
-                  accepting={accepting}
-                  completing={completing}
                   selected={selectedOrder?.id === order.id}
-                  onSelect={(o) => setSelected((prev) => (prev?.id === o.id ? null : o))}
+                  onSelect={(o) => {
+                    setSelected(o)
+                    setDetail(o)
+                  }}
                 />
               ))
             )}
           </div>
         </div>
 
-        {/* Right: Map Panel */}
-        <div className="cr-map-panel">
-
-          {/* Map header */}
-          <div className="cr-map-header">
-            <div className="cr-map-title">
-              <Layers size={16} />
-              {selectedOrder
-                ? `#${selectedOrder.order_code} — ${selectedOrder.delivery_address || "Manzil yo'q"}`
-                : 'Xarita'
-              }
+        {/* ORDER DETAIL PANEL — slides up */}
+        {detailOrder && (
+          <div className="cr-detail">
+            {/* Header */}
+            <div className="cr-detail-hd">
+              <button className="cr-detail-back" onClick={() => setDetail(null)}>
+                <ArrowLeft size={15} /> Orqaga
+              </button>
+              <span className="cr-detail-code">#{detailOrder.order_code}</span>
+              <span className={`cr-detail-badge cr-detail-badge--${detailOrder.status}`}>
+                {detailOrder.status === 'ready'  && <><Circle size={9} /> Tayyor</>}
+                {detailOrder.status === 'on_way' && <><CircleDot size={9} /> Yo'lda</>}
+                {detailOrder.status === 'served' && <><CheckCircle size={9} /> Yetkazildi</>}
+              </span>
             </div>
-            {routeLoading && (
-              <div className="cr-route-info">
-                <Loader2 size={13} className="cr-spin" /> Yo'l hisoblanmoqda...
-              </div>
-            )}
-            {!routeLoading && routeInfo && (
-              <div className="cr-route-info">
-                <Navigation2 size={13} />
-                {(routeInfo.distance / 1000).toFixed(1)} km · {Math.round(routeInfo.duration / 60)} daq
-              </div>
-            )}
-          </div>
 
-          {/* Map */}
-          <div className="cr-map-area">
-            <div ref={mapContainerRef} className="cr-leaflet-map" />
-          </div>
-
-          {/* Legend */}
-          <div className="cr-map-legend">
-            <div className="cr-legend-item">
-              <div className="cr-legend-dot cr-legend-dot--courier" /> Mening joylashuvim
-            </div>
-            <div className="cr-legend-item">
-              <div className="cr-legend-dot cr-legend-dot--delivery" /> Yetkazish manzili
-            </div>
-            {!online && (
-              <div className="cr-legend-hint">
-                <WifiOff size={11} /> Joylashuvni ulash uchun "Faol" tugmasini bosing
+            {/* Scrollable body */}
+            <div className="cr-detail-body">
+              {/* Time */}
+              <div className="cr-detail-row cr-detail-row--time">
+                <Clock size={13} />
+                <span>{fmtTime(detailOrder.created_at)} · {fmtElapsed(detailOrder.created_at)}</span>
               </div>
-            )}
+
+              {/* Customer */}
+              {(detailOrder.customer_first_name || detailOrder.customer_phone) && (
+                <div className="cr-detail-card">
+                  {detailOrder.customer_first_name && (
+                    <div className="cr-detail-row">
+                      <User size={13} />
+                      <span>{detailOrder.customer_first_name} {detailOrder.customer_last_name || ''}</span>
+                    </div>
+                  )}
+                  {detailOrder.customer_phone && (
+                    <a href={`tel:${detailOrder.customer_phone}`} className="cr-detail-row cr-detail-phone">
+                      <Phone size={13} />
+                      <span>{detailOrder.customer_phone}</span>
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Address */}
+              {detailOrder.delivery_address && (
+                <div className="cr-detail-card">
+                  <div className="cr-detail-row">
+                    <MapPin size={13} style={{ color: '#FF6B35', flexShrink: 0 }} />
+                    <span>{detailOrder.delivery_address}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Items */}
+              {detailOrder.items?.length > 0 && (
+                <div className="cr-detail-card">
+                  <div className="cr-detail-section-label">
+                    <Package size={11} /> Mahsulotlar ({detailOrder.items.length} ta)
+                  </div>
+                  {detailOrder.items.map((it, i) => (
+                    <div key={i} className="cr-detail-item">
+                      <span className="cr-detail-qty">×{it.quantity}</span>
+                      <span className="cr-detail-item-name">{it.item_name}</span>
+                      <span className="cr-detail-item-price">{fmt(it.unit_price * it.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Note */}
+              {detailOrder.note && (
+                <div className="cr-detail-note">
+                  <AlertCircle size={12} /> {detailOrder.note}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="cr-detail-foot">
+              <div className="cr-detail-total">{fmt(detailOrder.final_price || detailOrder.total_price)}</div>
+              {detailOrder.status === 'ready' && (
+                <button
+                  className="cr-detail-action cr-detail-action--accept"
+                  disabled={accepting === detailOrder.id}
+                  onClick={() => acceptOrder(detailOrder.id, () => setDetail(null))}
+                >
+                  {accepting === detailOrder.id
+                    ? <Loader2 size={16} className="cr-spin" />
+                    : <><Truck size={16} /> Olaman</>
+                  }
+                </button>
+              )}
+              {detailOrder.status === 'on_way' && (
+                <button
+                  className="cr-detail-action cr-detail-action--complete"
+                  disabled={completing === detailOrder.id}
+                  onClick={() => completeOrder(detailOrder.id, () => setDetail(null))}
+                >
+                  {completing === detailOrder.id
+                    ? <Loader2 size={16} className="cr-spin" />
+                    : <><CheckCircle2 size={16} /> Yetkazildi</>
+                  }
+                </button>
+              )}
+              {detailOrder.status === 'served' && (
+                <span className="cr-detail-done"><CheckCircle size={15} /> Yetkazildi</span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
