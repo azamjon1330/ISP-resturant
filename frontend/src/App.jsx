@@ -18,6 +18,7 @@ import AdminPromo from './pages/Admin/AdminPromo'
 import AdminVip from './pages/Admin/AdminVip'
 import AdminAnalytics from './pages/Admin/AdminAnalytics'
 import AdminCouriers from './pages/Admin/AdminCouriers'
+import AdminReviews from './pages/Admin/AdminReviews'
 import CourierPage from './pages/Courier/CourierPage'
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="vip" element={<AdminVip />} />
           <Route path="couriers" element={<AdminCouriers />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="reviews" element={<AdminReviews />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

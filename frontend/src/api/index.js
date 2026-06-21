@@ -108,6 +108,8 @@ export const customerAPI = {
   addAddress: (data) => api.post('/customer/addresses', data),
   deleteAddress: (id) => api.delete(`/customer/addresses/${id}`),
   cancelOrder: (code, reason) => api.post(`/customer/orders/${code}/cancel`, { reason }),
+  getMyReviews: () => api.get('/customer/reviews'),
+  deleteMyReview: (id) => api.delete(`/customer/reviews/${id}`),
 }
 
 export const vipAPI = {
@@ -137,6 +139,11 @@ export const couriersAPI = {
   create: (data) => api.post('/admin/couriers', data),
   update: (id, data) => api.put(`/admin/couriers/${id}`, data),
   delete: (id) => api.delete(`/admin/couriers/${id}`),
+}
+
+export const adminReviewsAPI = {
+  getAll: () => api.get('/admin/reviews'),
+  delete: (id) => api.delete(`/admin/reviews/${id}`),
 }
 
 export default api
