@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   background: #000;
   font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
   overflow: hidden;
@@ -219,6 +220,11 @@
 .cr-map-panel {
   flex: 1; min-height: 0;
   position: relative;
+  /* Own stacking context with a low z-index so Leaflet's internal panes
+     (tiles z400, markers z600, controls z1000) stay BELOW the bottom sheet
+     and the order-detail overlay instead of painting over them. */
+  z-index: 0;
+  overflow: hidden;
 }
 .cr-leaflet-map {
   position: absolute; inset: 0;
@@ -254,7 +260,9 @@
 
 /* ── BOTTOM SHEET ── */
 .cr-sheet {
-  height: 200px; flex-shrink: 0;
+  height: 200px;                          /* fallback for browsers without dvh */
+  height: clamp(165px, 24dvh, 280px);     /* scales with screen height */
+  flex-shrink: 0;
   display: flex; flex-direction: column;
   background: rgba(8,8,8,0.88);
   backdrop-filter: blur(14px);
@@ -554,8 +562,7 @@
   .cr-online-label { display: none; }
   .cr-online-btn { width: 32px; padding: 0; justify-content: center; }
 
-  /* Bigger sheet on small phones */
-  .cr-sheet { height: 210px; }
+  /* Sheet height is handled fluidly via clamp(dvh) on the base rule */
 
   /* Reduce FAB size slightly */
   .cr-map-fab { height: 42px; font-size: 13px; padding: 0 22px; }
@@ -565,7 +572,6 @@
   .cr-header { padding: 0 8px; gap: 5px; }
   .cr-h-stats { gap: 3px; }
   .cr-hstat { width: 28px; height: 28px; }
-  .cr-sheet { height: 190px; }
   .cr-detail-total { font-size: 16px; }
   .cr-detail-action { height: 40px; padding: 0 16px; font-size: 13px; }
 }
