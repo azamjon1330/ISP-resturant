@@ -941,7 +941,7 @@ export default function LandingPage() {
             <div className="lp-how-card lp-reveal">
               <div className="lp-how-img-wrap lp-how-photo-wrap">
                 <img
-                  src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=85&fit=crop"
+                  src="/images/01.png"
                   alt="Menyudan tanlash"
                   className="lp-how-photo"
                   loading="lazy"
@@ -960,7 +960,7 @@ export default function LandingPage() {
             <div className="lp-how-card lp-reveal" style={{ transitionDelay: '100ms' }}>
               <div className="lp-how-img-wrap lp-how-photo-wrap">
                 <img
-                  src="https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=600&q=85&fit=crop"
+                  src="/images/02.png"
                   alt="Buyurtma berish"
                   className="lp-how-photo"
                   loading="lazy"
@@ -979,7 +979,7 @@ export default function LandingPage() {
             <div className="lp-how-card lp-reveal" style={{ transitionDelay: '200ms' }}>
               <div className="lp-how-img-wrap lp-how-photo-wrap">
                 <img
-                  src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&q=85&fit=crop"
+                  src="/images/03.png"
                   alt="Yetkazib olish"
                   className="lp-how-photo"
                   loading="lazy"
