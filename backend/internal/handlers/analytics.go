@@ -10,6 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// localTZ is the restaurant's timezone. created_at is stored as a naive UTC
+// timestamp (server runs in UTC), so analytics must re-interpret it as UTC and
+// convert to local time — otherwise "today" and the hourly chart are ~5h off.
+const localTZ = "Asia/Tashkent"
+
 func GetAnalytics(c *gin.Context) {
 	period := c.Query("period")
 	customDate := c.Query("date") // e.g. "2026-05-11"
@@ -17,20 +22,23 @@ func GetAnalytics(c *gin.Context) {
 		period = "month"
 	}
 
+	localTs := "(created_at AT TIME ZONE 'UTC' AT TIME ZONE '" + localTZ + "')"
+	localToday := "(now() AT TIME ZONE '" + localTZ + "')::date"
+
 	var dateFilter string
 	if customDate != "" {
-		dateFilter = fmt.Sprintf("DATE(created_at) = '%s'", customDate)
+		dateFilter = fmt.Sprintf("DATE(%s) = '%s'", localTs, customDate)
 		period = "custom"
 	} else {
 		switch period {
 		case "today":
-			dateFilter = "DATE(created_at) = CURRENT_DATE"
+			dateFilter = fmt.Sprintf("DATE(%s) = %s", localTs, localToday)
 		case "week":
-			dateFilter = "created_at >= CURRENT_DATE - INTERVAL '7 days'"
+			dateFilter = fmt.Sprintf("%s >= %s - INTERVAL '7 days'", localTs, localToday)
 		case "month":
-			dateFilter = "created_at >= CURRENT_DATE - INTERVAL '30 days'"
+			dateFilter = fmt.Sprintf("%s >= %s - INTERVAL '30 days'", localTs, localToday)
 		case "year":
-			dateFilter = "created_at >= CURRENT_DATE - INTERVAL '365 days'"
+			dateFilter = fmt.Sprintf("%s >= %s - INTERVAL '365 days'", localTs, localToday)
 		default:
 			dateFilter = "1=1"
 		}
@@ -45,7 +53,7 @@ func GetAnalytics(c *gin.Context) {
 
 	database.DB.QueryRow(
 		`SELECT COALESCE(SUM(final_price),0), COUNT(*)
-		 FROM orders WHERE status != 'pending' AND DATE(created_at) = CURRENT_DATE`,
+		 FROM orders WHERE status != 'pending' AND DATE(`+localTs+`) = `+localToday,
 	).Scan(&analytics.TodayRevenue, &analytics.TodayOrders)
 
 	// One-time expenses within the period
@@ -96,9 +104,9 @@ func GetAnalytics(c *gin.Context) {
 	}
 
 	dailyRows, _ := database.DB.Query(
-		`SELECT TO_CHAR(DATE(created_at),'YYYY-MM-DD'), COALESCE(SUM(final_price),0), COUNT(*)
-		 FROM orders WHERE status != 'pending' AND created_at >= CURRENT_DATE - INTERVAL '30 days'
-		 GROUP BY DATE(created_at) ORDER BY DATE(created_at)`,
+		`SELECT TO_CHAR(DATE(`+localTs+`),'YYYY-MM-DD'), COALESCE(SUM(final_price),0), COUNT(*)
+		 FROM orders WHERE status != 'pending' AND `+localTs+` >= `+localToday+` - INTERVAL '30 days'
+		 GROUP BY DATE(`+localTs+`) ORDER BY DATE(`+localTs+`)`,
 	)
 	if dailyRows != nil {
 		defer dailyRows.Close()
@@ -112,10 +120,10 @@ func GetAnalytics(c *gin.Context) {
 	// Hourly breakdown for today or a single custom date
 	if period == "today" || period == "custom" {
 		hourlyRows, _ := database.DB.Query(
-			`SELECT EXTRACT(HOUR FROM created_at)::int,
+			`SELECT EXTRACT(HOUR FROM `+localTs+`)::int,
 			        COALESCE(SUM(final_price),0), COUNT(*)
 			 FROM orders WHERE status != 'pending' AND `+dateFilter+`
-			 GROUP BY EXTRACT(HOUR FROM created_at)
+			 GROUP BY EXTRACT(HOUR FROM `+localTs+`)
 			 ORDER BY 1`,
 		)
 		if hourlyRows != nil {
