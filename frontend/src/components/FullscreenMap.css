@@ -1,0 +1,97 @@
+.fsm-root {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  background: #0f0f14;
+  animation: fsmIn 0.2s ease;
+}
+@keyframes fsmIn { from { opacity: 0 } to { opacity: 1 } }
+
+.fsm-topbar {
+  flex-shrink: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: #16162a;
+  border-bottom: 1px solid rgba(255,107,53,0.25);
+}
+.fsm-back {
+  display: flex; align-items: center; gap: 6px;
+  height: 38px; padding: 0 14px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff; font-size: 14px; font-weight: 700;
+  border-radius: 10px; cursor: pointer;
+  font-family: inherit;
+}
+.fsm-back:hover { background: rgba(255,255,255,0.14); }
+.fsm-title { color: rgba(255,255,255,0.85); font-size: 15px; font-weight: 700; }
+
+/* The map fills all remaining space and creates its own stacking context so
+   Leaflet's controls never paint over the action bar. */
+.fsm-map {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  z-index: 0;
+}
+
+.fsm-route-badge {
+  position: absolute;
+  top: 66px; left: 50%; transform: translateX(-50%);
+  z-index: 4100;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 14px;
+  background: rgba(0,0,0,0.78);
+  border: 1px solid rgba(255,107,53,0.4);
+  border-radius: 100px;
+  color: #FF8C5A; font-size: 12px; font-weight: 700;
+  white-space: nowrap;
+}
+
+.fsm-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: #16162a;
+  border-top: 1px solid rgba(255,107,53,0.22);
+}
+
+.fsm-btn {
+  flex: 1;
+  height: 50px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 800; font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.fsm-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.fsm-btn-wide { flex: 1; }
+
+.fsm-btn-ghost {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.2);
+}
+.fsm-btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.16); }
+
+.fsm-btn-primary {
+  background: linear-gradient(135deg, #FF6B35, #E85A24);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(255,107,53,0.45);
+}
+.fsm-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 9px 26px rgba(255,107,53,0.55); }
+
+.fsm-spin { animation: fsmSpin 0.7s linear infinite; }
+@keyframes fsmSpin { to { transform: rotate(360deg); } }
+
+@media (max-width: 380px) {
+  .fsm-btn { height: 46px; font-size: 13.5px; gap: 6px; }
+  .fsm-back { padding: 0 10px; font-size: 13px; }
+}

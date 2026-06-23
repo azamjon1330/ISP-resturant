@@ -347,6 +347,37 @@ export default function CourierPage() {
     if (firstActive) setSelected(firstActive)
   }, [mine, selectedOrder])
 
+  /* ─ Keep the open detail panel in sync with fresh data ─
+     Without this the panel holds a stale snapshot: its status badge and
+     action button (Olaman / Yetkazildi) would not reflect server changes,
+     and the panel would not close after the order leaves the lists. */
+  useEffect(() => {
+    setDetail((prev) => {
+      if (!prev) return prev
+      const fresh = mine.find((o) => o.id === prev.id) || available.find((o) => o.id === prev.id)
+      if (!fresh) return null               // order gone → close the panel
+      if (fresh.status === prev.status) return prev   // unchanged → keep ref
+      return fresh
+    })
+  }, [mine, available])
+
+  /* ─ Keep the selected order fresh; drop it only when gone from both lists ─
+     Identity is preserved unless status / coords change, so the map effect
+     does not refit and yank the view away every poll. */
+  useEffect(() => {
+    setSelected((prev) => {
+      if (!prev) return prev
+      const fresh = mine.find((o) => o.id === prev.id) || available.find((o) => o.id === prev.id)
+      if (!fresh) return null
+      if (
+        fresh.status === prev.status &&
+        fresh.delivery_lat === prev.delivery_lat &&
+        fresh.delivery_lng === prev.delivery_lng
+      ) return prev
+      return fresh
+    })
+  }, [mine, available])
+
   /* ─ Map init / update ─ */
   useEffect(() => {
     if (!courier) return
