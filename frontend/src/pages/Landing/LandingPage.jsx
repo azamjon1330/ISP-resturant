@@ -55,7 +55,7 @@ const LANG = {
     menu_eye: 'BIZNING MENYU', menu_title: 'Sevimli Taomlaringiz', menu_sub: 'Har kuni yangi tayyorlangan, milliy retseptlar asosida',
     cat_all: 'Barchasi',
     cat_title: "Kategoriyalarni Ko'ring",
-    add: "Qo'shish", in_cart: 'Savatda',
+    add: 'Savatga', in_cart: 'Savatda',
     how_eye: 'QANDAY ISHLAYDI', how_title: 'Uchta oddiy qadam',
     how1_ttl: 'Tanlang', how1_sub: "Menyudan sevimli taomingizni savatga qo'shing",
     how2_ttl: 'Buyurtma bering', how2_sub: "Manzil va to'lov usulini kiriting, tasdiqlang",
@@ -130,7 +130,7 @@ const LANG = {
     menu_eye: 'НАШЕ МЕНЮ', menu_title: 'Ваши любимые блюда', menu_sub: 'Каждый день свежее, по национальным рецептам',
     cat_all: 'Все',
     cat_title: 'Изучите Наши Категории',
-    add: 'Добавить', in_cart: 'В корзине',
+    add: 'В корзину', in_cart: 'В корзине',
     how_eye: 'КАК ЭТО РАБОТАЕТ', how_title: 'Три простых шага',
     how1_ttl: 'Выберите', how1_sub: 'Добавьте любимые блюда из меню в корзину',
     how2_ttl: 'Оформите', how2_sub: 'Введите адрес и подтвердите заказ',
@@ -917,7 +917,9 @@ export default function LandingPage() {
                           className={`lp-mc-add${inCart ? ' active' : ''}`}
                           onClick={() => addToCart(item)}
                         >
-                          {inCart ? <CheckCircle size={16} /> : <Plus size={16} />}
+                          {inCart
+                            ? <><CheckCircle size={16} /> {T.in_cart}</>
+                            : <><Plus size={16} /> {T.add}</>}
                         </button>
                       </div>
                     </div>
