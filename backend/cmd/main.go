@@ -32,6 +32,7 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/auth/login", handlers.Login)
+		api.GET("/auth/me", middleware.StaffAuth(), handlers.Me)
 		api.GET("/menu", handlers.GetMenu)
 		api.GET("/orders/:code", handlers.GetOrderByCode)
 		api.POST("/orders", middleware.ResolveCustomerOptional(), handlers.CreateOrder)
@@ -152,6 +153,12 @@ func main() {
 		// Reviews management
 		admin.GET("/reviews", handlers.AdminGetReviews)
 		admin.DELETE("/reviews/:id", handlers.AdminDeleteReview)
+
+		// Staff logins (cashier / kitchen / admin)
+		admin.GET("/staff", handlers.ListStaff)
+		admin.POST("/staff", handlers.CreateStaff)
+		admin.PUT("/staff/:id", handlers.UpdateStaff)
+		admin.DELETE("/staff/:id", handlers.DeleteStaff)
 	}
 
 	port := os.Getenv("PORT")

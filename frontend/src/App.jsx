@@ -16,7 +16,9 @@ import AdminInventory from './pages/Admin/AdminInventory'
 import AdminAnalytics from './pages/Admin/AdminAnalytics'
 import AdminCouriers from './pages/Admin/AdminCouriers'
 import AdminReviews from './pages/Admin/AdminReviews'
+import AdminStaff from './pages/Admin/AdminStaff'
 import CourierPage from './pages/Courier/CourierPage'
+import StaffGate from './components/StaffGate'
 
 export default function App() {
   return (
@@ -33,8 +35,8 @@ export default function App() {
         <Route path="/staff" element={<HomePage />} />
         <Route path="/shop" element={<ShopPage />} />
         <Route path="/courier" element={<CourierPage />} />
-        <Route path="/cashier" element={<CashierPage />} />
-        <Route path="/kitchen" element={<KitchenPage />} />
+        <Route path="/cashier" element={<StaffGate role="cashier" title="Касса"><CashierPage /></StaffGate>} />
+        <Route path="/kitchen" element={<StaffGate role="kitchen" title="Ошхона"><KitchenPage /></StaffGate>} />
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/*" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
@@ -45,6 +47,7 @@ export default function App() {
           <Route path="couriers" element={<AdminCouriers />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="reviews" element={<AdminReviews />} />
+          <Route path="staff" element={<AdminStaff />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

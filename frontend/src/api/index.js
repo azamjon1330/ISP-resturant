@@ -6,6 +6,8 @@ const api = axios.create({
 })
 
 api.interceptors.request.use(config => {
+  // An explicit Authorization header (e.g. staff token verification) always wins.
+  if (config.headers?.Authorization) return config
   const url = config.url || ''
   const isCustomerRoute = url.startsWith('/customer/') || url === '/orders'
   // Courier routes that require auth (everything except /courier/login and /courier/courier-of/...)
@@ -34,7 +36,9 @@ api.interceptors.response.use(
         localStorage.removeItem('eco_courier_token')
       } else if (isCustomer) {
         localStorage.removeItem('eco_customer_token')
-      } else if (!url.startsWith('/orders') && !url.startsWith('/menu')) {
+      } else if (url !== '/auth/me' && !url.startsWith('/orders') && !url.startsWith('/menu')) {
+        // /auth/me is the staff-token check — its 401 is handled by StaffGate,
+        // so don't wipe the admin token or bounce to the admin login here.
         localStorage.removeItem('eco_taomlar_token')
         window.location.href = '/admin'
       }
@@ -121,6 +125,16 @@ export const vipAPI = {
 
 export const authAPI = {
   login: (username, password) => api.post('/auth/login', { username, password }),
+  // Verify a saved staff/admin token and read its real role.
+  me: (token) => api.get('/auth/me', { headers: { Authorization: `Bearer ${token}` } }),
+}
+
+// Staff (login) management — admin only.
+export const staffAPI = {
+  list: () => api.get('/admin/staff'),
+  create: (data) => api.post('/admin/staff', data),
+  update: (id, data) => api.put(`/admin/staff/${id}`, data),
+  delete: (id) => api.delete(`/admin/staff/${id}`),
 }
 
 export const courierAPI = {

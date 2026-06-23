@@ -1,6 +1,6 @@
 import React from 'react'
 import { NavLink, Outlet, useNavigate, Navigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, BarChart3, LogOut, Home, Package, Bike, MessageSquare } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, BarChart3, LogOut, Home, Package, Bike, MessageSquare, KeyRound } from 'lucide-react'
 import './AdminLayout.css'
 
 const NAV = [
@@ -11,6 +11,7 @@ const NAV = [
   { to: '/admin/couriers', icon: Bike, label: 'Курьерлар' },
   { to: '/admin/analytics', icon: BarChart3, label: 'Аналитика' },
   { to: '/admin/reviews', icon: MessageSquare, label: 'Шархлар' },
+  { to: '/admin/staff', icon: KeyRound, label: 'Логинлар' },
 ]
 
 export default function AdminLayout() {

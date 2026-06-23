@@ -40,6 +40,54 @@ func AdminAuth() gin.HandlerFunc {
 			return
 		}
 
+		// Admin area is restricted to the "admin" role. Cashier / kitchen
+		// staff get valid tokens too, but must NOT reach admin endpoints.
+		if role, _ := claims["role"].(string); role != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+			c.Abort()
+			return
+		}
+
+		c.Set("user_id", claims["user_id"])
+		c.Set("role", claims["role"])
+		c.Next()
+	}
+}
+
+// StaffAuth — validates any admin_users token (admin, cashier or kitchen)
+// without restricting the role. Used by /api/auth/me so a panel can verify
+// that the token saved on the device is still valid and read its role.
+func StaffAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			c.Abort()
+			return
+		}
+
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			secret = "youit_jwt_secret_key_2024"
+		}
+
+		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+			return []byte(secret), nil
+		})
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid claims"})
+			c.Abort()
+			return
+		}
+
 		c.Set("user_id", claims["user_id"])
 		c.Set("role", claims["role"])
 		c.Next()
