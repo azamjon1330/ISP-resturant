@@ -1558,6 +1558,37 @@ a { color: inherit; text-decoration: none; }
 .lp-ocard-st--cancelled { background: rgba(0,0,0,0.08);      color: var(--text3); }
 
 .lp-ocard-items { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 10px; }
+/* Assigned-courier card shown inside an on-the-way order */
+.lp-courier-card {
+  display: flex; align-items: center; gap: 10px;
+  margin: 10px 0;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  background: rgba(255,107,53,0.08);
+  border: 1px solid rgba(255,107,53,0.25);
+}
+.lp-courier-av {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--orange); color: #fff;
+}
+.lp-courier-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.lp-courier-name {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lp-courier-role { font-size: 11px; color: var(--text2); }
+.lp-courier-call {
+  display: flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px; flex-shrink: 0;
+  border-radius: 100px;
+  background: var(--orange); color: #fff;
+  font-size: 12px; font-weight: 700;
+  text-decoration: none; white-space: nowrap;
+}
+.lp-courier-call:hover { background: var(--orange2); }
+
 .lp-ocard-foot {
   display: flex; align-items: center; justify-content: space-between;
   gap: 8px; flex-wrap: wrap;

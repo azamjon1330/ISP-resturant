@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { menuAPI } from '../../api'
+import { menuAPI, categoriesAPI } from '../../api'
 import toast from 'react-hot-toast'
 import {
   Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Check,
-  Loader, Camera, Image as ImageIcon, Upload,
+  Loader, Camera, Image as ImageIcon, Upload, Layers,
 } from 'lucide-react'
 import '../Admin/AdminLayout.css'
 
@@ -57,13 +57,71 @@ export default function AdminMenu() {
   const galleryInputRef = useRef(null)
   const cameraInputRef = useRef(null)
 
-  useEffect(() => { load() }, [])
+  // ── Categories (with photo) ──
+  const [categories, setCategories] = useState([])
+  const [catModal, setCatModal] = useState(false)
+  const [catForm, setCatForm] = useState({ name: '', image_url: '' })
+  const [catEditing, setCatEditing] = useState(null)
+  const [catSaving, setCatSaving] = useState(false)
+  const [catImgBusy, setCatImgBusy] = useState(false)
+  const catGalleryRef = useRef(null)
+  const catCameraRef = useRef(null)
+
+  // Names used by the item form dropdown (DB categories, falling back to defaults).
+  const catNames = categories.length ? categories.map(c => c.name) : CATS
+
+  useEffect(() => { load(); loadCategories() }, [])
 
   const load = async () => {
     setLoading(true)
     try { const r = await menuAPI.getAll(); setMenu(r.data) }
     catch { toast.error('Юкланмади') }
     finally { setLoading(false) }
+  }
+
+  const loadCategories = async () => {
+    try { const r = await categoriesAPI.getAll(); setCategories(r.data || []) }
+    catch { /* categories are optional */ }
+  }
+
+  const handleCatImage = async (file) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Расм танланг'); return }
+    setCatImgBusy(true)
+    try {
+      const dataUrl = await fileToCompressedDataURL(file)
+      setCatForm(p => ({ ...p, image_url: dataUrl }))
+    } catch { toast.error('Расм юкланмади') }
+    finally { setCatImgBusy(false) }
+  }
+
+  const editCat = (cat) => { setCatEditing(cat); setCatForm({ name: cat.name, image_url: cat.image_url || '' }) }
+  const resetCatForm = () => { setCatEditing(null); setCatForm({ name: '', image_url: '' }) }
+
+  const saveCat = async (e) => {
+    e.preventDefault()
+    if (!catForm.name.trim()) { toast.error('Категория номини киритинг'); return }
+    setCatSaving(true)
+    try {
+      if (catEditing) {
+        await categoriesAPI.update(catEditing.id, catForm)
+        toast.success('Янгиланди')
+      } else {
+        await categoriesAPI.create(catForm)
+        toast.success('Категория қўшилди')
+      }
+      resetCatForm()
+      await loadCategories()
+      await load() // item labels may have been renamed server-side
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Хатолик')
+    } finally { setCatSaving(false) }
+  }
+
+  const delCat = async (cat) => {
+    if (!window.confirm(`"${cat.name}" категориясини ўчирасизми?`)) return
+    try { await categoriesAPI.delete(cat.id); await loadCategories() }
+    catch { toast.error('Хатолик') }
   }
 
   const openModal = (item = null) => {
@@ -76,7 +134,7 @@ export default function AdminMenu() {
         available: item.available,
       })
     } else {
-      setForm(EMPTY_FORM)
+      setForm({ ...EMPTY_FORM, category: catNames[0] || EMPTY_FORM.category })
     }
     setModal(true)
   }
@@ -149,9 +207,14 @@ export default function AdminMenu() {
           <h1>🍜 Меню бошқаруви</h1>
           <p>{menu.length} та таом</p>
         </div>
-        <button className="adm-btn adm-btn-primary" onClick={() => openModal()}>
-          <Plus size={16} /> Янги таом
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="adm-btn adm-btn-secondary" onClick={() => { resetCatForm(); setCatModal(true) }}>
+            <Layers size={16} /> Категориялар
+          </button>
+          <button className="adm-btn adm-btn-primary" onClick={() => openModal()}>
+            <Plus size={16} /> Янги таом
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -299,7 +362,10 @@ export default function AdminMenu() {
                   <label className="adm-label">Категория</label>
                   <select className="adm-input" value={form.category}
                     onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
-                    {CATS.map(c => <option key={c}>{c}</option>)}
+                    {(form.category && !catNames.includes(form.category)
+                      ? [form.category, ...catNames]
+                      : catNames
+                    ).map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
 
@@ -355,6 +421,110 @@ export default function AdminMenu() {
           </div>
         </div>
       )}
+
+      {/* ─── CATEGORIES MODAL ──────────────────────────── */}
+      {catModal && (
+        <div className="adm-overlay" onClick={e => e.target === e.currentTarget && setCatModal(false)}>
+          <div style={{
+            background: 'white', borderRadius: 18, width: '100%', maxWidth: 540,
+            maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid #F3F4F6' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>🗂️ Категориялар</h2>
+              <button onClick={() => setCatModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 4, display: 'flex' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
+              {/* Add / edit form */}
+              <form onSubmit={saveCat} style={{ background: '#FAFAFA', border: '1.5px solid #F0F0F0', borderRadius: 12, padding: 16, marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>
+                  {catEditing ? '✏️ Категорияни таҳрирлаш' : '➕ Янги категория'}
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  {/* Photo */}
+                  <div style={{ flexShrink: 0 }}>
+                    {catForm.image_url ? (
+                      <div style={{ position: 'relative' }}>
+                        <img src={catForm.image_url} alt="cat"
+                          style={{ width: 84, height: 84, objectFit: 'cover', borderRadius: 12, border: '1.5px solid #E5E7EB' }} />
+                        <button type="button" onClick={() => setCatForm(p => ({ ...p, image_url: '' }))}
+                          style={{ position: 'absolute', top: -6, right: -6, background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ width: 84, height: 84, borderRadius: 12, border: '2px dashed #E5E7EB', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF' }}>
+                        {catImgBusy ? <Loader size={18} style={{ animation: 'adm-spin 0.7s linear infinite' }} /> : <ImageIcon size={20} />}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                      <button type="button" onClick={() => catCameraRef.current?.click()} disabled={catImgBusy}
+                        title="Camera" style={catImgBtn}><Camera size={14} /></button>
+                      <button type="button" onClick={() => catGalleryRef.current?.click()} disabled={catImgBusy}
+                        title="Галерея" style={catImgBtn}><Upload size={14} /></button>
+                    </div>
+                    <input ref={catCameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+                      onChange={e => { handleCatImage(e.target.files?.[0]); e.target.value = '' }} />
+                    <input ref={catGalleryRef} type="file" accept="image/*" style={{ display: 'none' }}
+                      onChange={e => { handleCatImage(e.target.files?.[0]); e.target.value = '' }} />
+                  </div>
+
+                  {/* Name + actions */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <input className="adm-input" placeholder="Категория номи (масалан: Шашлик)"
+                      value={catForm.name}
+                      onChange={e => setCatForm(p => ({ ...p, name: e.target.value }))} />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      {catEditing && (
+                        <button type="button" className="adm-btn adm-btn-secondary" onClick={resetCatForm}>Бекор</button>
+                      )}
+                      <button type="submit" className="adm-btn adm-btn-primary" disabled={catSaving || catImgBusy}>
+                        {catSaving ? <Loader size={15} style={{ animation: 'adm-spin 0.7s linear infinite' }} /> : <Check size={15} />}
+                        {catEditing ? 'Сақлаш' : 'Қўшиш'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+
+              {/* Existing categories */}
+              {categories.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#9CA3AF', padding: 24, fontSize: 13 }}>
+                  Ҳали категориялар йўқ
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {categories.map(cat => (
+                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, border: '1px solid #F0F0F0', borderRadius: 10 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 9, overflow: 'hidden', background: '#F3F4F6', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {cat.image_url
+                          ? <img src={cat.image_url} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <ImageIcon size={18} color="#9CA3AF" />}
+                      </div>
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#111827' }}>{cat.name}</span>
+                      <button onClick={() => editCat(cat)} style={{ padding: '6px 9px', borderRadius: 7, border: '1.5px solid #E5E7EB', background: 'white', cursor: 'pointer', display: 'flex' }}>
+                        <Edit2 size={14} color="#374151" />
+                      </button>
+                      <button onClick={() => delCat(cat)} style={{ padding: '6px 9px', borderRadius: 7, border: '1.5px solid #FEE2E2', background: '#FEF2F2', cursor: 'pointer', display: 'flex' }}>
+                        <Trash2 size={14} color="#EF4444" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+const catImgBtn = {
+  width: 36, height: 30, borderRadius: 7, border: '1.5px solid #E5E7EB',
+  background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151',
 }

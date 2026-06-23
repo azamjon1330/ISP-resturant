@@ -47,6 +47,13 @@ api.interceptors.response.use(
   }
 )
 
+export const categoriesAPI = {
+  getAll: () => api.get('/categories'),
+  create: (data) => api.post('/admin/categories', data),
+  update: (id, data) => api.put(`/admin/categories/${id}`, data),
+  delete: (id) => api.delete(`/admin/categories/${id}`),
+}
+
 export const menuAPI = {
   getAll: () => api.get('/menu'),
   create: (data) => api.post('/admin/menu', data),

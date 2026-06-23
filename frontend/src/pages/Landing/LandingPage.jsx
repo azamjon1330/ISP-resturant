@@ -265,6 +265,7 @@ export default function LandingPage() {
   const [ordersOpen, setOO]   = useState(false)
   const [myOrders, setMO]     = useState([])
   const [flashId, setFlash]   = useState(null)
+  const [courierByCode, setCourierByCode] = useState({}) // order_code -> courier (for on_way orders)
 
   // ── Checkout
   const [checkoutOpen, setCkO] = useState(false)
@@ -537,6 +538,23 @@ export default function LandingPage() {
       customerAPI.orders().then(res => setMO(res.data || [])).catch(() => {})
     }
   }, [cartOpen, customer])
+
+  // Fetch the assigned courier (name + phone) for each on-the-way order so the
+  // customer can see who is delivering and call them.
+  useEffect(() => {
+    const onWay = myOrders.filter(o => o.status === 'on_way')
+    if (onWay.length === 0) { setCourierByCode({}); return }
+    let active = true
+    Promise.all(onWay.map(o =>
+      fetch(`/api/courier/courier-of/${o.order_code}`)
+        .then(r => (r.ok ? r.json() : null))
+        .then(data => [o.order_code, data])
+        .catch(() => [o.order_code, null])
+    )).then(entries => {
+      if (active) setCourierByCode(Object.fromEntries(entries.filter(([, v]) => v)))
+    })
+    return () => { active = false }
+  }, [myOrders])
 
   const cancelOrder = async code => {
     try {
@@ -1237,6 +1255,22 @@ export default function LandingPage() {
                             ))}
                           </div>
                         </div>
+                        {order.status === 'on_way' && courierByCode[order.order_code] && (
+                          <div className="lp-courier-card">
+                            <div className="lp-courier-av"><Truck size={16} /></div>
+                            <div className="lp-courier-info">
+                              <span className="lp-courier-name">
+                                {courierByCode[order.order_code].first_name} {courierByCode[order.order_code].last_name || ''}
+                              </span>
+                              <span className="lp-courier-role">{lang === 'uz' ? 'Kuryer' : 'Курьер'}</span>
+                            </div>
+                            {courierByCode[order.order_code].phone && (
+                              <a className="lp-courier-call" href={`tel:${courierByCode[order.order_code].phone}`}>
+                                <Phone size={13} /> {courierByCode[order.order_code].phone}
+                              </a>
+                            )}
+                          </div>
+                        )}
                         <div className="lp-ocard-foot">
                           <span className="lp-ocard-total">{fmt(order.final_price || order.total_price || 0)}</span>
                           {canCancel && (

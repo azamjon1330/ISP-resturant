@@ -51,6 +51,9 @@ func main() {
 
 		// Public restaurant settings (pickup location, etc.)
 		api.GET("/settings", handlers.GetSettings)
+
+		// Public product categories (with photos)
+		api.GET("/categories", handlers.GetCategories)
 	}
 
 	// Customer-authenticated routes
@@ -159,6 +162,11 @@ func main() {
 		admin.POST("/staff", handlers.CreateStaff)
 		admin.PUT("/staff/:id", handlers.UpdateStaff)
 		admin.DELETE("/staff/:id", handlers.DeleteStaff)
+
+		// Product categories (with photo)
+		admin.POST("/categories", handlers.CreateCategory)
+		admin.PUT("/categories/:id", handlers.UpdateCategory)
+		admin.DELETE("/categories/:id", handlers.DeleteCategory)
 	}
 
 	port := os.Getenv("PORT")

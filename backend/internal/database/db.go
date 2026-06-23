@@ -291,6 +291,15 @@ func runMigrations() {
 		`INSERT INTO restaurant_settings (key, value) VALUES ('pickup_lng', '69.2401') ON CONFLICT (key) DO NOTHING`,
 		`INSERT INTO restaurant_settings (key, value) VALUES ('pickup_address', 'Toshkent, O''zbekiston') ON CONFLICT (key) DO NOTHING`,
 
+		// ── Product categories (with photo) ───────────────────────────────────
+		`CREATE TABLE IF NOT EXISTS categories (
+			id         SERIAL PRIMARY KEY,
+			name       VARCHAR(100) UNIQUE NOT NULL,
+			image_url  TEXT,
+			sort_order INTEGER DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
 		// ── Trigger: auto-update orders.updated_at ────────────────────────────
 		`CREATE OR REPLACE FUNCTION update_updated_at()
 		 RETURNS TRIGGER AS $$
