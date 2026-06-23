@@ -1,0 +1,30 @@
+# ════════════════════════════════════════════════════════════════════
+#  Front reverse proxy for the whole server.
+#  Run this IN ADDITION to your app stacks (restaurant, clinic, ...).
+#  It owns ports 80 + 443 and routes each domain to the right app.
+#
+#  Start:   cd deploy && docker compose up -d
+#  Logs:    docker compose -f deploy/docker-compose.yml logs -f caddy
+#  Reload:  docker compose -f deploy/docker-compose.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
+# ════════════════════════════════════════════════════════════════════
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: eco_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3 (QUIC)
+    extra_hosts:
+      # Lets Caddy reach apps published on the host (e.g. :3003) from
+      # inside the container. Required on Linux.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # <-- persists issued certificates (DO NOT delete)
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

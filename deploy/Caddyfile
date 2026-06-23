@@ -1,0 +1,35 @@
+# ════════════════════════════════════════════════════════════════════
+#  Caddy reverse proxy — automatic HTTPS (Let's Encrypt) for all domains
+#  on this server. Certificates are issued AND auto-renewed for free.
+#  (Let's Encrypt certs last 90 days; Caddy renews them automatically,
+#   so HTTPS keeps working forever with no manual action.)
+# ════════════════════════════════════════════════════════════════════
+
+# ── Global options ──
+{
+	# Email used by Let's Encrypt for expiry / problem notices.
+	# Replace with a real address (recommended). You can also leave it
+	# commented out — certificates still work without it.
+	# email you@example.com
+}
+
+# ── ECO Taom — restaurant (this repo) ──
+# Frontend container publishes host port 3003 (see docker-compose.yml).
+# Caddy terminates TLS here and forwards plain HTTP to the frontend nginx,
+# which in turn proxies /api and /ws to the backend. WebSockets pass
+# through automatically — no extra config needed.
+eco-taom.uz, www.eco-taom.uz {
+	encode gzip zstd
+	reverse_proxy host.docker.internal:3003
+}
+
+# ── Clinic project (separate app already running on this server) ──
+# Fill in the real domain and port, then uncomment. Find the clinic's
+# published port on the server with:   docker ps
+# (look at the PORTS column of the clinic container, e.g. 0.0.0.0:3001->80/tcp
+#  means the port is 3001). If it is not a docker app, use:  sudo ss -tlnp
+#
+# clinic-domain.uz, www.clinic-domain.uz {
+# 	encode gzip zstd
+# 	reverse_proxy host.docker.internal:CLINIC_PORT
+# }
